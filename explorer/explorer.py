@@ -3,6 +3,8 @@ import numpy as np
 import holoviews as hv
 import pandas as pd
 
+import logging
+
 from bokeh.application.handlers import FunctionHandler
 from bokeh.application import Application
 from bokeh.io import show
@@ -57,6 +59,8 @@ class QAExplorer(hv.streams.Stream):
 
     query = param.String(default='')
 
+    id_list = param.String(default='')
+
     x_data = param.ObjectSelector(default='base_PsfFlux', 
                                       objects=list(default_xFuncs.keys()))
     x_data_custom = param.String(default='')
@@ -77,27 +81,35 @@ class QAExplorer(hv.streams.Stream):
 
     output = parambokeh.view.Plot()
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, rootdir='.', *args, **kwargs):
         super(QAExplorer, self).__init__(*args, **kwargs)
+
+        self.rootdir = rootdir
 
         self._catalog_path = None
         self._selected = None
         # Sets self.ds property
-        self.set_data(self.catalog_path, self.query, self.x_data, self.x_data_custom, 
+        self.set_data(self.catalog_path, self.query, self.id_list, 
+                      self.x_data, self.x_data_custom, 
                       self.y_data, self.y_data_custom, self.labeller)
 
-    def _set_streams(self):
-        pass
+    def set_data(self, catalog_path, query, id_list, 
+                 x_data, x_data_custom, y_data, y_data_custom, 
+                 labeller, **kwargs):
 
-    def set_data(self, catalog_path, query, x_data, x_data_custom, y_data, y_data_custom, labeller, **kwargs):
         if catalog_path != self._catalog_path:
             self.catalog = pd.read_hdf(catalog_path)
+            self.catalog.index = self.catalog.id
             self._catalog_path = catalog_path
 
-        if query:
-            cat = self.catalog.query(query)
+        if id_list:
+            ids = self.get_saved_ids(id_list)
+            cat = self.catalog.loc[ids]
         else:
             cat = self.catalog
+
+        if query:
+            cat = cat.query(query)
 
         if x_data_custom:
             xFunc = getFunc(x_data_custom)
@@ -130,7 +142,32 @@ class QAExplorer(hv.streams.Stream):
                            'id' : data_id[ok]})
 
         self.ds = hv.Dataset(df)
-        self._set_streams()
+
+    @property
+    def selected(self):
+        return self._selected 
+
+    @property
+    def id_path(self):
+        return os.path.join(self.rootdir, 'data', 'ids')
+
+    def save_selected(self, name):
+        filename = os.path.join(self.id_path, '{}.h5'.format(name))
+        logging.info('writing {} ids to {}'.format(len(self.selected), filename))
+        self.selected.to_hdf(filename, 'ids', mode='w')
+
+    @property
+    def saved_ids(self):
+        """Returns list of names of selected IDs
+        """
+        return [os.path.splitext(f)[0] for f in os.listdir(self.id_path)]
+
+    def get_saved_ids(self, id_list):
+        id_list = id_list.split(',')
+
+        files = [os.path.join(self.id_path, '{}.h5'.format(f.strip())) for f in id_list]
+
+        return pd.concat([pd.read_hdf(f, 'ids') for f in files]).unique()
 
     def make_scatter(self, object_type, x_range=None, y_range=None, **kwargs):
         self.set_data(**kwargs)
@@ -194,16 +231,6 @@ class QAExplorer(hv.streams.Stream):
     def make_yhist(self, **kwargs):
         y_range = kwargs.pop('y_range')
         return self._make_hist('y', y_range, **kwargs)
-
-    @property
-    def selected(self):
-        return self._selected 
-
-    def write_selected(self, name):
-        filename = os.path.join('data', 'ids', '{}.h5'.format(name))
-        print('writing {} ids to {}'.format(len(self.selected), filename))
-        self.selected.to_hdf(filename, 'ids', mode='w')
-        # print(self.selected.head())
 
     def view(self):
 

@@ -29,12 +29,22 @@ import parambokeh
 
 from .utils import Mag, CustomFunctor, DeconvolvedMoments
 from .utils import StarGalaxyLabeller
-from .utils import RAColumn, DecColumn
+from .utils import RAColumn, DecColumn, Column
+from .utils import SdssTraceSize, PsfSdssTraceSizeDiff, HsmTraceSize, PsfHsmTraceSizeDiff
 
 default_xFuncs = {'base_PsfFlux' : Mag('base_PsfFlux'),
                   'modelfit_CModel' : Mag('modelfit_CModel')}
 default_yFuncs = {'modelfit_CModel - base_PsfFlux' : CustomFunctor('mag(modelfit_CModel) - mag(base_PsfFlux)'),
-                  'Deconvolved Moments' : DeconvolvedMoments()}
+                  'Deconvolved Moments' : DeconvolvedMoments(),
+                  'Footprint NPix' : Column('base_Footprint_nPix'),
+                  'ext_photometryKron_KronFlux - base_PsfFlux' : \
+                        CustomFunctor('mag(ext_photometryKron_KronFlux) - mag(base_PsfFlux)'),
+                  'base_GaussianFlux - base_PsfFlux' : CustomFunctor('mag(base_GaussianFlux) - mag(base_PsfFlux)'),
+                  'SDSS Trace Size' : SdssTraceSize(),
+                  'PSF - SDSS Trace Size' : PsfSdssTraceSizeDiff(),
+                  'HSM Trace Size' : HsmTraceSize(),
+                  'PSF - HSM Trace Size': PsfHsmTraceSizeDiff()}
+
 default_labellers = {'default':StarGalaxyLabeller()}
 
 def getFunc(funcName):
@@ -51,6 +61,24 @@ def getLabeller(labellerName):
 
 def write_selected(explorer, filename):
     print(explorer._selected.head())
+
+def get_default_range(x, y):
+    x = pd.Series(x).dropna()
+    y = pd.Series(y).dropna()
+    xMed = np.median(x)
+    yMed = np.median(y)
+    xMAD = np.median(np.absolute(x - xMed))
+    yMAD = np.median(np.absolute(y - yMed))
+
+    ylo = yMed - 10*yMAD
+    yhi = yMed + 10*yMAD
+
+    xlo, xhi = x.quantile([0., 0.99])
+    xBuffer = xMAD/4.
+    xlo -= xBuffer
+    xhi += xBuffer
+
+    return (xlo, xhi), (ylo, yhi)
 
 class QAExplorer(hv.streams.Stream):
 
@@ -75,7 +103,7 @@ class QAExplorer(hv.streams.Stream):
     object_type = param.ObjectSelector(default='all',
                                        objects=['all', 'star', 'galaxy'])
 
-    nbins = param.Integer(default=50, bounds=(10,100))
+    nbins = param.Integer(default=20, bounds=(10,100))
 
     # write_selected = param.Action(default=write_selected)
 
@@ -141,7 +169,13 @@ class QAExplorer(hv.streams.Stream):
                            'dec': dec[ok],
                            'id' : data_id[ok]})
 
-        self.ds = hv.Dataset(df)
+        x_range, y_range = get_default_range(df.x, df.y)
+        xdim = hv.Dimension('x', label=xFunc.name, range=x_range)
+        ydim = hv.Dimension('y', label=yFunc.name, range=y_range)
+
+        self.ds = hv.Dataset(df, kdims=[xdim, ydim])
+
+        print(self.ds.dimensions())
 
     @property
     def selected(self):
@@ -177,12 +211,13 @@ class QAExplorer(hv.streams.Stream):
         else:
             dset = self.ds.select(label=object_type)
 
-        xdim = hv.Dimension('x', label=self.xlabel)
-        ydim = hv.Dimension('y', label=self.ylabel)
+        pts = dset.to(hv.Points, kdims=['x', 'y'], vdims=['label'], groupby=[])
+        print(pts.dimensions())
 
-        pts = dset.to(hv.Points, kdims=[xdim, ydim], vdims=['label'], groupby=[])
         scatter = dynspread(datashade(pts, x_range=x_range, y_range=y_range, dynamic=False, normalization='log'))
-        scatter = scatter.opts('RGB [width=600, height=400]').relabel('{} ({})'.format(object_type, len(dset)))
+
+        title = '{} ({}) {}'.format(object_type, len(dset), pts.get_dimension('y').label)
+        scatter = scatter.opts('RGB [width=600, height=400]').relabel(title)
         return scatter
 
     def make_sky(self, object_type, ra_range=None, dec_range=None, x_range=None, y_range=None, **kwargs):
@@ -198,7 +233,7 @@ class QAExplorer(hv.streams.Stream):
         self._selected = dset.data.id
 
         pts = dset.to(hv.Points, kdims=['ra', 'dec'], vdims=['y'], groupby=[])
-        agg = aggregate(pts, width=100, height=100, x_range=x_range, y_range=y_range, aggregator=ds.mean('y'), dynamic=False)
+        agg = aggregate(pts, width=100, height=100, x_range=ra_range, y_range=dec_range, aggregator=ds.mean('y'), dynamic=False)
         hover = hv.QuadMesh(agg).opts('[tools=["hover"]] (alpha=0 hover_alpha=0.2)')
         shaded = dynspread(datashade(pts, x_range=ra_range, y_range=dec_range, dynamic=False, 
                                      cmap=cc.palette['coolwarm'], aggregator=ds.mean('y')))
@@ -232,16 +267,38 @@ class QAExplorer(hv.streams.Stream):
         y_range = kwargs.pop('y_range')
         return self._make_hist('y', y_range, **kwargs)
 
+    @property
+    def default_range(self):
+        x = self.ds.data.x.dropna()
+        y = self.ds.data.y.dropna()
+        xMed = np.median(x)
+        yMed = np.median(y)
+        xMAD = np.median(np.absolute(x - xMed))
+        yMAD = np.median(np.absolute(y - yMed))
+
+        ylo = yMed - 10*yMAD
+        yhi = yMed + 10*yMAD
+
+        xlo, xhi = x.quantile([0., 0.99])
+        xBuffer = xMAD/4.
+        xlo -= xBuffer
+        xhi += xBuffer
+
+        # print(xlo, xhi, ylo, yhi)
+        return (xlo, xhi), (ylo, yhi)
+
     def view(self):
 
-        self.range_xy = hv.streams.RangeXY()
-        self.range_sky = hv.streams.RangeXY().rename(x_range='ra_range', y_range='dec_range')
+        x_range, y_range = self.default_range
 
-        scatter = hv.DynamicMap(self.make_scatter, streams=[self, self.range_xy])
-        sky = hv.DynamicMap(self.make_sky, streams=[self, self.range_sky, self.range_xy])
+        range_xy = hv.streams.RangeXY()
+        range_sky = hv.streams.RangeXY().rename(x_range='ra_range', y_range='dec_range')
 
-        xhist = hv.DynamicMap(self.make_xhist, kdims=[], streams=[self, self.range_xy])
-        yhist = hv.DynamicMap(self.make_yhist, kdims=[], streams=[self, self.range_xy])
+        scatter = hv.DynamicMap(self.make_scatter, streams=[self, range_xy])
+        sky = hv.DynamicMap(self.make_sky, streams=[self, range_sky, range_xy])
+
+        xhist = hv.DynamicMap(self.make_xhist, kdims=[], streams=[self, range_xy])
+        yhist = hv.DynamicMap(self.make_yhist, kdims=[], streams=[self, range_xy])
 
         l = (scatter + sky + yhist + xhist).cols(2)
         return l

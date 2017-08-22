@@ -7,6 +7,9 @@ from explorer.explorer import QAExplorer
 
 from bokeh.models.widgets import Button, TextInput, PreText
 
+import warnings
+warnings.filterwarnings('ignore', r'All-NaN (slice|axis) encountered')
+
 hv.extension('bokeh')
 
 def modify_doc(doc):

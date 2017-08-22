@@ -54,6 +54,9 @@ class Column(Functor):
     def _func(self, catalog):
         return catalog[self.col]
 
+class FootprintNPix(Column):
+    col = 'base_Footprint_nPix'
+
 class CoordColumn(Column):
     def _func(self, catalog):
         return np.rad2deg(catalog[self.col])
@@ -130,4 +133,43 @@ class DeconvolvedMoments(Functor):
             # raise TaskError("No psf shape parameter found in catalog")
             raise RuntimeError('No psf shape parameter found in catalog')
         return np.where(np.isfinite(hsm), hsm, sdss) - psf
+
+class SdssTraceSize(Functor):
+    """Functor to calculate SDSS trace radius size for sources"""
+    name = "SDSS Trace Size"
+    def __call__(self, catalog):
+        srcSize = np.sqrt(0.5*(catalog["base_SdssShape_xx"] + catalog["base_SdssShape_yy"]))
+        return np.array(srcSize)
+
+
+class PsfSdssTraceSizeDiff(Functor):
+    """Functor to calculate SDSS trace radius size difference (%) between object and psf model"""
+    name = "PSF - SDSS Trace Size"
+    def __call__(self, catalog):
+        srcSize = np.sqrt(0.5*(catalog["base_SdssShape_xx"] + catalog["base_SdssShape_yy"]))
+        psfSize = np.sqrt(0.5*(catalog["base_SdssShape_psf_xx"] + catalog["base_SdssShape_psf_yy"]))
+        sizeDiff = 100*(srcSize - psfSize)/(0.5*(srcSize + psfSize))
+        return np.array(sizeDiff)
+
+
+class HsmTraceSize(Functor):
+    """Functor to calculate HSM trace radius size for sources"""
+    name = 'HSM Trace Size'
+    def __call__(self, catalog):
+        srcSize = np.sqrt(0.5*(catalog["ext_shapeHSM_HsmSourceMoments_xx"] +
+                               catalog["ext_shapeHSM_HsmSourceMoments_yy"]))
+        return np.array(srcSize)
+
+
+class PsfHsmTraceSizeDiff(Functor):
+    """Functor to calculate HSM trace radius size difference (%) between object and psf model"""
+    name = 'PSF - HSM Trace Size'
+    
+    def __call__(self, catalog):
+        srcSize = np.sqrt(0.5*(catalog["ext_shapeHSM_HsmSourceMoments_xx"] +
+                               catalog["ext_shapeHSM_HsmSourceMoments_yy"]))
+        psfSize = np.sqrt(0.5*(catalog["ext_shapeHSM_HsmPsfMoments_xx"] +
+                               catalog["ext_shapeHSM_HsmPsfMoments_yy"]))
+        sizeDiff = 100*(srcSize - psfSize)/(0.5*(srcSize + psfSize))
+        return np.array(sizeDiff)
 

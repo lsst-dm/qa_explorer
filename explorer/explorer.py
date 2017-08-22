@@ -171,12 +171,12 @@ class QAExplorer(hv.streams.Stream):
                            'id' : data_id[ok]})
 
         x_range, y_range = get_default_range(df.x, df.y)
-        xdim = hv.Dimension('x', label=xFunc.name, range=x_range)
-        ydim = hv.Dimension('y', label=yFunc.name, range=y_range)
+        xdim = hv.Dimension('x', label=xFunc.name)#, range=x_range)
+        ydim = hv.Dimension('y', label=yFunc.name)#, range=y_range)
 
         self.ds = hv.Dataset(df, kdims=[xdim, ydim])
 
-        print(self.ds.dimensions())
+        # print(self.ds.dimensions())
 
     @property
     def selected(self):
@@ -217,7 +217,8 @@ class QAExplorer(hv.streams.Stream):
         print(pts.dimensions())
 
         scatter = dynspread(datashade(pts, x_range=x_range, y_range=y_range, dynamic=False, normalization='log'))
-        # hover = HoverTool(tooltips=[("(x,y)", "($x, $y)")])
+        hover = HoverTool(tooltips=[("(x,y)", "($x, $y)")])
+        # hv.opts({'RGB': {'plot' : {'tools' : [hover]}}}, scatter)
         # scatter = scatter.opts(plot=dict(tools=[hover]))
 
         title = '{} ({}) {}'.format(object_type, len(dset), pts.get_dimension('y').label)

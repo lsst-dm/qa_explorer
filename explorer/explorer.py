@@ -206,7 +206,7 @@ class QAExplorer(hv.streams.Stream):
 
     def make_scatter(self, object_type, x_range=None, y_range=None, **kwargs):
         self.set_data(**kwargs)
-        print('before:', x_range, y_range)
+        logging.info('x_range={}, y_range={}'.format(x_range, y_range))
 
         if object_type == 'all':
             dset = self.ds
@@ -219,7 +219,6 @@ class QAExplorer(hv.streams.Stream):
         scatter = dynspread(datashade(pts, x_range=x_range, y_range=y_range, dynamic=False, normalization='log'))
         # hover = HoverTool(tooltips=[("(x,y)", "($x, $y)")])
         # scatter = scatter.opts(plot=dict(tools=[hover]))
-        print('after:', x_range, y_range)
 
         title = '{} ({}) {}'.format(object_type, len(dset), pts.get_dimension('y').label)
         scatter = scatter.opts('RGB [width=600, height=400]').relabel(title)

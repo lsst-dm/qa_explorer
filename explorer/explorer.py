@@ -28,10 +28,11 @@ from holoviews.plotting.bokeh.callbacks import callbacks, Callback
 import param
 import parambokeh
 
-from .utils import Mag, CustomFunctor, DeconvolvedMoments
-from .utils import StarGalaxyLabeller
-from .utils import RAColumn, DecColumn, Column
-from .utils import SdssTraceSize, PsfSdssTraceSizeDiff, HsmTraceSize, PsfHsmTraceSizeDiff
+from .functors import Mag, CustomFunctor, DeconvolvedMoments
+from .functors import StarGalaxyLabeller
+from .functors import RAColumn, DecColumn, Column, IDColumn
+from .functors import SdssTraceSize, PsfSdssTraceSizeDiff, HsmTraceSize, PsfHsmTraceSizeDiff
+from .functors import CompositeFunctor
 
 default_xFuncs = {'base_PsfFlux' : Mag('base_PsfFlux'),
                   'modelfit_CModel' : Mag('modelfit_CModel')}
@@ -84,7 +85,7 @@ def get_default_range(x, y):
 class QAExplorer(hv.streams.Stream):
 
 
-    catalog_path = param.Path(default='forced_big.h5', search_paths=['data'])
+    catalog = param.Path(default='forced_big.parq', search_paths=['.','data'])
 
     query = param.String(default='')
 
@@ -115,68 +116,69 @@ class QAExplorer(hv.streams.Stream):
 
         self.rootdir = rootdir
 
-        self._catalog_path = None
+        self._ds = None
         self._selected = None
-        # Sets self.ds property
-        self.set_data(self.catalog_path, self.query, self.id_list, 
-                      self.x_data, self.x_data_custom, 
-                      self.y_data, self.y_data_custom, self.labeller)
 
-    def set_data(self, catalog_path, query, id_list, 
+        # Sets self.ds property
+
+        # self._set_data(self.catalog, self.query, self.id_list, 
+        #               self.x_data, self.x_data_custom, 
+        #               self.y_data, self.y_data_custom, self.labeller)
+
+    @property
+    def funcs(self):
+        return self._get_funcs(self.x_data, self.x_data_custom,
+                               self.y_data, self.y_data_custom,
+                               self.labeller)
+
+    def _get_funcs(self, x_data, x_data_custom, y_data, y_data_custom,
+                    labeller):
+        if self.x_data_custom:
+            xFunc = getFunc(self.x_data_custom)
+        else:
+            xFunc = getFunc(self.x_data)
+
+        if self.y_data_custom:
+            yFunc = getFunc(self.y_data_custom)
+        else:
+            yFunc = getFunc(self.y_data)
+
+        labeller = getLabeller(self.labeller)
+
+        return CompositeFunctor({'x' : xFunc,
+                                 'y' : yFunc,
+                                 'label' : labeller,
+                                 'id' : Column('id'),
+                                 'ra' : RAColumn(),
+                                 'dec': DecColumn()})
+
+    def _set_data(self, catalog, query, id_list, 
                  x_data, x_data_custom, y_data, y_data_custom, 
                  labeller, **kwargs):
+        funcs = self._get_funcs(x_data, x_data_custom,
+                                y_data, y_data_custom,
+                                labeller)
 
-        if catalog_path != self._catalog_path:
-            self.catalog = pd.read_hdf(catalog_path)
-            self.catalog.index = self.catalog.id
-            self._catalog_path = catalog_path
+        df = funcs(catalog, query=query)
+        df.index = df['id']
 
         if id_list:
             ids = self.get_saved_ids(id_list)
-            cat = self.catalog.loc[ids]
-        else:
-            cat = self.catalog
+            df = df.loc[ids]
 
-        if query:
-            cat = cat.query(query)
+        ok = np.isfinite(df.x) & np.isfinite(df.y)
+        xdim = hv.Dimension('x', label=funcs['x'].name)
+        ydim = hv.Dimension('y', label=funcs['y'].name)
+        self._ds = hv.Dataset(df[ok], kdims=[xdim, ydim, 'ra', 'dec', 'id'], vdims=['label'])
 
-        if x_data_custom:
-            xFunc = getFunc(x_data_custom)
-        else:
-            xFunc = getFunc(x_data)
-        x = xFunc(cat)
-        self.xlabel = xFunc.name
-
-        if y_data_custom:
-            yFunc = getFunc(y_data_custom)
-        else:
-            yFunc = getFunc(y_data)
-        y = yFunc(cat)
-        self.ylabel = yFunc.name
-
-        label = getLabeller(labeller)(cat)
-
-        ra = RAColumn()(cat)
-        dec = DecColumn()(cat)
-
-        data_id = cat.id
-
-        ok = np.isfinite(x) & np.isfinite(y)
-
-        df = pd.DataFrame({'x' : x[ok],
-                           'y' : y[ok],
-                           'label' : label[ok],
-                           'ra' : ra[ok],
-                           'dec': dec[ok],
-                           'id' : data_id[ok]})
-
-        x_range, y_range = get_default_range(df.x, df.y)
-        xdim = hv.Dimension('x', label=xFunc.name)#, range=x_range)
-        ydim = hv.Dimension('y', label=yFunc.name)#, range=y_range)
-
-        self.ds = hv.Dataset(df, kdims=[xdim, ydim])
-
-        # print(self.ds.dimensions())
+    @property
+    def ds(self):
+        if self._ds is None:
+            self._set_data(self.catalog, self.query, self.id_list,
+                           self.x_data, self.x_data_custom,
+                           self.y_data, self.y_data_custom,
+                           self.labeller)
+        return self._ds
 
     @property
     def selected(self):
@@ -205,7 +207,7 @@ class QAExplorer(hv.streams.Stream):
         return pd.concat([pd.read_hdf(f, 'ids') for f in files]).unique()
 
     def make_scatter(self, object_type, x_range=None, y_range=None, **kwargs):
-        self.set_data(**kwargs)
+        self._set_data(**kwargs)
         logging.info('x_range={}, y_range={}'.format(x_range, y_range))
 
         if object_type == 'all':

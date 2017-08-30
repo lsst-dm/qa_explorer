@@ -49,6 +49,8 @@ if __name__=='__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser(description="Schwimmbad example.")
 
+    parser.add_argument('filename')
+
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--ncores", dest="n_cores", default=1,
                        type=int, help="Number of processes (uses multiprocessing).")
@@ -60,4 +62,4 @@ if __name__=='__main__':
 
     filename = '../data/forced_big.h5'
     # write_fake_grid(pool, filename, ra_offsets=range(-1,2), dec_offsets=range(-1,2), tag='test')
-    write_fake_grid(pool, filename)
+    write_fake_grid(pool, args.filename)

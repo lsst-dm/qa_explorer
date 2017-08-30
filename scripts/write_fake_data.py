@@ -3,8 +3,12 @@ import numpy as np
 import fastparquet
 import itertools
 import re
+import schwimmbad
 
-def perturb_catalog(filename, ra_offset=2, dec_offset=2):
+def perturb_catalog(filename, ra_offset=2, dec_offset=2, tag='fake'):
+    # if ra_offset==0 and dec_offset==0:
+    #     pass
+
     cat = pd.read_hdf(filename)
     new = cat.copy()
     for i, c in enumerate(cat.columns):
@@ -18,17 +22,40 @@ def perturb_catalog(filename, ra_offset=2, dec_offset=2):
     ra_sign = 'm' if ra_offset < 0 else 'p'
     dec_sign = 'm' if dec_offset < 0 else 'p'
 
-    new_filename = filename[:-3] + '_fake_{}{}_{}{}.parq'.format(ra_sign, ra_offset,
-                                                                 dec_sign, dec_offset)
+    new_filename = filename[:-3] + '_{}_{}{}_{}{}.parq'.format(tag, ra_sign, abs(ra_offset),
+                                                                 dec_sign, abs(dec_offset))
 
     fastparquet.write(new_filename, new)
 
 
-def write_fake_grid(filename, ra_offsets=range(-10,11), dec_offsets=range(-10,11)):
-    for dra, ddec in itertools.product(ra_offsets, dec_offsets):
-        print('dra={}, ddec={}'.format(dra, ddec))
-        perturb_catalog(filename, dra, ddec)
+class write_worker(object):
+    def __init__(self, filename, tag='fake'):
+        self.filename = filename
+        self.tag = tag
+
+    def __call__(self, args):
+        dra, ddec = args
+        return perturb_catalog(self.filename, ra_offset=dra, dec_offset=ddec, tag=self.tag)
+
+def write_fake_grid(pool, filename, ra_offsets=range(-10,11), dec_offsets=range(-10,11), tag='fake'):
+    worker = write_worker(filename, tag=tag)
+    return pool.map(worker, itertools.product(ra_offsets, dec_offsets))
 
 if __name__=='__main__':
+
+    import schwimmbad
+
+    from argparse import ArgumentParser
+    parser = ArgumentParser(description="Schwimmbad example.")
+
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--ncores", dest="n_cores", default=1,
+                       type=int, help="Number of processes (uses multiprocessing).")
+    group.add_argument("--mpi", dest="mpi", default=False,
+                       action="store_true", help="Run with MPI.")
+    args = parser.parse_args()
+
+    pool = schwimmbad.choose_pool(mpi=args.mpi, processes=args.n_cores)
+
     filename = '../data/forced_big.h5'
-    write_fake_grid(filename, ra_offsets=range(-1,2), dec_offsets=range(-1,2))
+    write_fake_grid(pool, filename, ra_offsets=range(-1,2), dec_offsets=range(-1,2), tag='test')

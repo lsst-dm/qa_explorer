@@ -21,7 +21,7 @@ def perturb_catalog(filename, ra_offset=2, dec_offset=2):
     new_filename = filename[:-3] + '_fake_{}{}_{}{}.parq'.format(ra_sign, ra_offset,
                                                                  dec_sign, dec_offset)
 
-    fastparquet.write('data/forced_big_fake_m2_p0.parq', new)
+    fastparquet.write(new_filename, new)
 
 
 def write_fake_grid(filename, ra_offsets=range(-10,11), dec_offsets=range(-10,11)):

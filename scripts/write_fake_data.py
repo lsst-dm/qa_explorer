@@ -35,6 +35,7 @@ class write_worker(object):
 
     def __call__(self, args):
         dra, ddec = args
+        print('dra={}, ddec={}'.format(*args))
         return perturb_catalog(self.filename, ra_offset=dra, dec_offset=ddec, tag=self.tag)
 
 def write_fake_grid(pool, filename, ra_offsets=range(-10,11), dec_offsets=range(-10,11), tag='fake'):

@@ -6,8 +6,6 @@ import re
 import schwimmbad
 
 def perturb_catalog(filename, ra_offset=2, dec_offset=2, tag='fake'):
-    # if ra_offset==0 and dec_offset==0:
-    #     pass
 
     cat = pd.read_hdf(filename)
     new = cat.copy()
@@ -61,4 +59,5 @@ if __name__=='__main__':
     pool = schwimmbad.choose_pool(mpi=args.mpi, processes=args.n_cores)
 
     filename = '../data/forced_big.h5'
-    write_fake_grid(pool, filename, ra_offsets=range(-1,2), dec_offsets=range(-1,2), tag='test')
+    # write_fake_grid(pool, filename, ra_offsets=range(-1,2), dec_offsets=range(-1,2), tag='test')
+    write_fake_grid(pool, filename)

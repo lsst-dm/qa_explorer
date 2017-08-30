@@ -39,7 +39,9 @@ class write_worker(object):
 
 def write_fake_grid(pool, filename, ra_offsets=range(-10,11), dec_offsets=range(-10,11), tag='fake'):
     worker = write_worker(filename, tag=tag)
-    return pool.map(worker, itertools.product(ra_offsets, dec_offsets))
+
+    results = pool.map(worker, itertools.product(ra_offsets, dec_offsets))
+    pool.close()
 
 if __name__=='__main__':
 

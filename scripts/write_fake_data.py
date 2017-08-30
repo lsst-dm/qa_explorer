@@ -50,6 +50,7 @@ if __name__=='__main__':
     parser = ArgumentParser(description="Schwimmbad example.")
 
     parser.add_argument('filename')
+    parser.add_argument('--test', action='store_true')
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--ncores", dest="n_cores", default=1,
@@ -60,6 +61,7 @@ if __name__=='__main__':
 
     pool = schwimmbad.choose_pool(mpi=args.mpi, processes=args.n_cores)
 
-    filename = '../data/forced_big.h5'
-    # write_fake_grid(pool, filename, ra_offsets=range(-1,2), dec_offsets=range(-1,2), tag='test')
-    write_fake_grid(pool, args.filename)
+    if args.test:
+        write_fake_grid(pool, args.filename, ra_offsets=range(-1,2), dec_offsets=range(-1,2), tag='test')
+    else:
+        write_fake_grid(pool, args.filename)

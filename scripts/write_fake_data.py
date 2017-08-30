@@ -30,5 +30,5 @@ def write_fake_grid(filename, ra_offsets=range(-10,11), dec_offsets=range(-10,11
         perturb_catalog(filename, dra, ddec)
 
 if __name__=='__main__':
-    filename = 'data/forced_big.h5'
+    filename = '../data/forced_big.h5'
     write_fake_grid(filename, ra_offsets=range(-1,2), dec_offsets=range(-1,2))

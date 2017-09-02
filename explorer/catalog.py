@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import dask.dataframe as dd
 import fastparquet
 import glob, re
 import logging
@@ -36,17 +37,22 @@ class ParquetReadWorker(object):
 
 class ParquetCatalog(Catalog):
     index_column = 'id'
-    def __init__(self, filenames):
-        if isinstance(filenames, str):
-            self.filenames = [filenames]
-        else:
+    def __init__(self, filenames, dask=True):
+        self.dask = dask
+        if dask:
             self.filenames = filenames
-        self.pfiles = [fastparquet.ParquetFile(f) for f in self.filenames]
-        self.columns = self.pfiles[0].columns
-        if not all([p.columns==self.columns for p in self.pfiles]):
-            raise ValueError('Not all parquet files have the same columns!')
+        else:
+            if isinstance(filenames, str):
+                self.filenames = [filenames]
+            else:
+                self.filenames = filenames
 
-        self._cache = None
+            self.pfiles = [fastparquet.ParquetFile(f) for f in self.filenames]
+            self.columns = self.pfiles[0].columns
+            if not all([p.columns==self.columns for p in self.pfiles]):
+                raise ValueError('Not all parquet files have the same columns!')
+
+            self._cache = None
 
     def _purge_cache(self, cols=None):
         if self._cache is not None:
@@ -59,28 +65,34 @@ class ParquetCatalog(Catalog):
                         del self._cache[c]
 
     def get_columns(self, columns, check_columns=True, pool=None):
-        if check_columns:
-            columns = self._sanitize_columns(columns)
+        if self.dask:
+            if self.index_column not in columns:
+                columns = tuple(columns) + ('id',)
+            return dd.read_parquet(self.filenames, columns=columns).set_index(self.index_column) #, drop=False)
 
-        # if self.index_column not in columns:
-        #     columns = columns + [self.index_column]
-
-        if pool is None:
-            mapper = map
         else:
-            mapper = pool.map
+            if check_columns:
+                columns = self._sanitize_columns(columns)
 
-        if self._cache is None:
-            cols_to_read = columns
-        else:
-            cols_to_read = list(set(columns) - (set(self._cache.columns)))
+            # if self.index_column not in columns:
+            #     columns = columns + [self.index_column]
 
-        if cols_to_read:
-            worker = ParquetReadWorker(columns=cols_to_read, index_column=self.index_column)
-            new_df = pd.concat(mapper(worker, self.pfiles))
-            if self._cache is None:
-                self._cache = new_df
+            if pool is None:
+                mapper = map
             else:
-                self._cache = self._cache.join(new_df)
+                mapper = pool.map
 
-        return self._cache[columns]
+            if self._cache is None:
+                cols_to_read = columns
+            else:
+                cols_to_read = list(set(columns) - (set(self._cache.columns)))
+
+            if cols_to_read:
+                worker = ParquetReadWorker(columns=cols_to_read, index_column=self.index_column)
+                new_df = pd.concat(mapper(worker, self.pfiles))
+                if self._cache is None:
+                    self._cache = new_df
+                else:
+                    self._cache = self._cache.join(new_df)
+
+            return self._cache[columns]

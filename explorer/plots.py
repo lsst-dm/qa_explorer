@@ -14,7 +14,7 @@ def sky_compare(catalog, funcs, cmap=cc.palette['coolwarm'], width=400):
     funcs: dictionary of Functors
     """
     allfuncs = funcs.copy()
-    allfuncs.update({'id':Column('id'), 'ra':RAColumn(), 'dec': DecColumn()})
+    allfuncs.update({'ra':RAColumn(), 'dec': DecColumn()})
     f = CompositeFunctor(allfuncs)
     ds = hv.Dataset(f(catalog, dropna=True))
     pts = ds.to(hv.Points, kdims=['ra', 'dec'], vdims=['id'] + list(funcs.keys()), groupby=[])

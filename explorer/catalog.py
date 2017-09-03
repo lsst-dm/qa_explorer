@@ -38,7 +38,7 @@ class ParquetReadWorker(object):
 class ParquetCatalog(Catalog):
     index_column = 'id'
     def __init__(self, filenames, client=None):
-        self.dask = dask
+        self.filenames = filenames
         self.client = client
 
     def get_columns(self, columns, check_columns=True, pool=None):

@@ -32,7 +32,7 @@ class Functor(object):
     def _func(self, df):
         raise NotImplementedError('Must define calculation on in-memory dataframe')
 
-    def __call__(self, catalog, query=None, dropna=False, client=None):
+    def __call__(self, catalog, query=None, dropna=False):
         # First read what we need into memory,
         #  Then perform the calculation.
         if isinstance(catalog, pd.DataFrame):
@@ -45,14 +45,14 @@ class Functor(object):
         if query:
             df = df.query(query)
 
-        if client:
-            vals = client.persist(self._func(df))
+        if catalog.client:
+            vals = catalog.client.persist(self._func(df))
         else:
             vals = self._func(df)
 
         if dropna:
             ok = np.isfinite(vals)
-            
+
             vals = vals.replace([np.inf, -np.inf], np.nan).dropna(how='any')
 
         if self.force_ndarray:

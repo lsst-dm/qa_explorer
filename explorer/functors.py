@@ -32,7 +32,7 @@ class Functor(object):
     def _func(self, df):
         raise NotImplementedError('Must define calculation on in-memory dataframe')
 
-    def __call__(self, catalog, query=None, dropna=False):
+    def __call__(self, catalog, query=None, dropna=False, client=None):
         # First read what we need into memory,
         #  Then perform the calculation.
         if isinstance(catalog, pd.DataFrame):
@@ -45,9 +45,14 @@ class Functor(object):
         if query:
             df = df.query(query)
 
-        vals = self._func(df)
+        if client:
+            vals = client.persist(self._func(df))
+        else:
+            vals = self._func(df)
 
         if dropna:
+            ok = np.isfinite(vals)
+            
             vals = vals.replace([np.inf, -np.inf], np.nan).dropna(how='any')
 
         if self.force_ndarray:
@@ -252,6 +257,7 @@ class SdssTraceSize(Functor):
     """Functor to calculate SDSS trace radius size for sources"""
     name = "SDSS Trace Size"
     _columns = ("base_SdssShape_xx", "base_SdssShape_yy")
+
     def _func(self, df):
         srcSize = np.sqrt(0.5*(df["base_SdssShape_xx"] + df["base_SdssShape_yy"]))
         return srcSize

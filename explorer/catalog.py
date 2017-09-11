@@ -11,6 +11,8 @@ class Catalog(object):
         self.data
         self.columns = data.columns
 
+        self._coords = None
+
     def _sanitize_columns(self, columns):
         bad_cols = [c for c in columns if c not in self.columns]
         if bad_cols:
@@ -22,18 +24,20 @@ class Catalog(object):
             columns = self._sanitize_columns(columns)
         return self.data[columns]
 
-class ParquetReadWorker(object):
-    def __init__(self, columns, index_column='id'):
-        if index_column not in columns:
-            self.columns = columns + [index_column]
-        else:
-            self.columns = columns
-        self.index_column = index_column
+    @property
+    def ra(self):
+        if self._coords is None:
+            self._coords = self._get_coords()
+        return self._coords['ra']
 
-    def __call__(self, pfile):
-        df = pfile.to_pandas(columns=self.columns)
-        df.index = df[self.index_column]
-        return df
+    @property
+    def dec(self):
+        if self._coords is None:
+            self._coords = self._get_coords()
+        return self._coords['dec']
+
+    def _get_coords(self):
+        return NotImplementedError
 
 class ParquetCatalog(Catalog):
     index_column = 'id'
@@ -41,7 +45,7 @@ class ParquetCatalog(Catalog):
         self.filenames = filenames
         self.client = client
 
-    def get_columns(self, columns, check_columns=True, pool=None):
+    def get_columns(self, columns):
         if self.index_column not in columns:
             columns = tuple(columns) + ('id',)
         if self.client:
@@ -49,3 +53,5 @@ class ParquetCatalog(Catalog):
         else:
             return dd.read_parquet(self.filenames, columns=columns).set_index(self.index_column)
 
+    def _get_coords(self):
+        return self.get_columns(['coord_ra', 'coord_dec']) * 180 / np.pi

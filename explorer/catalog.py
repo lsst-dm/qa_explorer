@@ -46,7 +46,7 @@ class ParquetCatalog(Catalog):
         self.client = client
         self._coords = None
 
-    def get_columns(self, columns):
+    def get_columns(self, columns, query=None):
         if self.index_column not in columns:
             columns = tuple(columns) + ('id',)
         if self.client:

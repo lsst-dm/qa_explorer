@@ -46,7 +46,7 @@ class Functor(object):
         if sync:
             df = catalog.get_columns(self.columns, query=query).compute(get=dask.get)
         else:
-            df = catalog.get_columns(self.columns, query=query).compute(get=get)
+            df = catalog.get_columns(self.columns, query=query).compute()
         vals = self._func(df)
 
         if dropna:

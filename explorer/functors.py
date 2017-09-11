@@ -35,15 +35,20 @@ class Functor(object):
     def __call__(self, catalog, query=None, dropna=False):
         # First read what we need into memory,
         #  Then perform the calculation.
-        if isinstance(catalog, pd.DataFrame):
-            df = catalog
-        elif isinstance(catalog, dd.DataFrame):
-            df = catalog
-        else:
-            df = self._get_columns(catalog, query=query)
+        # if isinstance(catalog, pd.DataFrame):
+        #     df = catalog
+        # elif isinstance(catalog, dd.DataFrame):
+        #     df = catalog
+        # else:
+        #     df = self._get_columns(catalog, query=query)
+
+        df = catalog.get_columns(self.columns)
 
         if query:
-            df = df.query(query)
+            if catalog.client:
+                df = catalog.client.persist(df.query(query))
+            else:
+                df = df.query(query)
 
         if catalog.client:
             vals = catalog.client.persist(self._func(df))
@@ -51,14 +56,11 @@ class Functor(object):
             vals = self._func(df)
 
         if dropna:
+            raise NotImplementedError
             ok = np.isfinite(vals)
-
             vals = vals.replace([np.inf, -np.inf], np.nan).dropna(how='any')
 
-        if self.force_ndarray:
-            return np.array(vals)
-        else:
-            return vals
+        return vals
 
 class ParquetReadWorker(object):
     def __init__(self, cols):

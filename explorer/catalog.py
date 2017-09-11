@@ -39,10 +39,6 @@ class Catalog(object):
     def _get_coords(self):
         return NotImplementedError
 
-    def get_dataset(self, columns):
-        """Returns holoviews Dataset containing desired columns, plus ra+dec
-        """
-
 class ParquetCatalog(Catalog):
     index_column = 'id'
     def __init__(self, filenames, client=None):
@@ -59,5 +55,5 @@ class ParquetCatalog(Catalog):
             return dd.read_parquet(self.filenames, columns=columns).set_index(self.index_column)
 
     def _get_coords(self):
-        return self.get_columns(['coord_ra', 'coord_dec']) * 180 / np.pi
-
+        df = (self.get_columns(['coord_ra', 'coord_dec']) * 180 / np.pi)
+        return df.rename(columns={'coord_ra':'ra', 'coord_dec':'dec'})

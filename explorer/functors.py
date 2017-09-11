@@ -6,6 +6,7 @@ import re
 import fastparquet
 import logging
 import dask.dataframe as dd
+import dask
 from schwimmbad import choose_pool
 
 from .catalog import Catalog
@@ -32,7 +33,7 @@ class Functor(object):
     def _func(self, df):
         raise NotImplementedError('Must define calculation on in-memory dataframe')
 
-    def __call__(self, catalog, query=None, dropna=False):
+    def __call__(self, catalog, query=None, dropna=False, sync=False):
         # First read what we need into memory,
         #  Then perform the calculation.
         # if isinstance(catalog, pd.DataFrame):
@@ -42,7 +43,10 @@ class Functor(object):
         # else:
         #     df = self._get_columns(catalog, query=query)
 
-        df = catalog.get_columns(self.columns, query=query).compute()
+        if sync:
+            df = catalog.get_columns(self.columns, query=query).compute(get=dask.get)
+        else:
+            df = catalog.get_columns(self.columns, query=query).compute(get=get)
         vals = self._func(df)
 
         if dropna:

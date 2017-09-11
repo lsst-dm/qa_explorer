@@ -19,7 +19,7 @@ class Catalog(object):
             logging.warning('Columns not available: {}'.format(bad_cols))
         return list(set(columns) - set(bad_cols))
 
-    def get_columns(self, columns, check_columns=True):
+    def get_columns(self, columns, check_columns=True, query=None):
         if check_columns:
             columns = self._sanitize_columns(columns)
         return self.data[columns]

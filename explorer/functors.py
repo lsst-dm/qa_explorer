@@ -70,7 +70,7 @@ class CompositeFunctor(Functor):
 
     def _func(self, df):
         # Need to preserve index here...
-        return pd.DataFrame({k : f(df) for k,f in self.funcDict.items()})
+        return pd.DataFrame({k : f._func(df) for k,f in self.funcDict.items()})
 
     def __getitem__(self, item):
         return self.funcDict[item]

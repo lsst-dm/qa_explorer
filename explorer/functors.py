@@ -35,14 +35,12 @@ class Functor(object):
     def __call__(self, catalog, query=None, dropna=False):
         # First read what we need into memory,
         #  Then perform the calculation.
-        # if isinstance(catalog, pd.DataFrame):
-        #     df = catalog
-        # elif isinstance(catalog, dd.DataFrame):
-        #     df = catalog
-        # else:
-        #     df = self._get_columns(catalog, query=query)
-
-        df = catalog.get_columns(self.columns)
+        if isinstance(catalog, pd.DataFrame):
+            df = catalog
+        elif isinstance(catalog, dd.DataFrame):
+            df = catalog
+        else:
+            df = self._get_columns(catalog, query=query)
 
         if query:
             if catalog.client:
@@ -58,7 +56,8 @@ class Functor(object):
         if dropna:
             raise NotImplementedError
             ok = np.isfinite(vals)
-            vals = vals.replace([np.inf, -np.inf], np.nan).dropna(how='any')
+            vals = vals[ok]
+            # vals = vals.replace([np.inf, -np.inf], np.nan).dropna(how='any')
 
         return vals
 

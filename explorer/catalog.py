@@ -73,7 +73,7 @@ class ParquetCatalog(Catalog):
 
         else:
             cols_to_get = list(columns) + [self.index_column]
-            return self._read_data(columns).set_index(self.index_column)
+            return self._read_data(cols_to_get).set_index(self.index_column)
 
     def _get_coords(self):
         df = (self.get_columns(['coord_ra', 'coord_dec']) * 180 / np.pi)

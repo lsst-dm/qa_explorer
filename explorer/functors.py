@@ -21,10 +21,6 @@ class Functor(object):
 
     Subclasses must define _columns attribute that is read from table
     """
-    force_ndarray = False
-
-    def _get_columns(self, catalog, query=None):
-        return catalog.get_columns(self.columns)
 
     @property
     def columns(self):
@@ -83,8 +79,7 @@ class CompositeFunctor(Functor):
         return [x for y in [f.columns for f in self.funcDict.values()] for x in y]
 
     def _func(self, df):
-        # Need to preserve index here...
-        return pd.DataFrame({k : f._func(df) for k,f in self.funcDict.items()})
+        return dd.DataFrame.from_pandas(pd.DataFrame({k : f._func(df) for k,f in self.funcDict.items()}))
 
     def __getitem__(self, item):
         return self.funcDict[item]

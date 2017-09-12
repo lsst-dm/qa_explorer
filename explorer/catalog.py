@@ -46,18 +46,29 @@ class ParquetCatalog(Catalog):
         self.client = client
         self._coords = None
 
-        # self._cache = None
+        self._df = None
+
+    def _read_data(self, columns):
+        if self.client:
+            return self.client.persist(dd.read_parquet(self.filenames, columns=columns))
+        else:
+            return dd.read_parquet(self.filenames, columns=columns)
 
     def get_columns(self, columns, query=None):
-        if self.index_column not in columns:
-            columns = tuple(columns) + ('id',)
 
-        
+        if self._df is None:
+            if self.index_column not in columns:
+                cols_to_get = list(columns) + [self.index_column]
 
-        if self.client:
-            return self.client.persist(dd.read_parquet(self.filenames, columns=columns).set_index(self.index_column))
+            self._df = self._read_data(cols_to_get).set_index(self.index_column)
+
         else:
-            return dd.read_parquet(self.filenames, columns=columns).set_index(self.index_column)
+            cols_to_get = list(set(columns) - set(self._df.columns))
+            if cols_to_get:
+                new = self._read_data(cols_to_get + [self.index_column]).set_index(self.index_column)
+                self._df = self._df.join(new)
+
+        return self._df[list(columns)]
 
     def _get_coords(self):
         df = (self.get_columns(['coord_ra', 'coord_dec']) * 180 / np.pi)

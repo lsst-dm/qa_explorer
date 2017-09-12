@@ -54,7 +54,7 @@ class ParquetCatalog(Catalog):
         else:
             return dd.read_parquet(self.filenames, columns=columns)
 
-    def get_columns(self, columns, query=None, use_cache=False):
+    def get_columns(self, columns, query=None, use_cache=True):
         
         if use_cache:
             if self._df is None:

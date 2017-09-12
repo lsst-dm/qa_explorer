@@ -39,7 +39,7 @@ class Functor(object):
 
         if dropna:
             if catalog.client:
-                vals = catalog.client.compute(vals[da.isfinite(vals)])
+                vals = catalog.client.compute(vals[da.isfinite(vals)]).result()
             else:
                 vals = vals[da.isfinite(vals)]
             # vals = vals.replace([np.inf, -np.inf], np.nan).dropna(how='any')
@@ -78,8 +78,12 @@ class CompositeFunctor(Functor):
     def columns(self):
         return [x for y in [f.columns for f in self.funcDict.values()] for x in y]
 
-    def _func(self, df):
-        return dd.DataFrame.from_pandas(pd.DataFrame({k : f._func(df) for k,f in self.funcDict.items()}))
+    def __call__(self, catalog, **kwargs):
+        df = pd.DataFrame({k : f(catalog) for k,f in self.funcDict.items()})
+        return dd.from_pandas(df, chunksize=1000000)
+
+    # def _func(self, df):
+    #     return dd.DataFrame.from_pandas(pd.DataFrame({k : f._func(df) for k,f in self.funcDict.items()}))
 
     def __getitem__(self, item):
         return self.funcDict[item]

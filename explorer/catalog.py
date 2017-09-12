@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import dask.dataframe as dd
+from distributed import Future
 import fastparquet
 import glob, re
 import logging
@@ -54,6 +55,13 @@ class ParquetCatalog(Catalog):
         else:
             return dd.read_parquet(self.filenames, columns=columns)
 
+    @property
+    def df(self):
+        if isinstance(self._df, Future):
+            return self._df.result()
+        else:
+            return self._df
+
     def get_columns(self, columns, query=None, use_cache=True):
         
         if use_cache:
@@ -61,15 +69,24 @@ class ParquetCatalog(Catalog):
                 if self.index_column not in columns:
                     cols_to_get = list(columns) + [self.index_column]
 
-                self._df = self._read_data(cols_to_get).set_index(self.index_column)
+                if self.client:
+                    self._df = self.client.persist(self._read_data(cols_to_get).set_index(self.index_column))
+                else:
+                    self._df = self._read_data(cols_to_get).set_index(self.index_column)
 
             else:
                 cols_to_get = list(set(columns) - set(self._df.columns))
                 if cols_to_get:
                     new = self._read_data(cols_to_get + [self.index_column]).set_index(self.index_column)
-                    self._df = self._df.join(new)
+                    if self.client:
+                        self._df = self.client.persist(self._df.join(new))
+                    else:
+                        self._df = self._df.join(new)
 
-            return self._df[list(columns)]
+            if self.client:
+                return self.client.persist(self.df[list(columns)])
+            else:
+                return self.df[list(columns)]
 
         else:
             cols_to_get = list(columns) + [self.index_column]

@@ -33,37 +33,34 @@ class Functor(object):
         except AttributeError:
             raise NotImplementedError('Must define columns property or _columns attribute')
 
-    def _func(self, df):
+    def _func(self, df, dropna=True):
         raise NotImplementedError('Must define calculation on dataframe')
 
-    def __call__(self, catalog, query=None, dropna=False):
+    def __call__(self, catalog, query=None, dropna=True):
 
         df = catalog.get_columns(self.columns, query=query)
         vals = self._func(df)
 
         if dropna:
-            vals = vals[da.isfinite(vals)]
+            if catalog.client:
+                vals = catalog.client.compute(vals[da.isfinite(vals)])
+            else:
+                vals = vals[da.isfinite(vals)]
             # vals = vals.replace([np.inf, -np.inf], np.nan).dropna(how='any')
 
         return vals
 
     def test(self, catalog, dropna=True):
-        start1 = time.time()
-        res1 = self(catalog)
-        len1 = len(res1.compute())
-        end1 = time.time()
-        
-        if dropna:
-            start2 = time.time()
-            res2 = self(catalog, dropna=True)
-            len2 = len(res2.compute()) 
-            end2 = time.time()
+        start = time.time()
+        res = self(catalog, dropna=dropna)
+        if catalog.client:
+            n = len(res.result())
+        else:
+            n = len(res.compute()) 
+        end = time.time()
         
         print('Test results for {}:'.format(self.name))
-        print('  no dropna took {:.2f}s, length={}.  Type={}'.format(end1-start1, len1, type(res1)))
-        if dropna:
-            print('  with dropna took {:.2f}s, length={}.  Type={}'.format(end2-start2, len2, type(res2)))
-    
+        print('  Took {:.2f}s, length={}.  Type={}'.format(end-start, n, type(res)))    
 
 class ParquetReadWorker(object):
     def __init__(self, cols):

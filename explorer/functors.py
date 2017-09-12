@@ -59,8 +59,10 @@ class Functor(object):
             n = len(res.compute()) 
         end = time.time()
         
+        runtime = end - start
         print('Test results for {}:'.format(self.name))
-        print('  Took {:.2f}s, length={}.  Type={}'.format(end-start, n, type(res)))    
+        print('  Took {:.2f}s, length={}.  Type={}'.format(runtime, n, type(res)))    
+        return runtime
 
 class ParquetReadWorker(object):
     def __init__(self, cols):

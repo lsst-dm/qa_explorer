@@ -54,21 +54,26 @@ class ParquetCatalog(Catalog):
         else:
             return dd.read_parquet(self.filenames, columns=columns)
 
-    def get_columns(self, columns, query=None):
+    def get_columns(self, columns, query=None, use_cache=False):
+        
+        if use_cache:
+            if self._df is None:
+                if self.index_column not in columns:
+                    cols_to_get = list(columns) + [self.index_column]
 
-        if self._df is None:
-            if self.index_column not in columns:
-                cols_to_get = list(columns) + [self.index_column]
+                self._df = self._read_data(cols_to_get).set_index(self.index_column)
 
-            self._df = self._read_data(cols_to_get).set_index(self.index_column)
+            else:
+                cols_to_get = list(set(columns) - set(self._df.columns))
+                if cols_to_get:
+                    new = self._read_data(cols_to_get + [self.index_column]).set_index(self.index_column)
+                    self._df = self._df.join(new)
+
+            return self._df[list(columns)]
 
         else:
-            cols_to_get = list(set(columns) - set(self._df.columns))
-            if cols_to_get:
-                new = self._read_data(cols_to_get + [self.index_column]).set_index(self.index_column)
-                self._df = self._df.join(new)
-
-        return self._df[list(columns)]
+            cols_to_get = list(columns) + [self.index_column]
+            return self._read_data(columns).set_index(self.index_column)
 
     def _get_coords(self):
         df = (self.get_columns(['coord_ra', 'coord_dec']) * 180 / np.pi)

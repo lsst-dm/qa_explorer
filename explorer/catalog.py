@@ -46,9 +46,14 @@ class ParquetCatalog(Catalog):
         self.client = client
         self._coords = None
 
+        # self._cache = None
+
     def get_columns(self, columns, query=None):
         if self.index_column not in columns:
             columns = tuple(columns) + ('id',)
+
+        
+
         if self.client:
             return self.client.persist(dd.read_parquet(self.filenames, columns=columns).set_index(self.index_column))
         else:

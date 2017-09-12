@@ -6,6 +6,7 @@ import re
 import fastparquet
 import logging
 import dask.dataframe as dd
+import dask.array as da
 import dask
 from schwimmbad import choose_pool
 
@@ -31,26 +32,16 @@ class Functor(object):
             raise NotImplementedError('Must define columns property or _columns attribute')
 
     def _func(self, df):
-        raise NotImplementedError('Must define calculation on in-memory dataframe')
+        raise NotImplementedError('Must define calculation on dataframe')
 
-    def __call__(self, catalog, query=None, dropna=False, sync=False):
-        # First read what we need into memory,
-        #  Then perform the calculation.
-        # if isinstance(catalog, pd.DataFrame):
-        #     df = catalog
-        # elif isinstance(catalog, dd.DataFrame):
-        #     df = catalog
-        # else:
-        #     df = self._get_columns(catalog, query=query)
+    def __call__(self, catalog, query=None, dropna=False):
 
-        if sync:
-            df = catalog.get_columns(self.columns, query=query).compute(get=dask.get)
-        else:
-            df = catalog.get_columns(self.columns, query=query).compute()
+        df = catalog.get_columns(self.columns, query=query)
         vals = self._func(df)
 
         if dropna:
-            vals = vals.replace([np.inf, -np.inf], np.nan).dropna(how='any')
+            vals = vals[da.isfinite(vals)]
+            # vals = vals.replace([np.inf, -np.inf], np.nan).dropna(how='any')
 
         return vals
 
@@ -157,7 +148,7 @@ class FootprintNPix(Column):
 
 class CoordColumn(Column):
     def _func(self, df):
-        return np.rad2deg(df[self.col])
+        return df[self.col] * 180 / np.pi
 
 class RAColumn(CoordColumn):
     name = 'RA'
@@ -183,7 +174,7 @@ class Mag(Functor):
         return [self.col]
 
     def _func(self, df):
-        return -2.5*np.log10(df[self.col])
+        return -2.5*da.log10(df[self.col])
 
     @property
     def name(self):
@@ -200,7 +191,7 @@ class MagDiff(Functor):
         return [self.col1, self.col2]
 
     def _func(self, df):
-        return -2.5*np.log10(df[self.col1]/df[self.col2])
+        return -2.5*da.log10(df[self.col1]/df[self.col2])
 
     @property
     def name(self):
@@ -223,9 +214,6 @@ class DeconvolvedMoments(Functor):
                 "ext_shapeHSM_HsmPsfMoments_xx",
                 "ext_shapeHSM_HsmPsfMoments_yy")
 
-    def __init__(self, pandas=True, **kwargs):
-        self.pandas = pandas
-
     def _func(self, df):
         """Calculate deconvolved moments"""
         if "ext_shapeHSM_HsmSourceMoments_xx" in df.columns: # _xx added by tdm
@@ -241,10 +229,7 @@ class DeconvolvedMoments(Functor):
             # raise TaskError("No psf shape parameter found in catalog")
             raise RuntimeError('No psf shape parameter found in catalog')
 
-        if self.pandas:
-            return hsm.where(np.isfinite(hsm), sdss) - psf
-        else:
-            return np.where(np.isfinite(hsm), hsm, sdss) - psf
+        return hsm.where(da.isfinite(hsm), sdss) - psf
 
 class SdssTraceSize(Functor):
     """Functor to calculate SDSS trace radius size for sources"""
@@ -252,7 +237,7 @@ class SdssTraceSize(Functor):
     _columns = ("base_SdssShape_xx", "base_SdssShape_yy")
 
     def _func(self, df):
-        srcSize = np.sqrt(0.5*(df["base_SdssShape_xx"] + df["base_SdssShape_yy"]))
+        srcSize = da.sqrt(0.5*(df["base_SdssShape_xx"] + df["base_SdssShape_yy"]))
         return srcSize
 
 
@@ -263,8 +248,8 @@ class PsfSdssTraceSizeDiff(Functor):
                 "base_SdssShape_psf_xx", "base_SdssShape_psf_yy")
 
     def _func(self, df):
-        srcSize = np.sqrt(0.5*(df["base_SdssShape_xx"] + df["base_SdssShape_yy"]))
-        psfSize = np.sqrt(0.5*(df["base_SdssShape_psf_xx"] + df["base_SdssShape_psf_yy"]))
+        srcSize = da.sqrt(0.5*(df["base_SdssShape_xx"] + df["base_SdssShape_yy"]))
+        psfSize = da.sqrt(0.5*(df["base_SdssShape_psf_xx"] + df["base_SdssShape_psf_yy"]))
         sizeDiff = 100*(srcSize - psfSize)/(0.5*(srcSize + psfSize))
         return sizeDiff
 
@@ -275,7 +260,7 @@ class HsmTraceSize(Functor):
     _columns = ("ext_shapeHSM_HsmSourceMoments_xx",
                 "ext_shapeHSM_HsmSourceMoments_yy")
     def _func(self, df):
-        srcSize = np.sqrt(0.5*(df["ext_shapeHSM_HsmSourceMoments_xx"] +
+        srcSize = da.sqrt(0.5*(df["ext_shapeHSM_HsmSourceMoments_xx"] +
                                df["ext_shapeHSM_HsmSourceMoments_yy"]))
         return srcSize
 
@@ -289,9 +274,9 @@ class PsfHsmTraceSizeDiff(Functor):
                 "ext_shapeHSM_HsmPsfMoments_yy")
 
     def _func(self, df):
-        srcSize = np.sqrt(0.5*(df["ext_shapeHSM_HsmSourceMoments_xx"] +
+        srcSize = da.sqrt(0.5*(df["ext_shapeHSM_HsmSourceMoments_xx"] +
                                df["ext_shapeHSM_HsmSourceMoments_yy"]))
-        psfSize = np.sqrt(0.5*(df["ext_shapeHSM_HsmPsfMoments_xx"] +
+        psfSize = da.sqrt(0.5*(df["ext_shapeHSM_HsmPsfMoments_xx"] +
                                df["ext_shapeHSM_HsmPsfMoments_yy"]))
         sizeDiff = 100*(srcSize - psfSize)/(0.5*(srcSize + psfSize))
         return sizeDiff

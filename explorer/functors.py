@@ -8,6 +8,8 @@ import logging
 import dask.dataframe as dd
 import dask.array as da
 import dask
+import time
+
 from schwimmbad import choose_pool
 
 from .catalog import Catalog
@@ -44,6 +46,24 @@ class Functor(object):
             # vals = vals.replace([np.inf, -np.inf], np.nan).dropna(how='any')
 
         return vals
+
+    def test(self, catalog, dropna=True):
+        start1 = time.time()
+        res1 = self(catalog)
+        len1 = len(res1.compute())
+        end1 = time.time()
+        
+        if dropna:
+            start2 = time.time()
+            res2 = self(catalog, dropna=True)
+            len2 = len(res2.compute()) 
+            end2 = time.time()
+        
+        print('Test results for {}:'.format(self.name))
+        print('  no dropna took {:.2f}s, length={}.  Type={}'.format(end1-start1, len1, type(res1)))
+        if dropna:
+            print('  with dropna took {:.2f}s, length={}.  Type={}'.format(end2-start2, len2, type(res2)))
+    
 
 class ParquetReadWorker(object):
     def __init__(self, cols):

@@ -32,7 +32,7 @@ class Functor(object):
     def _func(self, df, dropna=True):
         raise NotImplementedError('Must define calculation on dataframe')
 
-    def __call__(self, catalog, query=None, dropna=True):
+    def __call__(self, catalog, query=None, dropna=True, dask=False):
 
         df = catalog.get_columns(self.columns, query=query)
         vals = self._func(df)
@@ -44,15 +44,25 @@ class Functor(object):
                 vals = vals[da.isfinite(vals)]
             # vals = vals.replace([np.inf, -np.inf], np.nan).dropna(how='any')
 
-        return vals
-
-    def test(self, catalog, dropna=True):
-        start = time.time()
-        res = self(catalog, dropna=dropna)
-        if catalog.client:
-            n = len(res.result())
+        if dask:
+            return vals
         else:
-            n = len(res.compute()) 
+            if hasattr(vals, 'compute'):
+                return vals.compute()
+            elif hasattr(vals, 'result'):
+                return vals.result()
+            else:
+                return vals
+
+    def test(self, catalog, dropna=True, dask=False):
+        start = time.time()
+        res = self(catalog, dropna=dropna, dask=dask)
+        if hasattr(res, 'result'):
+            n = len(res.result())
+        elif hasattr(res, 'compute'):
+            n = len(res.compute())
+        else:
+            n = len(res)
         end = time.time()
         
         runtime = end - start
@@ -78,12 +88,13 @@ class CompositeFunctor(Functor):
     def columns(self):
         return [x for y in [f.columns for f in self.funcDict.values()] for x in y]
 
-    def __call__(self, catalog, **kwargs):
-        df = pd.DataFrame({k : f(catalog) for k,f in self.funcDict.items()})
-        return dd.from_pandas(df, chunksize=1000000)
-
-    # def _func(self, df):
-    #     return dd.DataFrame.from_pandas(pd.DataFrame({k : f._func(df) for k,f in self.funcDict.items()}))
+    def __call__(self, catalog, dask=False, **kwargs):
+        df = pd.DataFrame({k : f(catalog, dask=dask, **kwargs) 
+                            for k,f in self.funcDict.items()})
+        if dask:
+            return dd.from_pandas(df, chunksize=1000000)
+        else:
+            return df
 
     def __getitem__(self, item):
         return self.funcDict[item]

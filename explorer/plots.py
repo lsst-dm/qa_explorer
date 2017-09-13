@@ -8,18 +8,27 @@ import colorcet as cc
 
 from .functors import CompositeFunctor, Column, RAColumn, DecColumn
 
-def sky_compare(catalog, funcs, cmap=cc.palette['coolwarm'], width=400):
+def sky_compare(catalog, funcs, cmap=cc.palette['coolwarm'], width=400, dask=False):
     """Makes linked sky plots of desired quantities.
 
     funcs: dictionary of Functors
     """
+
     allfuncs = funcs.copy()
     allfuncs.update({'ra':RAColumn(), 'dec': DecColumn()})
     f = CompositeFunctor(allfuncs)
-    ds = hv.Dataset(f(catalog, dropna=True))
-    pts = ds.to(hv.Points, kdims=['ra', 'dec'], vdims=['id'] + list(funcs.keys()), groupby=[])
+    ds = hv.Dataset(f(catalog, dropna=True, dask=dask))
+    pts = ds.to(hv.Points, kdims=['ra', 'dec'], vdims=list(funcs.keys()), groupby=[])
     
-    pointer = hv.streams.PointerXY(x=pts.data.ra.mean(), y=pts.data.dec.mean())
+    mean_ra = pts.data.ra.mean()
+    mean_dec = pts.data.dec.mean()
+    try:
+        mean_ra = mean_ra.compute()
+        mean_dec = mean_dec.compute()
+    except AttributeError:
+        pass
+
+    pointer = hv.streams.PointerXY(x=mean_ra, y=mean_dec)
     cross_opts = dict(style={'line_width':1, 'color':'black'})
     cross_dmap = hv.DynamicMap(lambda x, y: (hv.VLine(x).opts(**cross_opts) * 
                                              hv.HLine(y).opts(**cross_opts)), streams=[pointer])    

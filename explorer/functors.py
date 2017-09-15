@@ -38,11 +38,16 @@ class Functor(object):
         vals = self._func(df)
 
         if dropna:
-            if catalog.client:
-                vals = catalog.client.compute(vals[da.isfinite(vals)]).result()
-            else:
-                vals = vals[da.isfinite(vals)]
-            # vals = vals.replace([np.inf, -np.inf], np.nan).dropna(how='any')
+            try:
+                if catalog.client:
+                    vals = catalog.client.compute(vals[da.isfinite(vals)]).result()
+                else:
+                    vals = vals[da.isfinite(vals)]
+            except TypeError:
+                if catalog.client:
+                    vals = catalog.client.compute(vals[da.notnull(vals)]).result()
+                else:
+                    vals = vals[da.notnull(vals)]
 
         if dask:
             return vals

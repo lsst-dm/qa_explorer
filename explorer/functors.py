@@ -231,12 +231,36 @@ class MagDiff(Functor):
     def name(self):
         return '(mag_{0} - mag_{1})'.format(self.col1, self.col2)
 
-class StarGalaxyLabeller(Functor):
+class Labeller(Functor):
+    """Main function of this subclass is to override the dropna=True
+    """
+    _null_label = 'null'
+    name = 'label'
+    def __call__(self, catalog, dropna=False, **kwargs):
+        return super(Labeller, self).__call__(catalog, dropna=False, **kwargs)
+
+        # Use below if we actually want to not label some things. Could be weird.
+        # vals = super(Labeller, self).__call__(catalog, dropna=False, **kwargs)
+        # if dropna:
+        #     return vals[vals != self._null_label]
+        # else:
+        #     return vals
+
+
+class StarGalaxyLabeller(Labeller):
     _columns = ["base_ClassificationExtendedness_value"]
     _column = "base_ClassificationExtendedness_value"
 
     def _func(self, df):
-        return np.where(df[self._column] < 0.5, 'star', 'galaxy')
+        x = df[self._columns][self._column]
+        mask = x.isnull()
+        test = (x < 0.5).astype(int)
+        test = test.mask(mask, 2)
+        #are these backwards?
+        label = pd.Series(pd.Categorical.from_codes(test, categories=['galaxy', 'star', self._null_label]), 
+                            index=x.index, name='label')
+        return label
+        # return np.where(df[self._column] < 0.5, 'star', 'galaxy')
 
 
 class DeconvolvedMoments(Functor):

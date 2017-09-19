@@ -11,6 +11,7 @@ from bokeh.models import HoverTool
 
 
 from .functors import Functor, CompositeFunctor, Column, RAColumn, DecColumn, Mag
+from .functors import StarGalaxyLabeller
 
 class QAPlot(hv.streams.Stream):
     def __init__(self, catalog, dask=False, **kwargs):
@@ -49,7 +50,8 @@ class QAPlot(hv.streams.Stream):
         raise NotImplementedError
 
 class MultiFuncQAPlot(QAPlot):
-    def __init__(self, catalog, funcs, width=400, **kwargs):
+    def __init__(self, catalog, funcs, labeller=StarGalaxyLabeller(), width=400, 
+                 group_labels=False, **kwargs):
         super(MultiFuncQAPlot, self).__init__(catalog, **kwargs)
 
         if isinstance(funcs, list) or isinstance(funcs, tuple):
@@ -59,13 +61,19 @@ class MultiFuncQAPlot(QAPlot):
         else:
             self.funcs = funcs
 
+        self.labeller = labeller
+        self.group_labels = group_labels
         self.width = width
 
     @property
     def allfuncs(self):
         allfuncs = self.funcs.copy()
-        allfuncs.update({'ra':RAColumn(), 'dec': DecColumn()})
+        allfuncs.update({'ra':RAColumn(), 'dec': DecColumn(), 'label':self.labeller})
         return allfuncs        
+
+    @property
+    def groupby(self):
+        return ['label'] if self.group_labels else []
 
     def _make_ds(self):
         f = CompositeFunctor(self.allfuncs)
@@ -98,7 +106,7 @@ class ScatterSkyPlot(MultiFuncQAPlot):
             dset = self.ds
             
         pts = dset.to(hv.Points, kdims=['ra', 'dec'], 
-                        vdims=['x'] + list(self.funcs.keys()), groupby=[])
+                        vdims=['x'] + list(self.funcs.keys()), groupby=self.groupby)
 
         shaded = dynspread(datashade(pts, x_range=ra_range, y_range=dec_range, dynamic=False, 
                                          cmap=cc.palette['coolwarm'], aggregator=datashader.mean(ydim)))
@@ -132,9 +140,9 @@ class ScatterSkyPlot(MultiFuncQAPlot):
         dset = self._get_selected_dset(ydim, **kwargs)
 
         pts = dset.to(hv.Points, kdims=['x', ydim], 
-                        vdims=list(self.funcs.keys()), groupby=[])
+                        vdims=list(self.funcs.keys()), groupby=self.groupby)
         shaded = dynspread(datashade(pts, x_range=x_range, y_range=y_range, dynamic=False))
-        shaded = shaded.opts('RGB [width=700, height=300]')
+        shaded = shaded.opts('RGB [width=700, height=300, tools=["box_select"]]')
 
         # decimate_opts = dict(plot={'tools':['hover', 'box_select']}, 
         #                     style={'alpha':0, 'size':5, 'nonselection_alpha':0})
@@ -209,10 +217,10 @@ class SkyPlot(MultiFuncQAPlot):
     def _make_figure(self):
 
         pts = self.ds.to(hv.Points, kdims=['ra', 'dec'], 
-                    vdims=list(self.funcs.keys()), groupby=[])
+                    vdims=list(self.funcs.keys()), groupby=self.groupby)
         
-        mean_ra = pts.data.ra.mean()
-        mean_dec = pts.data.dec.mean()
+        mean_ra = self.ds.data.ra.mean()
+        mean_dec = self.ds.data.dec.mean()
         try:
             mean_ra = mean_ra.compute()
             mean_dec = mean_dec.compute()

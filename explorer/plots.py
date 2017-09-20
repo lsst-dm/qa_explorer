@@ -14,12 +14,15 @@ from .functors import Functor, CompositeFunctor, Column, RAColumn, DecColumn, Ma
 from .functors import StarGalaxyLabeller
 
 class QAPlot(hv.streams.Stream):
+    query = param.String(default='')
+
     def __init__(self, catalog, dask=False, **kwargs):
         self.catalog = catalog
         self.dask = dask
         self.kwargs = kwargs
 
         self._figure = None
+        self._df = None
         self._ds = None
 
         super(QAPlot, self).__init__()
@@ -37,11 +40,26 @@ class QAPlot(hv.streams.Stream):
     def _get_selected(self):
         raise NotImplementedError
 
+    def set_query(self, q):
+        self.event(query=q)
+
+    @property
+    def df(self):
+        if self._df is None:
+            self._make_df()
+        return self._df
+
     @property
     def ds(self):
         if self._ds is None:
             self._make_ds()
-        return self._ds
+
+        ds = self._ds
+        if self.query:
+            df = ds.data.query(self.query)
+            ds = hv.Dataset(df, kdims=self._ds.dimensions())
+
+        return ds
 
     def _make_ds(self):
         raise NotImplementedError
@@ -75,11 +93,14 @@ class MultiFuncQAPlot(QAPlot):
     def groupby(self):
         return ['label'] if self.group_labels else []
 
-    def _make_ds(self):
+    def _make_df(self):
         f = CompositeFunctor(self.allfuncs)
         df = f(self.catalog, dask=self.dask)
+        self._df = df        
+
+    def _make_ds(self):
         dims = [hv.Dimension(k, label=v.name) for k,v in self.allfuncs.items()]
-        ds = hv.Dataset(df, kdims=dims)
+        ds = hv.Dataset(self.df, kdims=dims)
         self._ds = ds        
 
 class ScatterSkyPlot(MultiFuncQAPlot):
@@ -91,20 +112,26 @@ class ScatterSkyPlot(MultiFuncQAPlot):
         self.xfunc = xfunc
 
     @property
+    def groupby(self):
+        return []
+
+    @property
     def allfuncs(self):
         allfuncs = super(ScatterSkyPlot, self).allfuncs
         allfuncs.update({'x':self.xfunc})
         return allfuncs
 
     def _make_sky(self, ra_range, dec_range, ydim, **kwargs):
-        bounds = kwargs['bounds_{}'.format(ydim)]
+        # bounds = kwargs['bounds_{}'.format(ydim)]
 
-        if bounds is not None:
-            select_dict = {'x':bounds[0::2], ydim:bounds[1::2]}
-            dset = self.ds.select(**select_dict)
-        else:
-            dset = self.ds
+        # if bounds is not None:
+        #     select_dict = {'x':bounds[0::2], ydim:bounds[1::2]}
+        #     dset = self.ds.select(**select_dict)
+        # else:
+        #     dset = self.ds
             
+        dset = self._get_selected_dset(ydim, **kwargs)
+
         pts = dset.to(hv.Points, kdims=['ra', 'dec'], 
                         vdims=['x'] + list(self.funcs.keys()), groupby=self.groupby)
 
@@ -168,12 +195,12 @@ class ScatterSkyPlot(MultiFuncQAPlot):
             dimname = DimName(ydim=k)
             range_xy = hv.streams.RangeXY()
             range_sky = hv.streams.RangeXY().rename(x_range='ra_range', y_range='dec_range')
-            bounds_xy = hv.streams.BoundsXY().rename(bounds='bounds_{}'.format(k))
+            bounds_xy = hv.streams.Bounds().rename(bounds='bounds_{}'.format(k))
 
             scatter = hv.DynamicMap(self._make_scatter, kdims=[], 
-                                    streams=[bounds_xy, range_xy, dimname])
+                                    streams=[bounds_xy, range_xy, dimname, self])
             sky = hv.DynamicMap(self._make_sky, kdims=[], 
-                                streams=[bounds_xy, range_sky, dimname])
+                                streams=[bounds_xy, range_sky, dimname, self])
 
             scatters.append(scatter)
             sky_plots.append(sky)
@@ -232,12 +259,6 @@ class SkyPlot(MultiFuncQAPlot):
         cross_dmap = hv.DynamicMap(lambda x, y: (hv.VLine(x).opts(**cross_opts) * 
                                                  hv.HLine(y).opts(**cross_opts)), streams=[pointer])    
         
-
-        # sel = hv.streams.Selection1D(source=pts)
-        box = hv.streams.BoundsXY(source=pts, bounds=(mean_ra, mean_dec, mean_ra, mean_dec))
-        bounds_opts = dict(style={'line_color':'black', 'line_width':2})
-        bounds = hv.DynamicMap(lambda bounds : hv.Bounds(bounds), streams=[box]).opts(**bounds_opts)
-
         rgb_opts = dict(plot={'width':self.width, 'height':self.width})
 
         # hover = HoverTool(names=list(self.funcs.keys()))
@@ -249,12 +270,10 @@ class SkyPlot(MultiFuncQAPlot):
         for k,v in self.funcs.items():
             dshade = dynspread(datashade(pts, aggregator=datashader.mean(k), cmap=self.cmap)).opts(**rgb_opts)
             dec = decimate(pts).opts(**decimate_opts)
-            o = (dshade * dec * cross_dmap * bounds).relabel(v.name)
+            o = (dshade * dec * cross_dmap).relabel(v.name)
             plots.append(o)
 
-        self._box = box
-
-        self._figure = hv.Layout(plots).cols(2)
+        self._figure = hv.Layout(plots).cols(2).opts('Layout {+axiswise}')
 
     def _get_selected(self):
         selected = self.ds.select(ra=self._box.bounds[0::2], dec=self._box.bounds[1::2])

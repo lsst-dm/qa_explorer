@@ -10,8 +10,6 @@ import dask.array as da
 import dask
 import time
 
-from schwimmbad import choose_pool
-
 from .catalog import Catalog
 
 class Functor(object):

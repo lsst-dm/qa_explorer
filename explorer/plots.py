@@ -130,7 +130,7 @@ class ScatterSkyPlot(MultiFuncQAPlot):
         # else:
         #     dset = self.ds
             
-        dset = self._get_selected_dset(ydim, **kwargs)
+        dset = self._get_selected_dset(ydim, ignore_ydim=False, **kwargs)
 
         pts = dset.to(hv.Points, kdims=['ra', 'dec'], 
                         vdims=['x'] + list(self.funcs.keys()), groupby=self.groupby)
@@ -141,12 +141,12 @@ class ScatterSkyPlot(MultiFuncQAPlot):
 
         return shaded
 
-    def _get_selected_dset(self, ydim, **kwargs):
+    def _get_selected_dset(self, ydim, ignore_ydim=True, **kwargs):
         dset = self.ds
 
         if self.linked:
             for k in self.funcs.keys():
-                if k==ydim:
+                if k==ydim and ignore_ydim:
                     pass
                 else:
                     bounds = kwargs['bounds_{}'.format(k)]

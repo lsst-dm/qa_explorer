@@ -25,20 +25,24 @@ class Catalog(object):
             columns = self._sanitize_columns(columns)
         return self.data[columns]
 
-    @property
-    def ra(self):
-        if self._coords is None:
-            self._coords = self._get_coords()
-        return self._coords['ra']
+class CatalogDifference(Catalog):
+    _const_columns = ('coord_ra', 'coord_dec', 'id')
 
-    @property
-    def dec(self):
-        if self._coords is None:
-            self._coords = self._get_coords()
-        return self._coords['dec']
+    def __init__(self, cat1, cat2):
+        self.cat1 = cat1
+        self.cat2 = cat2
 
-    def _get_coords(self):
-        return NotImplementedError
+    def get_columns(self, *args, **kwargs):
+        df1 = self.cat1.get_columns(*args, **kwargs)
+        df2 = self.cat2.get_columns(*args, **kwargs)
+
+        df = df1 - df2
+        for c in self._const_columns:
+            if c in df.columns:
+                df.c = df1.c
+
+        return df
+
 
 class ParquetCatalog(Catalog):
     index_column = 'id'
@@ -91,7 +95,3 @@ class ParquetCatalog(Catalog):
         else:
             cols_to_get = list(columns) + [self.index_column]
             return self._read_data(cols_to_get).set_index(self.index_column)
-
-    def _get_coords(self):
-        df = (self.get_columns(['coord_ra', 'coord_dec']) * 180 / np.pi)
-        return df.rename(columns={'coord_ra':'ra', 'coord_dec':'dec'})

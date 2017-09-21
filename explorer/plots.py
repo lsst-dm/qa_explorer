@@ -141,7 +141,7 @@ class ScatterSkyPlot(MultiFuncQAPlot):
 
         return shaded
 
-    def _get_selected_dset(self, ydim, ignore_ydim=True, **kwargs):
+    def _get_selected_dset(self, ydim, ignore_ydim=False, **kwargs):
         dset = self.ds
 
         if self.linked:
@@ -159,29 +159,49 @@ class ScatterSkyPlot(MultiFuncQAPlot):
     def _get_selected(self):
         kwargs = {}
         [kwargs.update(b.contents) for b in self._bounds_streams]
-        return self._get_selected_dset(None, **kwargs)
+        return self._get_selected_dset(None, **kwargs).data
 
     def _make_scatter(self, x_range, y_range, ydim, **kwargs):
         kwarg_str = ','.join([k for k,v in kwargs.items() if v is not None])
 
-        dset = self._get_selected_dset(ydim, **kwargs)
+        selected_dset = self._get_selected_dset(ydim, ignore_ydim=True, **kwargs)
 
-        pts = dset.to(hv.Points, kdims=['x', ydim], 
+        pts = selected_dset.to(hv.Points, kdims=['x', ydim], 
                         vdims=list(self.funcs.keys()), groupby=self.groupby)
-        shaded = dynspread(datashade(pts, x_range=x_range, y_range=y_range, dynamic=False))
-        shaded = shaded.opts('RGB [width=700, height=300, tools=["box_select"]]')
 
-        # decimate_opts = dict(plot={'tools':['hover', 'box_select']}, 
-        #                     style={'alpha':0, 'size':5, 'nonselection_alpha':0})
-        # dec = decimate(pts).opts(**decimate_opts)
+        shaded = dynspread(datashade(pts, x_range=x_range, y_range=y_range, dynamic=False,
+                                    cmap=cc.palette['fire']))
+        shaded = shaded.opts('RGB [width=600, height=300, tools=["box_select"]]')
 
         bounds = kwargs['bounds_{}'.format(ydim)]
         if bounds is None:
             bounds = (0,0,0,0)
             
         box = hv.Bounds(bounds)
-        # text = hv.Text(0, 0, kwarg_str)
-        return (shaded * box).relabel('{} ({})'.format(self.funcs[ydim].name, len(dset)))
+
+        # dset = self._get_selected_dset(ydim, **kwargs)
+
+
+        # decimate_opts = dict(plot={'tools':['hover', 'box_select']}, 
+        #                     style={'alpha':0, 'size':5, 'nonselection_alpha':0})
+        # dec = decimate(pts).opts(**decimate_opts)
+
+        # If a selection is made, also include all points at lower alpha
+
+        label = '{} objects'.format(len(selected_dset))
+
+        if len(selected_dset) < len(self.ds) and False:
+            all_pts = self.ds.to(hv.Points, kdims=['x', ydim], 
+                        vdims=list(self.funcs.keys()), groupby=self.groupby)
+
+            all_shaded = dynspread(datashade(all_pts, x_range=x_range, y_range=y_range, 
+                                                    dynamic=False, cmap='grey'))
+            all_shaded = all_shaded.opts('RGB [width=600, height=300]')
+
+            return (all_shaded * shaded * box).relabel(label)
+
+        else:
+            return (shaded * box).relabel(label)
 
     def _make_figure(self):
 

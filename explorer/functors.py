@@ -13,9 +13,9 @@ import time
 from .catalog import Catalog
 
 class Functor(object):
-    """Performs computation on an hdf catalog, read from disk
+    """Performs computation on catalog(s), read from disk
 
-    Catalog is assumed to be the filename of a parquet file.
+    Catalog is a Catalog object
 
     Subclasses must define _columns attribute that is read from table
     """
@@ -130,7 +130,7 @@ def mag_aware_eval(df, expr):
     return val
 
 class CustomFunctor(Functor):
-    _ignore_words = ('mag', 'sin', 'cos', 'exp', 'log')
+    _ignore_words = ('mag', 'sin', 'cos', 'exp', 'log', 'sqrt')
 
     def __init__(self, expr):
         self.expr = expr
@@ -143,7 +143,7 @@ class CustomFunctor(Functor):
     def columns(self):
         flux_cols = re.findall('mag\(\s*(\w+)\s*\)', self.expr)
 
-        cols = [c for c in re.findall('\w+', self.expr) if c not in self._ignore_words]
+        cols = [c for c in re.findall('[a-zA-Z_]+', self.expr) if c not in self._ignore_words]
         not_a_col = []
         for c in flux_cols:
             if not re.search('_flux$', c):

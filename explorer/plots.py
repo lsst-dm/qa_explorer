@@ -1,7 +1,7 @@
 import holoviews as hv
 import param
 import pandas as pd
-from holoviews.operation.datashader import datashade, dynspread
+from holoviews.operation.datashader import datashade, dynspread, stack
 from holoviews.operation import decimate
 decimate.max_samples=5000
 dynspread.max_px = 10
@@ -198,7 +198,7 @@ class ScatterSkyPlot(MultiFuncQAPlot):
                                                     dynamic=False, cmap='grey'))
             all_shaded = all_shaded.opts('RGB [width=600, height=300]')
 
-            return (all_shaded * shaded * box).relabel(label)
+            return (stack(all_shaded * shaded, compositor='add') * box).relabel(label)
 
         else:
             return (shaded * box).relabel(label)

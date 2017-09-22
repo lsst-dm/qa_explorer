@@ -1,7 +1,11 @@
 import holoviews as hv
 import param
 import pandas as pd
-from holoviews.operation.datashader import datashade, dynspread, stack
+from holoviews.operation.datashader import datashade, dynspread
+try:
+    from holoviews.operation.datashader import stack
+except ImportError:
+    pass
 from holoviews.operation import decimate
 decimate.max_samples=5000
 dynspread.max_px = 10

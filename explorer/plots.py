@@ -192,7 +192,7 @@ class ScatterSkyPlot(MultiFuncQAPlot):
 
         # If a selection is made, also include all points at lower alpha
 
-        label = '{} objects'.format(len(selected_dset))
+        label = '{} ({})'.format(self.allfuncs[ydim].name, len(selected_dset))
 
         if len(selected_dset) < len(self.ds) and False:
             all_pts = self.ds.to(hv.Points, kdims=['x', ydim], 

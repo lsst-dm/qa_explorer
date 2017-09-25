@@ -42,7 +42,6 @@ class CatalogDifference(Catalog):
 
 
 class ParquetCatalog(Catalog):
-    index_column = 'id'
     def __init__(self, filenames, client=None):
         self.filenames = filenames
         self.client = client
@@ -67,20 +66,17 @@ class ParquetCatalog(Catalog):
         
         if use_cache:
             if self._df is None:
-                if self.index_column not in columns:
-                    cols_to_get = list(columns) + [self.index_column]
-                else:
-                    cols_to_get = list(columns)
+                cols_to_get = list(columns)
 
                 if self.client:
-                    self._df = self.client.persist(self._read_data(cols_to_get).set_index(self.index_column))
+                    self._df = self.client.persist(self._read_data(cols_to_get))
                 else:
-                    self._df = self._read_data(cols_to_get).set_index(self.index_column)
+                    self._df = self._read_data(cols_to_get)
 
             else:
                 cols_to_get = list(set(columns) - set(self._df.columns))
                 if cols_to_get:
-                    new = self._read_data(cols_to_get + [self.index_column]).set_index(self.index_column)
+                    new = self._read_data(cols_to_get)
                     if self.client:
                         self._df = self.client.persist(self._df.join(new))
                     else:
@@ -92,5 +88,5 @@ class ParquetCatalog(Catalog):
                 return self.df[list(columns)]
 
         else:
-            cols_to_get = list(columns) + [self.index_column]
-            return self._read_data(cols_to_get).set_index(self.index_column)
+            cols_to_get = list(columns)
+            return self._read_data(cols_to_get)

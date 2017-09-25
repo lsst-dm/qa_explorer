@@ -56,7 +56,7 @@ class ParquetCatalog(Catalog):
             df = dd.read_parquet(self.filenames, columns=columns)
 
         if 'dir0' in df.columns:
-            df = df.drop('dir0')
+            df = df.drop('dir0', axis=1)
 
     @property
     def df(self):

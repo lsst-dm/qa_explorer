@@ -25,6 +25,7 @@ def perturb_catalog(filename, ra_offset=2, dec_offset=2, tag='fake', id_offset=0
     new_filename = filename[:-3] + '_{}_{}{}_{}{}.parq'.format(tag, ra_sign, abs(ra_offset),
                                                                  dec_sign, abs(dec_offset))
 
+    new = new.set_index('id', drop=True)
     fastparquet.write(new_filename, new)
 
 

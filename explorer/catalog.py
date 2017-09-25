@@ -51,9 +51,12 @@ class ParquetCatalog(Catalog):
 
     def _read_data(self, columns):
         if self.client:
-            return self.client.persist(dd.read_parquet(self.filenames, columns=columns))
+            df = self.client.persist(dd.read_parquet(self.filenames, columns=columns))
         else:
-            return dd.read_parquet(self.filenames, columns=columns)
+            df = dd.read_parquet(self.filenames, columns=columns)
+
+        if 'dir0' in df.columns:
+            df = df.drop('dir0')
 
     @property
     def df(self):

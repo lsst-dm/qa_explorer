@@ -58,6 +58,8 @@ class ParquetCatalog(Catalog):
         if 'dir0' in df.columns:
             df = df.drop('dir0', axis=1)
 
+        return df
+
     @property
     def df(self):
         if isinstance(self._df, Future):

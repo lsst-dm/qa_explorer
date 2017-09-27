@@ -121,7 +121,8 @@ class scattersky(ParameterizedFunction):
         sky_filterpoints = filterpoints.instance(xdim='ra', ydim='dec')
         sky_pts = hv.util.Dynamic(dset, operation=sky_filterpoints,
                                   streams=[self.p.filter_stream])
-        sky_opts = dict(plot={'height':self.p.height, 'width':self.p.height},
+        sky_opts = dict(plot={'height':self.p.height, 'width':self.p.height,
+                              'match_aspect':True},
                         norm=dict(axiswise=True))
         sky_shaded = datashade(sky_pts, cmap=cc.palette[self.p.sky_cmap],
                                aggregator=ds.mean(self.p.ydim), height=self.p.height,

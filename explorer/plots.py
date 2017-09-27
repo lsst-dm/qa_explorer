@@ -10,6 +10,7 @@ import colorcet as cc
 from param import ParameterizedFunction, ParamOverrides
 from holoviews.core.operation import Operation
 from holoviews.streams import Stream, BoundsXY, LinkedStream
+from holoviews.streams import Bounds as BoundsXY
 from holoviews.plotting.bokeh.callbacks import Callback
 from holoviews.operation.datashader import datashade, dynspread
 

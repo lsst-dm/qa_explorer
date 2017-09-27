@@ -10,6 +10,7 @@ import colorcet as cc
 from param import ParameterizedFunction, ParamOverrides
 from holoviews.core.operation import Operation
 from holoviews.streams import Stream, BoundsXY, LinkedStream
+from holoviews.streams import Bounds as BoundsXY
 from holoviews.plotting.bokeh.callbacks import Callback
 from holoviews.operation.datashader import datashade, dynspread
 
@@ -112,7 +113,8 @@ class scattersky(ParameterizedFunction):
         scatter_filterpoints = filterpoints.instance(xdim=self.p.xdim, ydim=self.p.ydim)
         scatter_pts = hv.util.Dynamic(dset, operation=scatter_filterpoints,
                                       streams=[self.p.filter_stream])
-        scatter_opts = dict(plot={'height':self.p.height, 'width':self.p.width - self.p.height},
+        scatter_opts = dict(plot={'height':self.p.height, 'width':self.p.width - self.p.height,
+                                  'tools':['box_select']},
                            norm=dict(axiswise=True))
         scatter_shaded = datashade(scatter_pts, cmap=cc.palette[self.p.scatter_cmap])
         scatter = dynspread(scatter_shaded).opts(**scatter_opts)
@@ -121,7 +123,8 @@ class scattersky(ParameterizedFunction):
         sky_filterpoints = filterpoints.instance(xdim='ra', ydim='dec')
         sky_pts = hv.util.Dynamic(dset, operation=sky_filterpoints,
                                   streams=[self.p.filter_stream])
-        sky_opts = dict(plot={'height':self.p.height, 'width':self.p.height},
+        sky_opts = dict(plot={'height':self.p.height, 'width':self.p.height,
+                              'tools':['box_select']},
                         norm=dict(axiswise=True))
         sky_shaded = datashade(sky_pts, cmap=cc.palette[self.p.sky_cmap],
                                aggregator=ds.mean(self.p.ydim), height=self.p.height,

@@ -2,56 +2,52 @@ import numpy as np
 import pandas as pd
 import holoviews as hv
 
-class Dataset(hv.Dataset):
-    def __init__(self, catalog, xFunc, yFunc, labeller):
+from .functors import Functor, CompositeFunctor, Column, RAColumn, DecColumn, Mag
+from .functors import StarGalaxyLabeller
+
+class QADataset(object):
+    def __init__(self, catalog, funcs, xFunc=Mag('base_PsfFlux'), labeller=StarGalaxyLabeller()):
         self.catalog = catalog
 
-        self._xFunc = xFunc
-        self._yFunc = yFunc
-        self._labeller = labeller
+        if isinstance(funcs, list) or isinstance(funcs, tuple):
+            self.funcs = {'y{}'.format(i):f for i,f in enumerate(funcs)}
+        elif isinstance(funcs, Functor):
+            self.funcs = {'y':funcs}
+        else:
+            self.funcs = funcs
+
+        self.xFunc = xFunc
+        self.labeller = labeller
 
         self._df = None
-        self._set_data()
-
-    def reset(self):
-        self._df = None
+        self._ds = None
 
     @property
-    def xFunc(self):
-        return self._xFunc
-
-    @xFunc.setter
-    def xFunc(self, new):
-        if new is self._xFunc:
-            return
-        self._xFunc = new
-        self._set_data()
+    def allfuncs(self):
+        allfuncs = self.funcs.copy()
+        allfuncs.update({'ra':RAColumn(), 'dec': DecColumn(), 
+                         'label':self.labeller, 'x':self.xFunc})
+        return allfuncs        
 
     @property
-    def yFunc(self):
-        return self._yFunc
+    def df(self):
+        if self._df is None:
+            self._make_df()
+        return self._df
 
-    @yFunc.setter
-    def yFunc(self, new):
-        if new is self._yFunc:
-            return
-        self._yFunc = new
-        self._set_data()
-
-    @property
-    def labeller(self):
-        return self._labeller
-
-    @labeller.setter
-    def labeller(self, new):
-        if new is self._labeller:
-            return
-        self._labeller = new
-        self._set_data()
+    def _make_df(self):
+        f = CompositeFunctor(self.allfuncs)
+        df = f(self.catalog)
+        self._df = df        
 
     @property
-    def columns(self):
-        return self.xFunc.columns + self.yFunc.columns + self.labeller.columns
+    def ds(self):
+        if self._ds is None:
+            self._make_ds()
+        return self._ds
 
-    def _set_data(self):
-        x = self.xFunc(catalog)
+    def _make_ds(self):
+        dims = [hv.Dimension(k, label=v.name) for k,v in self.allfuncs.items()]
+        ds = hv.Dataset(self.df, kdims=dims)
+        self._ds = ds        
+

@@ -1,304 +1,166 @@
-import holoviews as hv
+from functools import partial
+
 import param
+import numpy as np
 import pandas as pd
-from holoviews.operation.datashader import datashade, dynspread
-try:
-    from holoviews.operation.datashader import stack
-except ImportError:
-    pass
-from holoviews.operation import decimate
-decimate.max_samples=5000
-dynspread.max_px = 10
-import datashader
+import holoviews as hv
+import datashader as ds
 import colorcet as cc
-from bokeh.models import HoverTool
 
+from param import ParameterizedFunction, ParamOverrides
+from holoviews.core.operation import Operation
+from holoviews.streams import Stream, BoundsXY, LinkedStream
+from holoviews.plotting.bokeh.callbacks import Callback
+from holoviews.operation.datashader import datashade, dynspread
 
-from .functors import Functor, CompositeFunctor, Column, RAColumn, DecColumn, Mag
-from .functors import StarGalaxyLabeller
+from bokeh.palettes import Greys9
 
-class QAPlot(hv.streams.Stream):
-    query = param.String(default='')
+class filterpoints(hv.Operation):
 
-    def __init__(self, catalog, dask=False, **kwargs):
-        self.catalog = catalog
-        self.dask = dask
-        self.kwargs = kwargs
+    groupby = param.Parameter(default=None, doc="""
+        Groupby argument to pass to Points creation.""")
 
-        self._figure = None
-        self._df = None
-        self._ds = None
+    filter_range = param.Parameter(default={}, doc="""
+        Dictionary of filter bounds.""")
 
-        super(QAPlot, self).__init__()
+    xdim = param.String(default='x')
+    ydim = param.String(default='y')
 
-    @property
-    def figure(self):
-        if self._figure is None:
-            self._make_figure()
-        return self._figure
+    def _process(self, dset, key=None):
 
-    @property
-    def selected(self):
-        return self._get_selected()
+        if self.p.filter_range is not None:
+            dset = dset.select(**self.p.filter_range)
 
-    def _get_selected(self):
-        raise NotImplementedError
+        vdims = [dim for dim in dset.dimensions() if dim.name not in [self.p.xdim, self.p.ydim]]
+        pts = dset.to(hv.Points, kdims=[self.p.xdim, self.p.ydim], 
+                        vdims=vdims, 
+                        groupby=self.p.groupby)
 
-    def set_query(self, q):
-        self.event(query=q)
+        return pts
 
-    @property
-    def df(self):
-        if self._df is None:
-            self._make_df()
-        return self._df
-
-    @property
-    def ds(self):
-        if self._ds is None:
-            self._make_ds()
-
-        ds = self._ds
-        if self.query:
-            df = ds.data.query(self.query)
-            ds = hv.Dataset(df, kdims=self._ds.dimensions())
-
-        return ds
-
-    def _make_ds(self):
-        raise NotImplementedError
-
-    def _make_figure(self):
-        raise NotImplementedError
-
-class MultiFuncQAPlot(QAPlot):
-    def __init__(self, catalog, funcs, labeller=StarGalaxyLabeller(), width=400, 
-                 group_labels=False, **kwargs):
-        super(MultiFuncQAPlot, self).__init__(catalog, **kwargs)
-
-        if isinstance(funcs, list) or isinstance(funcs, tuple):
-            self.funcs = {'y{}'.format(i):f for i,f in enumerate(funcs)}
-        elif isinstance(funcs, Functor):
-            self.funcs = {'y':funcs}
-        else:
-            self.funcs = funcs
-
-        self.labeller = labeller
-        self.group_labels = group_labels
-        self.width = width
-
-    @property
-    def allfuncs(self):
-        allfuncs = self.funcs.copy()
-        allfuncs.update({'ra':RAColumn(), 'dec': DecColumn(), 'label':self.labeller})
-        return allfuncs        
-
-    @property
-    def groupby(self):
-        return ['label'] if self.group_labels else []
-
-    def _make_df(self):
-        f = CompositeFunctor(self.allfuncs)
-        df = f(self.catalog, dask=self.dask)
-        self._df = df        
-
-    def _make_ds(self):
-        dims = [hv.Dimension(k, label=v.name) for k,v in self.allfuncs.items()]
-        ds = hv.Dataset(self.df, kdims=dims)
-        self._ds = ds        
-
-class ScatterSkyPlot(MultiFuncQAPlot):
-
-    def __init__(self, catalog, funcs, xfunc=Mag('base_PsfFlux'), linked=False, **kwargs):
-        super(ScatterSkyPlot, self).__init__(catalog, funcs, **kwargs)
-
-        self.linked = linked
-        self.xfunc = xfunc
-
-    @property
-    def groupby(self):
-        return []
-
-    @property
-    def allfuncs(self):
-        allfuncs = super(ScatterSkyPlot, self).allfuncs
-        allfuncs.update({'x':self.xfunc})
-        return allfuncs
-
-    def _make_sky(self, ra_range, dec_range, ydim, **kwargs):
-        # bounds = kwargs['bounds_{}'.format(ydim)]
-
-        # if bounds is not None:
-        #     select_dict = {'x':bounds[0::2], ydim:bounds[1::2]}
-        #     dset = self.ds.select(**select_dict)
-        # else:
-        #     dset = self.ds
-            
-        dset = self._get_selected_dset(ydim, ignore_ydim=False, **kwargs)
-
-        pts = dset.to(hv.Points, kdims=['ra', 'dec'], 
-                        vdims=['x'] + list(self.funcs.keys()), groupby=self.groupby)
-
-        shaded = dynspread(datashade(pts, x_range=ra_range, y_range=dec_range, dynamic=False, 
-                                         cmap=cc.palette['coolwarm'], aggregator=datashader.mean(ydim)))
-        shaded = shaded.opts('RGB [width=300, height=300]')
-
-        return shaded
-
-    def _get_selected_dset(self, ydim, ignore_ydim=False, **kwargs):
-        dset = self.ds
-
-        if self.linked:
-            for k in self.funcs.keys():
-                if k==ydim and ignore_ydim:
-                    pass
-                else:
-                    bounds = kwargs['bounds_{}'.format(k)]
-                    if bounds is not None:
-                        select_dict = {'x':bounds[0::2], k:bounds[1::2]}
-                        dset = dset.select(**select_dict)
-
-        return dset
-
-    def _get_selected(self):
-        kwargs = {}
-        [kwargs.update(b.contents) for b in self._bounds_streams]
-        return self._get_selected_dset(None, **kwargs).data
-
-    def _make_scatter(self, x_range, y_range, ydim, **kwargs):
-        kwarg_str = ','.join([k for k,v in kwargs.items() if v is not None])
-
-        selected_dset = self._get_selected_dset(ydim, ignore_ydim=True, **kwargs)
-
-        pts = selected_dset.to(hv.Points, kdims=['x', ydim], 
-                        vdims=list(self.funcs.keys()), groupby=self.groupby)
-
-        shaded = dynspread(datashade(pts, x_range=x_range, y_range=y_range, dynamic=False,
-                                    cmap=cc.palette['fire']))
-        shaded = shaded.opts('RGB [width=600, height=300, tools=["box_select"]]')
-
-        bounds = kwargs['bounds_{}'.format(ydim)]
-        if bounds is None:
-            bounds = (0,0,0,0)
-            
-        box = hv.Bounds(bounds)
-
-        # dset = self._get_selected_dset(ydim, **kwargs)
-
-
-        # decimate_opts = dict(plot={'tools':['hover', 'box_select']}, 
-        #                     style={'alpha':0, 'size':5, 'nonselection_alpha':0})
-        # dec = decimate(pts).opts(**decimate_opts)
-
-        # If a selection is made, also include all points at lower alpha
-
-        label = '{} ({})'.format(self.allfuncs[ydim].name, len(selected_dset))
-
-        if len(selected_dset) < len(self.ds) and False:
-            all_pts = self.ds.to(hv.Points, kdims=['x', ydim], 
-                        vdims=list(self.funcs.keys()), groupby=self.groupby)
-
-            all_shaded = dynspread(datashade(all_pts, x_range=x_range, y_range=y_range, 
-                                                    dynamic=False, cmap='grey'))
-            all_shaded = all_shaded.opts('RGB [width=600, height=300]')
-
-            return (stack(all_shaded * shaded, compositor='add') * box).relabel(label)
-
-        else:
-            return (shaded * box).relabel(label)
-
-    def _make_figure(self):
-
-        DimName = hv.streams.Stream.define('DimName', ydim='y')
-
-        bounds_streams = []
-
-        scatters = []
-        sky_plots = []
-        for k,v in self.funcs.items():
-            dimname = DimName(ydim=k)
-            range_xy = hv.streams.RangeXY()
-            range_sky = hv.streams.RangeXY().rename(x_range='ra_range', y_range='dec_range')
-            bounds_xy = hv.streams.Bounds().rename(bounds='bounds_{}'.format(k))
-
-            scatter = hv.DynamicMap(self._make_scatter, kdims=[], 
-                                    streams=[bounds_xy, range_xy, dimname, self])
-            sky = hv.DynamicMap(self._make_sky, kdims=[], 
-                                streams=[bounds_xy, range_sky, dimname, self])
-
-            scatters.append(scatter)
-            sky_plots.append(sky)
-            bounds_streams.append(bounds_xy)
-
-        for bounds, scatter in zip(bounds_streams, scatters):
-            bounds.source = scatter
-
-        plots = []
-        for i, (scatter, sky) in enumerate(zip(scatters, sky_plots)):
-            if self.linked:
-                for j, bounds in enumerate(bounds_streams):
-                    if i != j:
-                        scatter.streams.append(bounds)
-                        sky.streams.append(bounds)
-            plots += [scatter, sky]
-
-        self._bounds_streams = bounds_streams
-        self._figure = hv.Layout(plots).cols(2)
-
-    def reset_bounds(self):
-        for b in self._bounds_streams:
-            b.event(bounds=None)
-
-
-
-
-class SkyPlot(MultiFuncQAPlot):
-    """Makes linked sky plots of desired quantities.
-
-    funcs: dictionary of Functors
+# Define Stream class that stores filters for various Dimensions 
+class FilterStream(Stream):
     """
-    def __init__(self, catalog, funcs, cmap=cc.palette['coolwarm'], **kwargs):
-        super(SkyPlot, self).__init__(catalog, funcs, **kwargs)
+    Stream to apply arbitrary filtering on a Dataset.
+    """
 
-        self.cmap = cmap
+    filter_range = param.Dict(default={})
+    
+class ResetCallback(Callback):
 
-        self._pts = None
-        self._box = None
+    models = ['plot']
+    on_events = ['reset']
 
-    def _make_figure(self):
+class Reset(LinkedStream):
+    def __init__(self, *args, **params):
+        super(Reset, self).__init__(self, *args, **dict(params, transient=True))
 
-        pts = self.ds.to(hv.Points, kdims=['ra', 'dec'], 
-                    vdims=list(self.funcs.keys()), groupby=self.groupby)
+Stream._callbacks['bokeh'][Reset] = ResetCallback
+
+# Define Operation that filters based on FilterStream state (which provides the filter_range)
+class filterpoints(Operation):
+
+    filter_range = param.Dict(default={}, doc="""
+        Dictionary of filter bounds.""")
+    xdim = param.String(default='x')
+    ydim = param.String(default='y')
+
+    def _process(self, dset, key=None):
+        if self.p.filter_range is not None:
+            dset = dset.select(**self.p.filter_range)
+        kdims = [dset.get_dimension(self.p.xdim), dset.get_dimension(self.p.ydim)]
+        vdims = [dim for dim in dset.dimensions() if dim.name not in kdims]
+        return hv.Points(dset, kdims=kdims, vdims=vdims)
+    
+
+def notify_stream(bounds, filter_stream, xdim, ydim):
+    """
+    Function to attach to bounds stream as subscriber to notify FilterStream.
+    """
+    l, b, r, t = bounds
+    filter_range = dict(filter_stream.filter_range)
+    for dim, (low, high) in [(xdim, (l, r)), (ydim, (b, t))]:
+        if dim in filter_range:
+            old_low, old_high = filter_range[dim]
+            filter_range[dim]= (max(old_low, low), min(old_high, high))
+        else:
+            filter_range[dim] = (low, high)
+    filter_stream.event(filter_range=filter_range)
+
+def reset_stream(filter_stream):
+    filter_stream.event(filter_range={})
+
+class scattersky(ParameterizedFunction):
+    """
+    Creates two datashaded views from a Dataset.
+    """
+
+    xdim = param.String(default='x')
+    ydim = param.String(default='y')
+    scatter_cmap = param.String(default='fire')
+    sky_cmap = param.String(default='coolwarm')
+    height = param.Number(default=300)
+    width = param.Number(default=900)
+    filter_stream = param.ClassSelector(default=FilterStream(), class_=FilterStream)
+
+    def __call__(self, dset, **params):
+        self.p = ParamOverrides(self, params)
+        if self.p.ydim not in dset.dimensions():
+            raise ValueError('{} not in Dataset.'.format(self.p.ydim))
+
+        # Set up scatter plot
+        scatter_filterpoints = filterpoints.instance(xdim=self.p.xdim, ydim=self.p.ydim)
+        scatter_pts = hv.util.Dynamic(dset, operation=scatter_filterpoints,
+                                      streams=[self.p.filter_stream])
+        scatter_opts = dict(plot={'height':self.p.height, 'width':self.p.width - self.p.height},
+                           norm=dict(axiswise=True))
+        scatter_shaded = datashade(scatter_pts, cmap=cc.palette[self.p.scatter_cmap])
+        scatter = dynspread(scatter_shaded).opts(**scatter_opts)
         
-        mean_ra = self.ds.data.ra.mean()
-        mean_dec = self.ds.data.dec.mean()
-        try:
-            mean_ra = mean_ra.compute()
-            mean_dec = mean_dec.compute()
-        except AttributeError:
-            pass
-
-        pointer = hv.streams.PointerXY(x=mean_ra, y=mean_dec)
-        cross_opts = dict(style={'line_width':1, 'color':'black'})
-        cross_dmap = hv.DynamicMap(lambda x, y: (hv.VLine(x).opts(**cross_opts) * 
-                                                 hv.HLine(y).opts(**cross_opts)), streams=[pointer])    
+        # Set up sky plot
+        sky_filterpoints = filterpoints.instance(xdim='ra', ydim='dec')
+        sky_pts = hv.util.Dynamic(dset, operation=sky_filterpoints,
+                                  streams=[self.p.filter_stream])
+        sky_opts = dict(plot={'height':self.p.height, 'width':self.p.height},
+                        norm=dict(axiswise=True))
+        sky_shaded = datashade(sky_pts, cmap=cc.palette[self.p.sky_cmap],
+                               aggregator=ds.mean(self.p.ydim), height=self.p.height,
+                               width=self.p.width)
+        sky = dynspread(sky_shaded).opts(**sky_opts)
         
-        rgb_opts = dict(plot={'width':self.width, 'height':self.width})
+        # Set up BoundsXY streams to listen to box_select events and notify FilterStream
+        scatter_select = BoundsXY(source=scatter)
+        scatter_notifier = partial(notify_stream, filter_stream=self.p.filter_stream,
+                                   xdim=self.p.xdim, ydim=self.p.ydim)
+        scatter_select.add_subscriber(scatter_notifier)
+        
+        sky_select = BoundsXY(source=sky)
+        sky_notifier = partial(notify_stream, filter_stream=self.p.filter_stream,
+                               xdim='ra', ydim='dec')
+        sky_select.add_subscriber(sky_notifier)
+        
+        # Reset
+        reset = Reset(source=scatter)
+        reset.add_subscriber(partial(reset_stream, self.p.filter_stream))
+        
+        raw_scatter = datashade(scatter_filterpoints(dset), cmap=Greys9[::-1][:5])
+        raw_sky = datashade(sky_filterpoints(dset), cmap=Greys9[::-1][:5])
+        
+        return raw_scatter*scatter + raw_sky*sky
 
-        # hover = HoverTool(names=list(self.funcs.keys()))
-        # hover.tooltips.append(('index', '$index'))
+class multi_scattersky(ParameterizedFunction):
+    
+    filter_stream = param.ClassSelector(default=FilterStream(), class_=FilterStream)
 
-        decimate_opts = dict(plot={'tools':['hover', 'box_select']}, 
-                            style={'alpha':0, 'size':5, 'nonselection_alpha':0})
-        plots = []
-        for k,v in self.funcs.items():
-            dshade = dynspread(datashade(pts, aggregator=datashader.mean(k), cmap=self.cmap)).opts(**rgb_opts)
-            dec = decimate(pts).opts(**decimate_opts)
-            o = (dshade * dec * cross_dmap).relabel(v.name)
-            plots.append(o)
-
-        self._figure = hv.Layout(plots).cols(2).opts('Layout {+axiswise}')
-
-    def _get_selected(self):
-        selected = self.ds.select(ra=self._box.bounds[0::2], dec=self._box.bounds[1::2])
-        return selected.data
+    ignored_dimensions = param.List(default=['x', 'ra', 'dec', 'label'])
+    
+    def _get_ydims(self, dset):
+        # Get dimensions from first Dataset type found in input
+        return [dim.name for dim in dset.traverse(lambda x: x, [hv.Dataset])[0].dimensions()
+                if dim.name not in self.p.ignored_dimensions]
+    
+    def __call__(self, dset, **params):
+        self.p = param.ParamOverrides(self, params)
+        return hv.Layout([scattersky(dset, filter_stream=self.p.filter_stream,
+                                  ydim=ydim) 
+                       for ydim in self._get_ydims(dset)]).cols(2)

@@ -81,11 +81,13 @@ def notify_stream(bounds, filter_stream, xdim, ydim):
     l, b, r, t = bounds
     filter_range = dict(filter_stream.filter_range)
     for dim, (low, high) in [(xdim, (l, r)), (ydim, (b, t))]:
-        if dim in filter_range:
-            old_low, old_high = filter_range[dim]
-            filter_range[dim]= (max(old_low, low), min(old_high, high))
-        else:
-            filter_range[dim] = (low, high)
+        ## If you want to take the intersection of x selections, e.g.
+        # if dim in filter_range:
+        #     old_low, old_high = filter_range[dim]
+        #     filter_range[dim]= (max(old_low, low), min(old_high, high))
+        # else:
+        #     filter_range[dim] = (low, high)
+        filter_range[dim] = (low, high)
     filter_stream.event(filter_range=filter_range)
 
 def reset_stream(filter_stream):

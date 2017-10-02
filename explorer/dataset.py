@@ -26,7 +26,9 @@ class QADataset(object):
     def allfuncs(self):
         allfuncs = self.funcs.copy()
         allfuncs.update({'ra':RAColumn(), 'dec': DecColumn(), 
-                         'label':self.labeller, 'x':self.xFunc})
+                         'x':self.xFunc})
+        if self.labeller is not None:
+            allfuncs.update({'label':self.labeller})
         return allfuncs        
 
     @property

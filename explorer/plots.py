@@ -58,6 +58,15 @@ class Reset(LinkedStream):
 
 Stream._callbacks['bokeh'][Reset] = ResetCallback
 
+class filter_dset(Operation):
+    filter_range = param.Dict(default={}, doc="""
+        Dictionary of filter bounds.""")
+
+    def _process(self, dset, key=None):
+        if self.p.filter_range is not None:
+            dset = dset.select(**self.p.filter_range)
+        return dset
+
 # Define Operation that filters based on FilterStream state (which provides the filter_range)
 class filterpoints(Operation):
 
@@ -67,8 +76,7 @@ class filterpoints(Operation):
     ydim = param.String(default='y')
 
     def _process(self, dset, key=None):
-        if self.p.filter_range is not None:
-            dset = dset.select(**self.p.filter_range)
+        dset = filter_dset(dset, filter_range=self.p.filter_range)
         kdims = [dset.get_dimension(self.p.xdim), dset.get_dimension(self.p.ydim)]
         vdims = [dim for dim in dset.dimensions() if dim.name not in kdims]
         return hv.Points(dset, kdims=kdims, vdims=vdims)

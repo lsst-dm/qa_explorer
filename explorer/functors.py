@@ -260,6 +260,16 @@ class StarGalaxyLabeller(Labeller):
         return label
         # return np.where(df[self._column] < 0.5, 'star', 'galaxy')
 
+class NumStarLabeller(Labeller):
+    _columns = ['numStarFlags']
+    labels = {"star": 0, "maybe": 1, "notStar": 2}
+
+    def _func(self, df):
+        x = df[self._columns][self._columns[0]]
+        label = pd.Series(pd.Categorical.from_codes(x, categories=['0','1','2','3','4','5']), 
+                            index=x.index, name='label')
+        return label
+
 
 class DeconvolvedMoments(Functor):
     name = 'Deconvolved Moments'

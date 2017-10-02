@@ -49,11 +49,14 @@ class ParquetCatalog(Catalog):
 
         self._df = None
 
-    def _read_data(self, columns):
+    def _read_data(self, columns, query=None):
         if self.client:
             df = self.client.persist(dd.read_parquet(self.filenames, columns=columns))
         else:
             df = dd.read_parquet(self.filenames, columns=columns)
+
+        if query:
+            df = df.query(query)
 
         return df
 
@@ -66,7 +69,7 @@ class ParquetCatalog(Catalog):
 
     def get_columns(self, columns, query=None, use_cache=False):
         
-        if use_cache:
+        if use_cache and False:
             if self._df is None:
                 cols_to_get = list(columns)
 
@@ -91,4 +94,4 @@ class ParquetCatalog(Catalog):
 
         else:
             cols_to_get = list(columns)
-            return self._read_data(cols_to_get)
+            return self._read_data(cols_to_get, query=query)

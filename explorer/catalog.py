@@ -30,7 +30,7 @@ class CatalogDifference(Catalog):
         self.cat1 = cat1
         self.cat2 = cat2
 
-    
+
 
     def get_columns(self, *args, **kwargs):
         df1 = self.cat1.get_columns(*args, **kwargs)
@@ -64,7 +64,7 @@ class ParquetCatalog(Catalog):
         else:
             return self._df
 
-    def get_columns(self, columns, query=None, use_cache=True):
+    def get_columns(self, columns, query=None, use_cache=False):
         
         if use_cache:
             if self._df is None:

@@ -48,8 +48,25 @@ class ParquetCatalog(Catalog):
         self._coords = None
 
         self._df = None
+        self._columns = None
+        self._flags = None
+
+
+    @property
+    def columns(self):
+        if self._columns is None:
+            self._columns = list(dd.read_parquet(self.filenames[0]).columns)
+        return self._columns
+
+    @property
+    def flags(self):
+        if self._flags is None:
+            self._flags = list(dd.read_parquet(self.filenames[0]).select_dtypes(include=['bool']).columns)
+        return self._flags
+
 
     def _read_data(self, columns, query=None):
+        columns = columns + self.flags
         if self.client:
             df = self.client.persist(dd.read_parquet(self.filenames, columns=columns))
         else:

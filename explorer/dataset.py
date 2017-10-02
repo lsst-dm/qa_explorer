@@ -6,7 +6,8 @@ from .functors import Functor, CompositeFunctor, Column, RAColumn, DecColumn, Ma
 from .functors import StarGalaxyLabeller
 
 class QADataset(object):
-    def __init__(self, catalog, funcs, xFunc=Mag('base_PsfFlux'), labeller=StarGalaxyLabeller()):
+    def __init__(self, catalog, funcs, xFunc=Mag('base_PsfFlux'), labeller=StarGalaxyLabeller(),
+                 query=None):
         self.catalog = catalog
 
         if isinstance(funcs, list) or isinstance(funcs, tuple):
@@ -21,6 +22,20 @@ class QADataset(object):
 
         self._df = None
         self._ds = None
+        self._query = query
+
+    def _reset(self):
+        self._df = None
+        self._ds = None
+
+    @property
+    def query(self):
+        return self._query
+
+    @query.setter
+    def query(self, new):
+        self._query = new
+        self._reset()
 
     @property
     def allfuncs(self):
@@ -39,7 +54,7 @@ class QADataset(object):
 
     def _make_df(self):
         f = CompositeFunctor(self.allfuncs)
-        df = f(self.catalog)
+        df = f(self.catalog, query=self.query)
         self._df = df        
 
     @property

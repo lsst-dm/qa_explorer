@@ -266,8 +266,12 @@ class NumStarLabeller(Labeller):
 
     def _func(self, df):
         x = df[self._columns][self._columns[0]]
-        label = pd.Series(pd.Categorical.from_codes(x, categories=['0','1','2','3','4','5']), 
-                            index=x.index, name='label')
+
+        # Number of filters
+        n = len(x.unique()) - 1 
+
+        label = pd.cut(x, [-1, 0, n-1 , n], labels=['noStar', 'maybe', 'star'])        
+
         return label
 
 

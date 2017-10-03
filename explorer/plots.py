@@ -113,7 +113,7 @@ class scattersky(ParameterizedFunction):
     height = param.Number(default=300)
     width = param.Number(default=900)
     filter_stream = param.ClassSelector(default=FilterStream(), class_=FilterStream)
-    show_rawsky = param.bool(default=False)
+    show_rawsky = param.Boolean(default=False)
 
     def __call__(self, dset, **params):
         self.p = ParamOverrides(self, params)

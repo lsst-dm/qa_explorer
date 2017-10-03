@@ -113,6 +113,7 @@ class scattersky(ParameterizedFunction):
     height = param.Number(default=300)
     width = param.Number(default=900)
     filter_stream = param.ClassSelector(default=FilterStream(), class_=FilterStream)
+    show_rawsky = param.bool(default=False)
 
     def __call__(self, dset, **params):
         self.p = ParamOverrides(self, params)
@@ -157,9 +158,12 @@ class scattersky(ParameterizedFunction):
         reset.add_subscriber(partial(reset_stream, self.p.filter_stream))
         
         raw_scatter = datashade(scatter_filterpoints(dset), cmap=Greys9[::-1][:5])
-        raw_sky = datashade(sky_filterpoints(dset), cmap=Greys9[::-1][:5])
-        
-        return raw_scatter*scatter + raw_sky*sky
+        if self.p.show_rawsky:
+            raw_sky = datashade(sky_filterpoints(dset), cmap=Greys9[::-1][:5])
+            return raw_scatter*scatter + raw_sky*sky
+
+        else:
+            return raw_scatter*scatter + sky
 
 class multi_scattersky(ParameterizedFunction):
     

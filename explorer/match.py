@@ -2,6 +2,8 @@
 import scipy.spatial.kdtree, numpy
 from scipy import version
 from numpy import sin,cos,deg2rad,rad2deg,arcsin
+import numpy as np
+import dask.array as da
 import time
 
 scipy_version  = ('.'.join(version.version.split('.')[0:2])).split('.')[0:2]
@@ -24,8 +26,10 @@ def match_lists(ra1, dec1, ra2, dec2, dist, numNei=1):
          array([[0, 1],
                 [3, 3]]))
     """
-    cosd = lambda x : cos(deg2rad(x))
-    sind = lambda x : sin(deg2rad(x))
+    import pdb
+    pdb.set_trace()
+    cosd = lambda x : da.cos(x * np.pi/180)
+    sind = lambda x : da.sin(x * np.pi/180)
     mindist = 2 * sind(dist/2.) 
     getxyz = lambda r, d: [cosd(r)*cosd(d), sind(r)*cosd(d), sind(d)]
     xyz1 = numpy.array(getxyz(ra1, dec1))
@@ -43,6 +47,6 @@ def match_lists(ra1, dec1, ra2, dec2, dist, numNei=1):
     del xyz1
     dist, ind = ret
     finite = numpy.isfinite(dist)
-    dist[finite] = rad2deg(2*arcsin(dist[finite]/2))
+    dist[finite] = (2*arcsin(dist[finite]/2)) * 180 / np.pi
 
     return dist, ind

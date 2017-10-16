@@ -66,7 +66,8 @@ class MatchedCatalog(Catalog):
         self.client = client
 
         self._match_dist = None
-        self._match_inds = None
+        self._match_inds1 = None
+        self._match_inds2 = None
 
     def _match_cats(self):
         ra1, dec1 = self.cat1.ra, self.cat1.dec
@@ -77,8 +78,10 @@ class MatchedCatalog(Catalog):
         good = np.isfinite(dist)
 
         # Save indices as labels, not positions, as required by dask
-        ind_arr = np.array(self.cat1.index)
-        self._match_inds = ind_arr[inds[good]]
+        ind_arr1 = np.array(self.cat1.index)
+        ind_arr2 = np.array(self.cat2.index)
+        self._match_inds1 = ind_arr1[inds[good]]
+        self._match_inds2 = ind_arr2[inds[good]]
         self._match_dist = dist[good]
 
     @property
@@ -96,8 +99,8 @@ class MatchedCatalog(Catalog):
     def get_columns(self, *args, **kwargs):
 
         # Return columns in row-matched order
-        df1 = self.cat1.get_columns(*args, **kwargs).loc[self.match_inds]
-        df2 = self.cat2.get_columns(*args, **kwargs).loc[self.match_inds]
+        df1 = self.cat1.get_columns(*args, **kwargs).loc[self.match_inds1]
+        df2 = self.cat2.get_columns(*args, **kwargs).loc[self.match_inds2]
 
         return df1, df2
 

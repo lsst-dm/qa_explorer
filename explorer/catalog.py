@@ -89,7 +89,7 @@ class MatchedCatalog(Catalog):
 
     def get_columns(self, *args, **kwargs):
 
-        # Join catalogs according to match
+        # Return columns in row-matched order
         df1 = self.cat1.get_columns(*args, **kwargs).loc[self.match_inds]
         df2 = self.cat2.get_columns(*args, **kwargs).loc[self.match_inds]
 
@@ -136,6 +136,9 @@ class ParquetCatalog(Catalog):
 
         if query:
             df = df.query(query)
+
+        if 'dir0' in df.columns:
+            df = df.drop('dir0', axis=1)
 
         return df
 

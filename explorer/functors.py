@@ -198,10 +198,17 @@ class RAColumn(CoordColumn):
     def __init__(self):
         self.col = 'coord_ra'
 
+    def __call__(self, catalog, **kwargs):
+        return catalog.ra
+
 class DecColumn(CoordColumn):
     name = 'Dec'
     def __init__(self):
         self.col = 'coord_dec'
+
+    def __call__(self, catalog, **kwargs):
+        return catalog.dec
+
 
 def fluxName(col):
     if not col.endswith('_flux'):

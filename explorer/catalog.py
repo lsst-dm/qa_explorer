@@ -74,8 +74,9 @@ class MatchedCatalog(Catalog):
         self._match_inds1 = None
         self._match_inds2 = None
 
-    def _get_coords(self):
-        return self.cat1._get_coords()
+    @property
+    def coords(self):
+        return self.cat1.coords
 
     def _match_cats(self):
         ra1, dec1 = self.cat1.ra, self.cat1.dec

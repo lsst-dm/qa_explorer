@@ -91,10 +91,16 @@ class MatchedCatalog(Catalog):
         return self._match_dist
 
     @property
-    def match_inds(self):
-        if self._match_inds is None:
+    def match_inds1(self):
+        if self._match_inds1 is None:
             self._match_cats()
-        return self._match_inds
+        return self._match_inds1
+
+    @property
+    def match_inds2(self):
+        if self._match_inds2 is None:
+            self._match_cats()
+        return self._match_inds2
 
     def get_columns(self, *args, **kwargs):
 

@@ -20,6 +20,8 @@ class Functor(object):
     Subclasses must define _columns attribute that is read from table
     """
 
+    allow_difference = True
+
     @property
     def columns(self):
         try:
@@ -34,9 +36,9 @@ class Functor(object):
 
         if isinstance(catalog, MatchedCatalog):
             df1, df2 = catalog.get_columns(self.columns, query=query)
-            try:
+            if self.allow_difference:
                 vals = self._func(df1) - self._func(df2)
-            except TypeError:
+            else:
                 vals = self._func(df1)
         else:
             df = catalog.get_columns(self.columns, query=query)
@@ -181,6 +183,7 @@ class Column(Functor):
 
 class IDColumn(Column):
     col = 'id'
+    allow_difference = False
 
 class FootprintNPix(Column):
     col = 'base_Footprint_nPix'
@@ -188,6 +191,7 @@ class FootprintNPix(Column):
 class CoordColumn(Column):
     def _func(self, df):
         return df[self.col] * 180 / np.pi
+    allow_difference = False
 
 class RAColumn(CoordColumn):
     name = 'RA'
@@ -241,6 +245,7 @@ class Labeller(Functor):
     """
     _null_label = 'null'
     name = 'label'
+    allow_difference = False
     def __call__(self, catalog, dropna=False, **kwargs):
         return super(Labeller, self).__call__(catalog, dropna=False, **kwargs)
 

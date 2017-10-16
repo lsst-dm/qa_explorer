@@ -107,7 +107,7 @@ class scattersky(ParameterizedFunction):
     """
 
     xdim = param.String(default='x')
-    ydim = param.String(default='y')
+    ydim = param.String(default='y0')
     scatter_cmap = param.String(default='fire')
     sky_cmap = param.String(default='coolwarm')
     height = param.Number(default=300)

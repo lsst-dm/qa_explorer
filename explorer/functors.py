@@ -202,8 +202,7 @@ class CoordColumn(Column):
 class RAColumn(CoordColumn):
     name = 'RA'
     def __init__(self, **kwargs):
-        self.col = 'coord_ra'
-        super(RAColumn, self).__init__(**kwargs)
+        super(RAColumn, self).__init__('coord_ra', **kwargs)
 
     def __call__(self, catalog, **kwargs):
         return catalog.ra
@@ -211,8 +210,7 @@ class RAColumn(CoordColumn):
 class DecColumn(CoordColumn):
     name = 'Dec'
     def __init__(self, **kwargs):
-        self.col = 'coord_dec'
-        super(DecColumn, self).__init__(**kwargs)
+        super(DecColumn, self).__init__('coord_ra', **kwargs)
 
     def __call__(self, catalog, **kwargs):
         return catalog.dec

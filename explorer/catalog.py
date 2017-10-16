@@ -28,18 +28,21 @@ class Catalog(object):
             columns = self._sanitize_columns(columns)
         return self.data[columns]
 
+    def _get_coords(self):
+        df = self.get_columns(['coord_ra', 'coord_dec'], add_flags=False)
+
+        # Hack to avoid phantom 'dir0' column 
+        df = df.compute()
+        if 'dir0' in df.columns:
+            df = df.drop('dir0', axis=1)
+
+        self._coords = (df*180 / np.pi).rename(columns={'coord_ra':'ra',
+                                                        'coord_dec':'dec'})
+
     @property
     def coords(self):
         if self._coords is None:
-            df = self.get_columns(['coord_ra', 'coord_dec'], add_flags=False)
-
-            # Hack to avoid phantom 'dir0' column 
-            df = df.compute()
-            if 'dir0' in df.columns:
-                df = df.drop('dir0', axis=1)
-
-            self._coords = (df*180 / np.pi).rename(columns={'coord_ra':'ra',
-                                                            'coord_dec':'dec'})
+            self._get_coords()
         return self._coords
 
     @property
@@ -65,9 +68,14 @@ class MatchedCatalog(Catalog):
 
         self.client = client
 
+        self._coords = None
+
         self._match_dist = None
         self._match_inds1 = None
         self._match_inds2 = None
+
+    def _get_coords():
+        return self.cat1._get_coords()
 
     def _match_cats(self):
         ra1, dec1 = self.cat1.ra, self.cat1.dec

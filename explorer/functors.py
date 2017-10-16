@@ -34,7 +34,10 @@ class Functor(object):
 
         if isinstance(catalog, MatchedCatalog):
             df1, df2 = catalog.get_columns(self.columns, query=query)
-            vals = self._func(df1) - self._func(df2)
+            try:
+                vals = self._func(df1) - self._func(df2)
+            except TypeError:
+                vals = self._func(df1)
         else:
             df = catalog.get_columns(self.columns, query=query)
             vals = self._func(df)

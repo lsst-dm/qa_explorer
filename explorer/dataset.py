@@ -6,7 +6,8 @@ from .functors import Functor, CompositeFunctor, Column, RAColumn, DecColumn, Ma
 from .functors import StarGalaxyLabeller
 
 class QADataset(object):
-    def __init__(self, catalog, funcs, xFunc=Mag('base_PsfFlux'), labeller=StarGalaxyLabeller(),
+    def __init__(self, catalog, funcs, xFunc=Mag('base_PsfFlux', allow_difference=False), 
+                 labeller=StarGalaxyLabeller(),
                  query=None):
         self.catalog = catalog
 
@@ -44,6 +45,7 @@ class QADataset(object):
                          'x':self.xFunc})
         if self.labeller is not None:
             allfuncs.update({'label':self.labeller})
+
         return allfuncs        
 
     @property

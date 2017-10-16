@@ -20,7 +20,8 @@ class Functor(object):
     Subclasses must define _columns attribute that is read from table
     """
 
-    allow_difference = True
+    def __init__(self, allow_difference=True):
+        self.allow_difference = allow_difference
 
     @property
     def columns(self):
@@ -93,8 +94,9 @@ class ParquetReadWorker(object):
 class CompositeFunctor(Functor):
     force_ndarray = False
 
-    def __init__(self, funcDict):
+    def __init__(self, funcDict, **kwargs):
         self.funcDict = funcDict
+        super(CompositeFunctor, self).__init__(**kwargs)
 
     @property 
     def columns(self):
@@ -114,9 +116,10 @@ class CompositeFunctor(Functor):
 class TestFunctor(Functor):
     name = 'test'
 
-    def __init__(self, n=None, seed=1234):
+    def __init__(self, n=None, seed=1234, **kwargs):
         self.n = n
         self.seed = seed
+        super(TestFunctor, self).__init__(**kwargs)
 
     def __call__(self, catalog):
         np.random.seed(self.seed)
@@ -141,8 +144,9 @@ def mag_aware_eval(df, expr):
 class CustomFunctor(Functor):
     _ignore_words = ('mag', 'sin', 'cos', 'exp', 'log', 'sqrt')
 
-    def __init__(self, expr):
+    def __init__(self, expr, **kwargs):
         self.expr = expr
+        super(CustomFunctor, self).__init__(**kwargs)
 
     @property
     def name(self):
@@ -167,8 +171,9 @@ class CustomFunctor(Functor):
         return mag_aware_eval(df, self.expr)
 
 class Column(Functor):
-    def __init__(self, col):
+    def __init__(self, col, **kwargs):
         self.col = col
+        super(Column, self).__init__(**kwargs)
 
     @property
     def name(self):
@@ -189,22 +194,25 @@ class FootprintNPix(Column):
     col = 'base_Footprint_nPix'
 
 class CoordColumn(Column):
+    allow_difference = False
+
     def _func(self, df):
         return df[self.col] * 180 / np.pi
-    allow_difference = False
 
 class RAColumn(CoordColumn):
     name = 'RA'
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.col = 'coord_ra'
+        super(RAColumn, self).__init__(**kwargs)
 
     def __call__(self, catalog, **kwargs):
         return catalog.ra
 
 class DecColumn(CoordColumn):
     name = 'Dec'
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.col = 'coord_dec'
+        super(DecColumn, self).__init__(**kwargs)
 
     def __call__(self, catalog, **kwargs):
         return catalog.dec
@@ -216,8 +224,9 @@ def fluxName(col):
     return col
 
 class Mag(Functor):
-    def __init__(self, col):
+    def __init__(self, col, **kwargs):
         self.col = fluxName(col)
+        super(Mag, self).__init__(**kwargs)
 
     @property
     def columns(self):
@@ -232,9 +241,10 @@ class Mag(Functor):
 
 class MagDiff(Functor):
     """Functor to calculate magnitude difference"""
-    def __init__(self, col1, col2):
+    def __init__(self, col1, col2, **kwargs):
         self.col1 = fluxName(col1)
         self.col2 = fluxName(col2)
+        super(MagDiff, self).__init__(**kwargs)
 
     @property
     def columns(self):

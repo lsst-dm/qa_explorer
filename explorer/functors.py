@@ -10,7 +10,7 @@ import dask.array as da
 import dask
 import time
 
-from .catalog import Catalog
+from .catalog import Catalog, MatchedCatalog
 
 class Functor(object):
     """Performs computation on catalog(s), read from disk
@@ -32,8 +32,12 @@ class Functor(object):
 
     def __call__(self, catalog, query=None, dropna=True, dask=False):
 
-        df = catalog.get_columns(self.columns, query=query)
-        vals = self._func(df)
+        if isinstance(catalog, MatchedCatalog):
+            df1, df2 = catalog.get_columns(self.columns, query=query)
+            vals = self._func(df1) - self._func(df2)
+        else:
+            df = catalog.get_columns(self.columns, query=query)
+            vals = self._func(df)
 
         if dropna:
             try:

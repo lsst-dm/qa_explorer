@@ -6,8 +6,11 @@ import fastparquet
 import glob, re
 import logging
 
+from .match import match_lists
+
 class Catalog(object):
     index_column = 'id'
+
     def __init__(self, data):
         self.data
         self.columns = data.columns
@@ -25,24 +28,78 @@ class Catalog(object):
             columns = self._sanitize_columns(columns)
         return self.data[columns]
 
-class CatalogDifference(Catalog):
-    def __init__(self, cat1, cat2):
+    @property
+    def coords(self):
+        if self._coords is None:
+            df = self.get_columns(['coord_ra', 'coord_dec'], add_flags=False)
+            self._coords = (df*180 / np.pi).rename(columns={'coord_ra':'ra',
+                                                            'coord_dec':'dec'})
+        return self._coords
+
+    @property
+    def ra(self):
+        return self.coords['ra']
+
+    @property
+    def dec(self):
+        return self.coords['dec']
+
+    @property
+    def index(self):
+        return self.coords.index
+
+class MatchedCatalog(Catalog):
+    def __init__(self, cat1, cat2, match_radius=0.5, tags=None, client=None):
         self.cat1 = cat1
         self.cat2 = cat2
 
+        self.tags = ['1', '2'] if tags is None else tags
 
+        self.match_radius = match_radius
+
+        self.client = client
+
+        self._match_dist = None
+        self._match_inds = None
+
+    def _match_cats(self):
+        ra1, dec1 = self.cat1.ra, self.cat1.dec
+        ra2, dec2 = self.cat2.ra, self.cat2.dec
+
+        dist, inds = match_lists(ra1, dec1, ra2, dec2, self.match_radius/3600)
+
+        good = np.isfinite(dist)
+
+        # Save indices as labels, not positions, as required by dask
+        ind_arr = np.array(self.cat1.index)
+        self._match_inds = ind_arr[inds[good]]
+        self._match_dist = dist[good]
+
+    @property
+    def match_dist(self):
+        if self._match_dist is None:
+            self._match_cats()
+        return self._match_dist
+
+    @property
+    def match_inds(self):
+        if self._match_inds is None:
+            self._match_cats()
+        return self._match_inds
 
     def get_columns(self, *args, **kwargs):
-        df1 = self.cat1.get_columns(*args, **kwargs)
-        df2 = self.cat2.get_columns(*args, **kwargs)
 
         # Join catalogs according to match
+        df1 = self.cat1.get_columns(*args, **kwargs).loc[self.match_inds]
+        df2 = self.cat2.get_columns(*args, **kwargs).loc[self.match_inds]
 
-        return df_matched
+        return df1, df2
 
 
 class ParquetCatalog(Catalog):
     def __init__(self, filenames, client=None):
+        if type(filenames) not in [list, tuple]:
+            self.filenames = [filenames]
         self.filenames = filenames
         self.client = client
         self._coords = None
@@ -64,9 +121,14 @@ class ParquetCatalog(Catalog):
             self._flags = list(dd.read_parquet(self.filenames[0]).select_dtypes(include=['bool']).columns)
         return self._flags
 
+    def get_flags(self, flags=None):
+        flags = self.flags if flags is None else flags
 
-    def _read_data(self, columns, query=None):
-        columns = columns + self.flags
+        return self.get_columns(flags)
+
+    def _read_data(self, columns, query=None, add_flags=True):
+        if add_flags:
+            columns = columns + self.flags
         if self.client:
             df = self.client.persist(dd.read_parquet(self.filenames, columns=columns))
         else:
@@ -84,7 +146,7 @@ class ParquetCatalog(Catalog):
         else:
             return self._df
 
-    def get_columns(self, columns, query=None, use_cache=False):
+    def get_columns(self, columns, query=None, use_cache=False, add_flags=True):
         
         if use_cache and False:
             if self._df is None:
@@ -111,4 +173,4 @@ class ParquetCatalog(Catalog):
 
         else:
             cols_to_get = list(columns)
-            return self._read_data(cols_to_get, query=query)
+            return self._read_data(cols_to_get, query=query, add_flags=add_flags)

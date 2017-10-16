@@ -26,8 +26,6 @@ def match_lists(ra1, dec1, ra2, dec2, dist, numNei=1):
          array([[0, 1],
                 [3, 3]]))
     """
-    import pdb
-    pdb.set_trace()
     cosd = lambda x : da.cos(x * np.pi/180)
     sind = lambda x : da.sin(x * np.pi/180)
     mindist = 2 * sind(dist/2.) 

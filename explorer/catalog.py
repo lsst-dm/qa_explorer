@@ -33,8 +33,11 @@ class Catalog(object):
         if self._coords is None:
             df = self.get_columns(['coord_ra', 'coord_dec'], add_flags=False)
 
-            # hack to avoid bug with phantom 'dir0' column
-            df = df[['coord_ra', 'coord_dec']]
+            # Hack to avoid phantom 'dir0' column 
+            df = df.compute()
+            if 'dir0' in df.columns:
+                df = df.drop('dir0', axis=1)
+
             self._coords = (df*180 / np.pi).rename(columns={'coord_ra':'ra',
                                                             'coord_dec':'dec'})
         return self._coords

@@ -41,7 +41,7 @@ class Functor(object):
 
         if isinstance(catalog, dd.DataFrame):
             vals = self._func(catalog)
-            
+
         elif isinstance(catalog, MatchedCatalog):
             df1, df2 = catalog.get_columns(self.columns, query=query)
             if self.allow_difference:
@@ -63,6 +63,8 @@ class Functor(object):
                     vals = catalog.client.compute(vals[da.notnull(vals)]).result()
                 else:
                     vals = vals[da.notnull(vals)]
+            except AttributeError:
+                vals = vals[da.nutnull(vals)]
 
         if dask:
             return vals

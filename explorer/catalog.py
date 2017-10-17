@@ -91,6 +91,7 @@ class MatchedCatalog(Catalog):
 
         good = np.isfinite(dist)
 
+        print('{0} good matches, {1} bad.'.format(good.sum(), ~good.sum()))
         # Save indices as labels, not positions, as required by dask
         ind_arr1 = np.array(self.cat1.index)
         ind_arr2 = np.array(self.cat2.index)

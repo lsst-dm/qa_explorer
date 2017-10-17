@@ -64,7 +64,7 @@ class Functor(object):
                 else:
                     vals = vals[da.notnull(vals)]
             except AttributeError:
-                vals = vals[da.nutnull(vals)]
+                vals = vals[da.notnull(vals)]
 
         if dask:
             return vals

@@ -39,7 +39,10 @@ class Functor(object):
 
     def __call__(self, catalog, query=None, dropna=True, dask=False):
 
-        if isinstance(catalog, MatchedCatalog):
+        if isinstance(catalog, dd.DataFrame):
+            vals = self._func(catalog)
+            
+        elif isinstance(catalog, MatchedCatalog):
             df1, df2 = catalog.get_columns(self.columns, query=query)
             if self.allow_difference:
                 vals = self._func(df1) - self._func(df2)

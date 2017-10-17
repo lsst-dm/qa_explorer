@@ -95,10 +95,10 @@ class MatchedCatalog(Catalog):
         # Save indices as labels, not positions, as required by dask
         ind_arr1 = np.array(self.cat1.index)
         ind_arr2 = np.array(self.cat2.index)
-        self._match_inds1 = ind_arr1[inds[good]]
+        self._match_inds1 = ind_arr1[good]
         self._match_inds2 = ind_arr2[inds[good]]
         self._match_dist = dist[good]
-        self._bad_inds1 = ind_arr1[inds[~good]]
+        self._bad_inds1 = ind_arr1[~good]
         self._bad_inds2 = ind_arr2[inds[~good]]
 
     @property

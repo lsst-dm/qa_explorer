@@ -19,9 +19,13 @@ class Functor(object):
 
     Subclasses must define _columns attribute that is read from table
     """
+    _allow_difference = True
 
-    def __init__(self, allow_difference=True):
-        self.allow_difference = allow_difference
+    def __init__(self, allow_difference=None):
+        if allow_difference is not None:
+            self.allow_difference = allow_difference
+        else:
+            self.allow_difference = self._allow_difference
 
     @property
     def columns(self):
@@ -188,13 +192,13 @@ class Column(Functor):
 
 class IDColumn(Column):
     col = 'id'
-    allow_difference = False
+    _allow_difference = False
 
 class FootprintNPix(Column):
     col = 'base_Footprint_nPix'
 
 class CoordColumn(Column):
-    allow_difference = False
+    _allow_difference = False
 
     def _func(self, df):
         return df[self.col] * 180 / np.pi
@@ -259,8 +263,8 @@ class Labeller(Functor):
     """Main function of this subclass is to override the dropna=True
     """
     _null_label = 'null'
+    _allow_difference = False
     name = 'label'
-    allow_difference = False
     def __call__(self, catalog, dropna=False, **kwargs):
         return super(Labeller, self).__call__(catalog, dropna=False, **kwargs)
 

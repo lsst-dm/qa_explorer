@@ -40,6 +40,10 @@ class Catalog(object):
                                                         'coord_dec':'dec'})
 
     @property
+    def df_all(self):
+        return self.get_columns(self.columns, add_flags=False)
+
+    @property
     def coords(self):
         if self._coords is None:
             self._get_coords()
@@ -73,6 +77,8 @@ class MatchedCatalog(Catalog):
         self._match_dist = None
         self._match_inds1 = None
         self._match_inds2 = None
+        self._bad_inds1 = None
+        self._bad_inds2 = None
 
     @property
     def coords(self):
@@ -92,6 +98,8 @@ class MatchedCatalog(Catalog):
         self._match_inds1 = ind_arr1[inds[good]]
         self._match_inds2 = ind_arr2[inds[good]]
         self._match_dist = dist[good]
+        self._bad_inds1 = ind_arr1[inds[~good]]
+        self._bad_inds2 = ind_arr2[inds[~good]]
 
     @property
     def match_dist(self):

@@ -84,14 +84,14 @@ class MatchedCatalog(Catalog):
         return self.cat1.coords
 
     def _match_cats(self):
-        ra1, dec1 = self.cat1.ra, self.cat1.dec
-        ra2, dec2 = self.cat2.ra, self.cat2.dec
+        ra1, dec1 = self.cat1.ra.values, self.cat1.dec.values
+        ra2, dec2 = self.cat2.ra.values, self.cat2.dec.values
 
         dist, inds = match_lists(ra1, dec1, ra2, dec2, self.match_radius/3600)
 
         good = np.isfinite(dist)
 
-        print('{0} good matches, {1} bad.'.format(good.sum(), ~good.sum()))
+        print('{0} good matches, {1} bad.'.format(good.sum(), (~good).sum()))
         # Save indices as labels, not positions, as required by dask
         ind_arr1 = np.array(self.cat1.index)
         ind_arr2 = np.array(self.cat2.index)

@@ -77,8 +77,7 @@ class MatchedCatalog(Catalog):
         self._match_dist = None
         self._match_inds1 = None
         self._match_inds2 = None
-        self._bad_inds1 = None
-        self._bad_inds2 = None
+        self._bad_inds = None
 
     @property
     def coords(self):
@@ -98,8 +97,7 @@ class MatchedCatalog(Catalog):
         self._match_inds1 = ind_arr1[good]
         self._match_inds2 = ind_arr2[inds[good]]
         self._match_dist = dist[good]
-        self._bad_inds1 = ind_arr1[~good]
-        self._bad_inds2 = ind_arr2[inds[~good]]
+        self._bad_inds = ind_arr1[~good]
 
     @property
     def match_dist(self):

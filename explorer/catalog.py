@@ -37,7 +37,7 @@ class Catalog(object):
             df = df.drop('dir0', axis=1)
 
         self._coords = (df*180 / np.pi).rename(columns={'coord_ra':'ra',
-                                                        'coord_dec':'dec'}).compute()
+                                                        'coord_dec':'dec'})
 
     @property
     def df_all(self):

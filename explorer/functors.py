@@ -45,7 +45,9 @@ class Functor(object):
         elif isinstance(catalog, MatchedCatalog):
             df1, df2 = catalog.get_columns(self.columns, query=query)
             if self.allow_difference:
-                vals = self._func(df1) - self._func(df2)
+                id1 = catalog.match_inds1
+                id2 = catalog.match_inds2
+                vals = self._func(df1).loc[id1].values - self._func(df2).loc[id2].values
             else:
                 vals = self._func(df1)
         else:

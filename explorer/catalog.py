@@ -122,8 +122,8 @@ class MatchedCatalog(Catalog):
     def get_columns(self, *args, **kwargs):
 
         # Return columns in row-matched order
-        df1 = self.cat1.get_columns(*args, **kwargs).loc[self.match_inds1]
-        df2 = self.cat2.get_columns(*args, **kwargs).loc[self.match_inds2]
+        df1 = self.cat1.get_columns(*args, **kwargs)
+        df2 = self.cat2.get_columns(*args, **kwargs)
         # df2.set_index(dd.Series(df1.index))
 
         return df1, df2

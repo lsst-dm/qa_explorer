@@ -74,7 +74,7 @@ class MatchedCatalog(Catalog):
 
         self._coords = None
 
-        self._match_dist = None
+        self._match_distance = None
         self._match_inds1 = None
         self._match_inds2 = None
         self._bad_inds = None
@@ -98,14 +98,14 @@ class MatchedCatalog(Catalog):
         # Save indices as labels, not positions, as required by dask
         self._match_inds1 = id1[good]
         self._match_inds2 = id2[inds[good]]
-        self._match_dist = dist[good]
+        self._match_distance = pd.Series(dist[good] * 3600, index=id1[good])
         self._bad_inds = id1[~good]
 
     @property
-    def match_dist(self):
-        if self._match_dist is None:
+    def match_distance(self):
+        if self._match_distance is None:
             self._match_cats()
-        return self._match_dist
+        return self._match_distance
 
     @property
     def match_inds1(self):

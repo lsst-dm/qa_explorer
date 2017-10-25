@@ -74,12 +74,20 @@ class filterpoints(Operation):
         Dictionary of filter bounds.""")
     xdim = param.String(default='x')
     ydim = param.String(default='y')
+    set_title = param.Boolean(default=True)
 
     def _process(self, dset, key=None):
         dset = filter_dset(dset, filter_range=self.p.filter_range)
         kdims = [dset.get_dimension(self.p.xdim), dset.get_dimension(self.p.ydim)]
         vdims = [dim for dim in dset.dimensions() if dim.name not in kdims]
-        return hv.Points(dset, kdims=kdims, vdims=vdims)
+        pts = hv.Points(dset, kdims=kdims, vdims=vdims)
+        if self.p.set_title:
+            ydata = dset.data[self.p.ydim]
+            title = 'mean = {:.3f}, std = {:.3f} ({:.0f})'.format(ydata.mean(),
+                                                                  ydata.std(),
+                                                                  len(ydata))
+            pts = pts.relabel(title)
+        return pts
     
 
 def notify_stream(bounds, filter_stream, xdim, ydim):
@@ -129,9 +137,9 @@ class scattersky(ParameterizedFunction):
                            norm=dict(axiswise=True))
         scatter_shaded = datashade(scatter_pts, cmap=cc.palette[self.p.scatter_cmap])
         scatter = dynspread(scatter_shaded).opts(**scatter_opts)
-        
+
         # Set up sky plot
-        sky_filterpoints = filterpoints.instance(xdim='ra', ydim='dec')
+        sky_filterpoints = filterpoints.instance(xdim='ra', ydim='dec', set_title=False)
         sky_pts = hv.util.Dynamic(dset, operation=sky_filterpoints,
                                   streams=[self.p.filter_stream])
         sky_opts = dict(plot={'height':self.p.height, 'width':self.p.height,

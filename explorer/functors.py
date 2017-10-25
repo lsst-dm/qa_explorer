@@ -115,7 +115,7 @@ class CompositeFunctor(Functor):
         return [x for y in [f.columns for f in self.funcDict.values()] for x in y]
 
     def __call__(self, catalog, dask=False, **kwargs):
-        df = pd.DataFrame({k : f(catalog, dask=dask, **kwargs) 
+        df = pd.DataFrame({k : f(catalog, dask=dask, dropna=False, **kwargs) 
                             for k,f in self.funcDict.items()})
         if dask:
             return dd.from_pandas(df, chunksize=1000000)

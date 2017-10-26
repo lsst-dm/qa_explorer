@@ -81,6 +81,7 @@ class filterpoints(Operation):
         kdims = [dset.get_dimension(self.p.xdim), dset.get_dimension(self.p.ydim)]
         vdims = [dim for dim in dset.dimensions() if dim.name not in kdims]
         pts = hv.Points(dset, kdims=kdims, vdims=vdims)
+        return pts
         if self.p.set_title:
             ydata = dset.data[self.p.ydim]
             title = 'mean = {:.3f}, std = {:.3f} ({:.0f})'.format(ydata.mean(),

@@ -56,6 +56,7 @@ class QADataset(object):
             self._make_df()
         return self._df
 
+    @property
     def is_matched(self):
         return isinstance(self.catalog, MatchedCatalog)
 

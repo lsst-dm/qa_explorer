@@ -65,6 +65,7 @@ class QADataset(object):
         df = f(self.catalog, query=self.query, **kwargs)
         if self.is_matched:
             df['match_distance'] = self.catalog.match_distance
+        df = df.dropna(how='any')
         self._df = df        
 
     @property

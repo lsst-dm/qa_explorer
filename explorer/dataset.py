@@ -60,9 +60,9 @@ class QADataset(object):
     def is_matched(self):
         return isinstance(self.catalog, MatchedCatalog)
 
-    def _make_df(self):
+    def _make_df(self, **kwargs):
         f = CompositeFunctor(self.allfuncs)
-        df = f(self.catalog, query=self.query)
+        df = f(self.catalog, query=self.query, **kwargs)
         if self.is_matched:
             df['match_distance'] = self.catalog.match_distance
         self._df = df        

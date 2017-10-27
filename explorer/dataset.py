@@ -75,9 +75,18 @@ class QADataset(object):
         return self._ds
 
     def _make_ds(self):
-        dims = [hv.Dimension(k, label=v.name) for k,v in self.allfuncs.items()]
+        kdims = ['ra', 'dec', hv.Dimension('x', label=self.xFunc.name)]
+        vdims = []
+        for k,v in self.allfuncs.items():
+            if k in ('ra', 'dec', 'x'):
+                continue
+            label = v.name
+            if v.allow_difference and self.is_matched:
+                label = 'diff({})'.format(label)
+            vdims.append(hv.Dimension(k, label=label))
+
         if self.is_matched:
-            dims += [hv.Dimension('match_distance', label='Match Distance [arcsec]')]
-        ds = hv.Dataset(self.df, kdims=dims)
+            vdims += [hv.Dimension('match_distance', label='Match Distance [arcsec]')]
+        ds = hv.Dataset(self.df, kdims=kdims, vdims=vdims)
         self._ds = ds        
 

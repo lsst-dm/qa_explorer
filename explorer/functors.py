@@ -114,10 +114,7 @@ class CompositeFunctor(Functor):
     def columns(self):
         return [x for y in [f.columns for f in self.funcDict.values()] for x in y]
 
-    def __call__(self, catalog, dask=False, **kwargs):
-        if isinstance(catalog, MatchedCatalog):
-            kwargs.update(dropna=True)
-        
+    def __call__(self, catalog, dask=False, **kwargs):        
         df = pd.DataFrame({k : f(catalog, dask=dask, **kwargs) 
                             for k,f in self.funcDict.items()})
         if dask:

@@ -75,10 +75,10 @@ class QADataset(object):
         return self._ds
 
     def _make_ds(self):
-        kdims = ['ra', 'dec', hv.Dimension('x', label=self.xFunc.name)]
+        kdims = ['ra', 'dec', hv.Dimension('x', label=self.xFunc.name), 'label']
         vdims = []
         for k,v in self.allfuncs.items():
-            if k in ('ra', 'dec', 'x'):
+            if k in ('ra', 'dec', 'x', 'label'):
                 continue
             label = v.name
             if v.allow_difference and self.is_matched:

@@ -182,7 +182,7 @@ class ParquetCatalog(Catalog):
         else:
             return self._df
 
-    def get_columns(self, columns, query=None, use_cache=False, add_flags=True):
+    def get_columns(self, columns, query=None, use_cache=False, add_flags=False):
         
         if use_cache and False:
             if self._df is None:

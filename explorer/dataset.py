@@ -7,10 +7,16 @@ from .functors import StarGalaxyLabeller
 from .catalog import MatchedCatalog
 
 class QADataset(object):
-    def __init__(self, catalog, funcs, xFunc=Mag('base_PsfFlux', allow_difference=False), 
+    def __init__(self, catalog, funcs, flags=None, 
+                 xFunc=Mag('base_PsfFlux', allow_difference=False), 
                  labeller=StarGalaxyLabeller(),
                  query=None):
         self.catalog = catalog
+
+        if flags is None:
+            self.flags = []
+        else:
+            self.flags = flags # TODO: check to make sure flags are valid            
 
         if isinstance(funcs, list) or isinstance(funcs, tuple):
             self.funcs = {'y{}'.format(i):f for i,f in enumerate(funcs)}
@@ -66,6 +72,10 @@ class QADataset(object):
         if self.is_matched:
             df['match_distance'] = self.catalog.match_distance
         df = df.dropna(how='any')
+        ids = df.index
+
+        flags = self.catalog.get_columns(self.flags).compute().loc[ids]
+        df = df.join(flags)
         self._df = df        
 
     @property
@@ -76,6 +86,7 @@ class QADataset(object):
 
     def _make_ds(self):
         kdims = ['ra', 'dec', hv.Dimension('x', label=self.xFunc.name), 'label']
+        kdims += self.flags
         vdims = []
         for k,v in self.allfuncs.items():
             if k in ('ra', 'dec', 'x', 'label'):

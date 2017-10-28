@@ -46,6 +46,8 @@ class FilterStream(Stream):
     """
 
     filter_range = param.Dict(default={})
+    flags = param.List(default=[], doc="""
+        Flags to select.""")
     
 class ResetCallback(Callback):
 
@@ -61,10 +63,14 @@ Stream._callbacks['bokeh'][Reset] = ResetCallback
 class filter_dset(Operation):
     filter_range = param.Dict(default={}, doc="""
         Dictionary of filter bounds.""")
+    flags = param.List(default=[], doc="""
+        Flags to select.""")
 
     def _process(self, dset, key=None):
+        filter_dict = self.p.filter_range.copy()
+        filter_dict.update({f:True for f in self.p.flags})
         if self.p.filter_range is not None:
-            dset = dset.select(**self.p.filter_range)
+            dset = dset.select(**filter_dict)
         return dset
 
 # Define Operation that filters based on FilterStream state (which provides the filter_range)
@@ -72,12 +78,14 @@ class filterpoints(Operation):
 
     filter_range = param.Dict(default={}, doc="""
         Dictionary of filter bounds.""")
+    flags = param.List(default=[], doc="""
+        Flags to select.""")
     xdim = param.String(default='x')
     ydim = param.String(default='y')
     set_title = param.Boolean(default=True)
 
     def _process(self, dset, key=None):
-        dset = filter_dset(dset, filter_range=self.p.filter_range)
+        dset = filter_dset(dset, flags=self.p.flags, filter_range=self.p.filter_range)
         kdims = [dset.get_dimension(self.p.xdim), dset.get_dimension(self.p.ydim)]
         vdims = [dim for dim in dset.dimensions() if dim.name not in kdims]
         pts = hv.Points(dset, kdims=kdims, vdims=vdims)
@@ -181,8 +189,9 @@ class multi_scattersky(ParameterizedFunction):
     
     def _get_ydims(self, dset):
         # Get dimensions from first Dataset type found in input
-        return [dim.name for dim in dset.traverse(lambda x: x, [hv.Dataset])[0].dimensions()
-                if dim.name not in self.p.ignored_dimensions]
+        return [dim.name for dim in dset.traverse(lambda x: x, [hv.Dataset])[0].vdims]
+        # return [dim.name for dim in dset.traverse(lambda x: x, [hv.Dataset])[0].dimensions()
+        #         if dim.name not in self.p.ignored_dimensions]
     
     def __call__(self, dset, **params):
         self.p = param.ParamOverrides(self, params)

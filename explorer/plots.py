@@ -25,6 +25,17 @@ class FilterStream(Stream):
     filter_range = param.Dict(default={})
     flags = param.List(default=[], doc="""
         Flags to select.""")
+
+class FlagSetter(Stream):
+    flags = param.ListSelector(default=[], objects=[])
+    
+    def __init__(self, filter_stream, **kwargs):
+        super(FlagSetter, self).__init__(**kwargs)
+        self.filter_stream = filter_stream
+    
+    def event(self, **kwargs):
+        self.filter_stream.event(**kwargs)
+        
     
 class ResetCallback(Callback):
 
@@ -155,7 +166,7 @@ class scattersky(ParameterizedFunction):
         # Set up summary table
         table = hv.util.Dynamic(dset, operation=summary_table.instance(ydim=self.p.ydim),
                                 streams=[self.p.filter_stream])
-        table = table.opts(plot={'width':120})
+        table = table.opts(plot={'width':200})
 
         # Set up BoundsXY streams to listen to box_select events and notify FilterStream
         scatter_select = BoundsXY(source=scatter)

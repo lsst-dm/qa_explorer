@@ -32,12 +32,20 @@ class FlagSetter(Stream):
     flags = param.ListSelector(default=[], objects=[])
     bad_flags = param.ListSelector(default=[], doc="""
         Flags to ignore""")
+    xdim = param.String(default='x')
+    x_range = param.Range(default=(10,25), softbounds=(0, 30))
 
     def __init__(self, filter_stream, **kwargs):
         super(FlagSetter, self).__init__(**kwargs)
         self.filter_stream = filter_stream
     
     def event(self, **kwargs):
+        if 'x_range' in kwargs:
+            x_range = kwargs.pop('x_range')
+            if 'filter_range' not in kwargs:
+                kwargs['filter_range'] = {}
+            kwargs['filter_range'].update(**{self.p.xdim:x_range})
+
         self.filter_stream.event(**kwargs)
         
     

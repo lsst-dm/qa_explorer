@@ -25,10 +25,14 @@ class FilterStream(Stream):
     filter_range = param.Dict(default={})
     flags = param.List(default=[], doc="""
         Flags to select.""")
+    bad_flags = param.List(default=[], doc="""
+        Flags to ignore""")
 
 class FlagSetter(Stream):
     flags = param.ListSelector(default=[], objects=[])
-    
+    bad_flags = param.ListSelector(default=[], doc="""
+        Flags to ignore""")
+
     def __init__(self, filter_stream, **kwargs):
         super(FlagSetter, self).__init__(**kwargs)
         self.filter_stream = filter_stream
@@ -53,10 +57,13 @@ class filter_dset(Operation):
         Dictionary of filter bounds.""")
     flags = param.List(default=[], doc="""
         Flags to select.""")
+    bad_flags = param.List(default=[], doc="""
+        Flags to ignore""")
 
     def _process(self, dset, key=None):
         filter_dict = self.p.filter_range.copy()
         filter_dict.update({f:True for f in self.p.flags})
+        filter_dict.update({f:False for f in self.p.bad_flags})
         if self.p.filter_range is not None:
             dset = dset.select(**filter_dict)
         return dset
@@ -68,12 +75,15 @@ class filterpoints(Operation):
         Dictionary of filter bounds.""")
     flags = param.List(default=[], doc="""
         Flags to select.""")
+    bad_flags = param.List(default=[], doc="""
+        Flags to ignore""")
     xdim = param.String(default='x')
     ydim = param.String(default='y')
     set_title = param.Boolean(default=True)
 
     def _process(self, dset, key=None):
-        dset = filter_dset(dset, flags=self.p.flags, filter_range=self.p.filter_range)
+        dset = filter_dset(dset, flags=self.p.flags, bad_flags=self.p.bad_flags, 
+                            filter_range=self.p.filter_range)
         kdims = [dset.get_dimension(self.p.xdim), dset.get_dimension(self.p.ydim)]
         vdims = [dim for dim in dset.dimensions() if dim.name not in kdims]
         pts = hv.Points(dset, kdims=kdims, vdims=vdims)
@@ -92,9 +102,12 @@ class summary_table(Operation):
         Dictionary of filter bounds.""")
     flags = param.List(default=[], doc="""
         Flags to select.""")
+    bad_flags = param.List(default=[], doc="""
+        Flags to ignore""")
 
     def _process(self, dset, key=None):
-        ds = filter_dset(dset, filter_range=self.p.filter_range, flags=self.p.flags)
+        ds = filter_dset(dset, filter_range=self.p.filter_range, 
+                        flags=self.p.flags, bad_flags=self.p.bad_flags)
         if self.p.ydim is None:
             cols = [dim.name for dim in dset.vdims]
         else:

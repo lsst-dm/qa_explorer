@@ -74,7 +74,11 @@ class QADataset(object):
         df = df.dropna(how='any')
         ids = df.index
 
-        flags = self.catalog.get_columns(self.flags).compute().loc[ids]
+        if self.is_matched:
+            flags, _ = self.catalog.get_columns(self.flags)
+        else:
+            flags = self.catalog.get_columns(self.flags)
+        flags = flags.compute().loc[ids]
         df = df.join(flags)
         self._df = df        
 

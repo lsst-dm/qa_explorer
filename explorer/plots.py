@@ -75,6 +75,22 @@ class filterpoints(Operation):
         return pts
     
 
+class summary_table(Operation):
+    ydim = param.String(default=None)
+    filter_range = param.Dict(default={}, doc="""
+        Dictionary of filter bounds.""")
+    flags = param.List(default=[], doc="""
+        Flags to select.""")
+
+    def _process(self, dset, key=None):
+        ds = filter_dset(dset, filter_range=self.p.filter_range, flags=self.p.flags)
+        if self.p.ydim is None:
+            cols = [dim.name for dim in dset.vdims]
+        else:
+            cols = [self.p.ydim]
+        df = ds.data[cols]
+        return hv.Table(df.describe().loc[['count', 'mean', 'std']])
+
 def notify_stream(bounds, filter_stream, xdim, ydim):
     """
     Function to attach to bounds stream as subscriber to notify FilterStream.
@@ -135,6 +151,12 @@ class scattersky(ParameterizedFunction):
                                width=self.p.width)
         sky = dynspread(sky_shaded).opts(**sky_opts)
         
+
+        # Set up summary table
+        table = hv.util.Dynamic(dset, operation=summary_table.instance(ydim=self.p.ydim),
+                                streams=[self.p.filter_stream])
+        table = table.opts(plot={'width':120})
+
         # Set up BoundsXY streams to listen to box_select events and notify FilterStream
         scatter_select = BoundsXY(source=scatter)
         scatter_notifier = partial(notify_stream, filter_stream=self.p.filter_stream,
@@ -153,10 +175,10 @@ class scattersky(ParameterizedFunction):
         raw_scatter = datashade(scatter_filterpoints(dset), cmap=Greys9[::-1][:5])
         if self.p.show_rawsky:
             raw_sky = datashade(sky_filterpoints(dset), cmap=Greys9[::-1][:5])
-            return raw_scatter*scatter + raw_sky*sky
+            return table + raw_scatter*scatter + raw_sky*sky
 
         else:
-            return raw_scatter*scatter + sky
+            return table + raw_scatter*scatter + sky
 
 class multi_scattersky(ParameterizedFunction):
     
@@ -174,4 +196,4 @@ class multi_scattersky(ParameterizedFunction):
         self.p = param.ParamOverrides(self, params)
         return hv.Layout([scattersky(dset, filter_stream=self.p.filter_stream,
                                   ydim=ydim) 
-                       for ydim in self._get_ydims(dset)]).cols(2)
+                       for ydim in self._get_ydims(dset)]).cols(3)

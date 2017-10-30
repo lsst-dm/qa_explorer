@@ -16,29 +16,6 @@ from holoviews.operation.datashader import datashade, dynspread
 
 from bokeh.palettes import Greys9
 
-class filterpoints(hv.Operation):
-
-    groupby = param.Parameter(default=None, doc="""
-        Groupby argument to pass to Points creation.""")
-
-    filter_range = param.Parameter(default={}, doc="""
-        Dictionary of filter bounds.""")
-
-    xdim = param.String(default='x')
-    ydim = param.String(default='y')
-
-    def _process(self, dset, key=None):
-
-        if self.p.filter_range is not None:
-            dset = dset.select(**self.p.filter_range)
-
-        vdims = [dim for dim in dset.dimensions() if dim.name not in [self.p.xdim, self.p.ydim]]
-        pts = dset.to(hv.Points, kdims=[self.p.xdim, self.p.ydim], 
-                        vdims=vdims, 
-                        groupby=self.p.groupby)
-
-        return pts
-
 # Define Stream class that stores filters for various Dimensions 
 class FilterStream(Stream):
     """

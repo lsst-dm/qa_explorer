@@ -148,7 +148,7 @@ class MultiMatchedCatalog(MatchedCatalog):
         return self.coadd_cat
 
     def match(self):
-        [c.match for c in self.subcats]
+        [c.match() for c in self.subcats]
 
     def get_columns(self, *args, **kwargs):
         """Returns list of dataframes: df1, then N x other dfs

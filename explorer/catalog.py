@@ -83,6 +83,9 @@ class MatchedCatalog(Catalog):
     def coords(self):
         return self.cat1.coords
 
+    def match(self):
+        return self._match_cats()
+
     def _match_cats(self):
         ra1, dec1 = self.cat1.ra, self.cat1.dec
         ra2, dec2 = self.cat2.ra, self.cat2.dec

@@ -10,7 +10,7 @@ import dask.array as da
 import dask
 import time
 
-from .catalog import Catalog, MatchedCatalog
+from .catalog import Catalog, MatchedCatalog, MultiMatchedCatalog
 
 class Functor(object):
     """Performs computation on catalog(s), read from disk
@@ -37,7 +37,7 @@ class Functor(object):
     def _func(self, df, dropna=True):
         raise NotImplementedError('Must define calculation on dataframe')
 
-    def __call__(self, catalog, query=None, dropna=True, dask=False):
+    def __call__(self, catalog, query=None, dropna=True, dask=False, flags=None):
 
         if isinstance(catalog, dd.DataFrame):
             vals = self._func(catalog)
@@ -45,10 +45,12 @@ class Functor(object):
         elif isinstance(catalog, MatchedCatalog):
             df1, df2 = catalog.get_columns(self.columns, query=query)
             if self.allow_difference:
-                id1 = catalog.match_inds1
-                id2 = catalog.match_inds2
-                vals = pd.Series((self._func(df1).compute().loc[id1].values - 
-                                  self._func(df2).compute().loc[id2].values), index=id1)
+                id1, id2 = catalog.match_inds
+                if isinstance(catalog, MultiMatchedCatalog):
+                    raise NotImplementedError
+                else:
+                    vals = pd.Series((self._func(df1).compute().loc[id1].values - 
+                                      self._func(df2).compute().loc[id2].values), index=id1)
             else:
                 vals = self._func(df1)
         else:

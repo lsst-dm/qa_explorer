@@ -148,7 +148,11 @@ class MultiMatchedCatalog(MatchedCatalog):
         return self.coadd_cat
 
     def match(self):
-        [c.match() for c in self.subcats]
+        for i,c in enumerate(self.subcats):
+            try:
+                c.match()
+            except:
+                logging.warning('Skipping catalog {}.'.format(i))
 
     def get_columns(self, *args, **kwargs):
         """Returns list of dataframes: df1, then N x other dfs

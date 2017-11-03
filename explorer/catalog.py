@@ -122,15 +122,39 @@ class MatchedCatalog(Catalog):
             self._match_cats()
         return self._match_inds2
 
+    @property
+    def match_inds(self):
+        return self.match_inds1, self.match_inds2
+
     def get_columns(self, *args, **kwargs):
 
-        # Return columns in row-matched order
         df1 = self.cat1.get_columns(*args, **kwargs)
         df2 = self.cat2.get_columns(*args, **kwargs)
         # df2.set_index(dd.Series(df1.index))
 
         return df1, df2
 
+class MultiMatchedCatalog(MatchedCatalog):
+    def __init__(self, coadd_cat, visit_cats, match_radius=0.5, client=None):
+        self.coadd_cat = coadd_cat
+        self.visit_cats = visit_cats
+        self.match_radius = match_radius
+        self.client = client
+
+        self.subcats = [MatchedCatalog(self.coadd_cat, v) for v in visit_cats]
+
+    @property
+    def cat1(self):
+        return self.coadd_cat
+
+    def match(self):
+        [c.match for c in self.subcats]
+
+    def get_columns(self, *args, **kwargs):
+        """Returns list of dataframes: df1, then N x other dfs
+        """
+        df1 = self.coadd_cat.get_columns(*args, **kwargs)
+        return (df1,) + (c.get_columns(*args, **kwargs) for c in self.visit_cats)
 
 class ParquetCatalog(Catalog):
     def __init__(self, filenames, client=None):

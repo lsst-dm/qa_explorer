@@ -7,6 +7,6 @@ def get_visits(field, tract, filt, sqlitedir='/scratch/hchiang2/parejko/'):
         cmd = "select distinct visit from calexp where tract=:tract and filter=:filt"
         cursor.execute(cmd, dict(tract=tract, filt=filt))
         result = cursor.fetchall()
-    return [str(x[0]) for x in result]
+    return [x[0] for x in result]
     # return '^'.join(str(x[0]) for x in result)
 

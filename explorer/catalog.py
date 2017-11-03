@@ -158,7 +158,7 @@ class MultiMatchedCatalog(MatchedCatalog):
         """Returns list of dataframes: df1, then N x other dfs
         """
         df1 = self.coadd_cat.get_columns(*args, **kwargs)
-        return (df1,) + (c.get_columns(*args, **kwargs) for c in self.visit_cats)
+        return (df1,) + tuple([c.get_columns(*args, **kwargs) for c in self.visit_cats])
 
 class ParquetCatalog(Catalog):
     def __init__(self, filenames, client=None):

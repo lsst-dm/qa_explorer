@@ -137,11 +137,20 @@ class MatchedCatalog(Catalog):
 class MultiMatchedCatalog(MatchedCatalog):
     def __init__(self, coadd_cat, visit_cats, match_radius=0.5, client=None):
         self.coadd_cat = coadd_cat
-        self.visit_cats = visit_cats
+        # Test each visit cat
+        good_visit_cats = []
+        for v in visit_cats:
+            try:
+                v.columns
+                good_visit_cats.append(v)
+            except:
+                continue
+
+        self.visit_cats = good_visit_cats
         self.match_radius = match_radius
         self.client = client
 
-        self.subcats = [MatchedCatalog(self.coadd_cat, v) for v in visit_cats]
+        self.subcats = [MatchedCatalog(self.coadd_cat, v) for v in self.visit_cats]
 
     @property
     def cat1(self):

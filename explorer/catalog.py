@@ -169,6 +169,14 @@ class MultiMatchedCatalog(MatchedCatalog):
         df1 = self.coadd_cat.get_columns(*args, **kwargs)
         return df1, tuple(c.get_columns(*args, **kwargs) for c in self.visit_cats)
 
+    @property
+    def match_inds(self):
+        ind2s = []
+        for c in self.subcats:
+            ind1, ind2 = c.match_inds
+            ind2s.append(ind2)
+        return tuple([ind1] + ind2s)
+
 class ParquetCatalog(Catalog):
     def __init__(self, filenames, client=None):
         if type(filenames) not in [list, tuple]:

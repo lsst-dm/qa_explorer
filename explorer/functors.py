@@ -37,18 +37,20 @@ class Functor(object):
     def _func(self, df, dropna=True):
         raise NotImplementedError('Must define calculation on dataframe')
 
-    def __call__(self, catalog, query=None, dropna=True, dask=False, flags=None):
+    def __call__(self, catalog, query=None, dropna=True, dask=False, flags=None,
+                how='mean'):
 
         if isinstance(catalog, dd.DataFrame):
             vals = self._func(catalog)
 
         elif isinstance(catalog, MatchedCatalog):
-            df1, df2 = catalog.get_columns(self.columns, query=query)
             if self.allow_difference:
-                id1, id2 = catalog.match_inds
                 if isinstance(catalog, MultiMatchedCatalog):
+                    
                     raise NotImplementedError
                 else:
+                    id1, id2 = catalog.match_inds
+                    df1, df2 = catalog.get_columns(self.columns, query=query)
                     vals = pd.Series((self._func(df1).compute().loc[id1].values - 
                                       self._func(df2).compute().loc[id2].values), index=id1)
             else:

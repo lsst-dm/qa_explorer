@@ -102,7 +102,7 @@ class MatchedCatalog(Catalog):
 
         good = np.isfinite(dist)
 
-        print('{0} good matches, {1} bad.'.format(good.sum(), (~good).sum()))
+        print('{0} matched within {} arcsec, {1} did not.'.format(good.sum(), self.match_radius, (~good).sum()))
 
         # Save indices as labels, not positions, as required by dask
         self._match_inds1 = id1[good]
@@ -202,8 +202,8 @@ class MultiMatchedCatalog(MatchedCatalog):
     def _apply_func(self, func, query=None, how='stats'):
         coadd_vals = self.coadd_cat._apply_func(func, query=query)
         visit_vals = [c._apply_func(func, query=query, how='second') for c in self.subcats]
-        aligned_vals = [coadd_vals.align(v)[1] for v in visit_vals]
-        val_df = pd.DataFrame(pd.concat(aligned_vals, axis=1))
+        aligned_vals = [coadd_vals.align(v)[1].compute() for v in visit_vals]
+        val_df = pd.concat(aligned_vals, axis=1)
         if how=='all':
             return val_df
         elif how=='stats':

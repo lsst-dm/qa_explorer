@@ -59,9 +59,9 @@ class Functor(object):
                     elif how=='sum':
                         vals = pd.Series(v1 + v2, index=id1)
                     elif how=='second':
-                        vals = v2
+                        vals = pd.Series(v2, index=id1)
                     elif how=='first':
-                        vals = v1
+                        vals = pd.Series(v1, index=id1)
             else:
                 vals = self._func(df1)
         else:

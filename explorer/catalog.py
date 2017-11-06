@@ -140,7 +140,7 @@ class MatchedCatalog(Catalog):
 
         return df1, df2
 
-    def _apply_func(self, func, query=None):
+    def _apply_func(self, func, query=None, how='difference'):
         if func.allow_difference:
             id1, id2 = self.match_inds
             df1, df2 = self.get_columns(func.columns, query=query)

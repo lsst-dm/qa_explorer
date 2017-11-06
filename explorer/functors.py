@@ -37,13 +37,12 @@ class Functor(object):
     def _func(self, df, dropna=True):
         raise NotImplementedError('Must define calculation on dataframe')
 
-    def __call__(self, catalog, query=None, dropna=True, dask=False, flags=None,
-                how='difference'):
+    def __call__(self, catalog, query=None, dropna=True, dask=False, flags=None, **kwargs):
 
         if isinstance(catalog, dd.DataFrame):
             vals = self._func(catalog)
         else:
-            vals = catalog._apply_func(self, query=query)
+            vals = catalog._apply_func(self, query=query, **kwargs)
 
         if dropna:
             try:

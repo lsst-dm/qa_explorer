@@ -42,31 +42,8 @@ class Functor(object):
 
         if isinstance(catalog, dd.DataFrame):
             vals = self._func(catalog)
-
-        elif isinstance(catalog, MatchedCatalog):
-            if self.allow_difference:
-                if isinstance(catalog, MultiMatchedCatalog):
-                    df1, df2s = catalog.get_columns(self.columns, query=query)
-
-                    raise NotImplementedError
-                else:
-                    id1, id2 = catalog.match_inds
-                    df1, df2 = catalog.get_columns(self.columns, query=query)
-                    v1 = self._func(df1).compute().loc[id1].values
-                    v2 = self._func(df2).compute().loc[id2].values
-                    if how=='difference':
-                        vals = pd.Series(v1 - v2, index=id1)
-                    elif how=='sum':
-                        vals = pd.Series(v1 + v2, index=id1)
-                    elif how=='second':
-                        vals = pd.Series(v2, index=id1)
-                    elif how=='first':
-                        vals = pd.Series(v1, index=id1)
-            else:
-                vals = self._func(df1)
         else:
-            df = catalog.get_columns(self.columns, query=query)
-            vals = self._func(df)
+            vals = catalog._apply_func(self, query=query)
 
         if dropna:
             try:

@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import dask.dataframe as dd
+import dask.array as da
 from distributed import Future
 import fastparquet
 import glob, re
@@ -60,6 +61,11 @@ class Catalog(object):
     @property
     def index(self):
         return self.coords.index
+
+    def _apply_func(self, func, query=None):
+        df = self.get_columns(func.columns, query=query)
+        vals = func._func(df)
+        return vals
 
 class MatchedCatalog(Catalog):
     def __init__(self, cat1, cat2, match_radius=0.5, tags=None, client=None):
@@ -134,6 +140,26 @@ class MatchedCatalog(Catalog):
 
         return df1, df2
 
+    def _apply_func(self, func, query=None):
+        if func.allow_difference:
+            id1, id2 = self.match_inds
+            df1, df2 = self.get_columns(func.columns, query=query)
+            v1 = func._func(df1).compute().loc[id1].values
+            v2 = func._func(df2).compute().loc[id2].values
+            if how=='difference':
+                vals = pd.Series(v1 - v2, index=id1)
+            elif how=='sum':
+                vals = pd.Series(v1 + v2, index=id1)
+            elif how=='second':
+                vals = pd.Series(v2, index=id1)
+            elif how=='first':
+                vals = pd.Series(v1, index=id1)
+        else:
+            vals = func._func(df1)
+
+        return vals
+
+
 class MultiMatchedCatalog(MatchedCatalog):
     def __init__(self, coadd_cat, visit_cats, match_radius=0.5, client=None):
         self.coadd_cat = coadd_cat
@@ -171,11 +197,7 @@ class MultiMatchedCatalog(MatchedCatalog):
 
     @property
     def match_inds(self):
-        ind2s = []
-        for c in self.subcats:
-            ind1, ind2 = c.match_inds
-            ind2s.append(ind2)
-        return tuple([ind1] + ind2s)
+        return [c.match_inds for c in self.subcats]
 
 class ParquetCatalog(Catalog):
     def __init__(self, filenames, client=None):

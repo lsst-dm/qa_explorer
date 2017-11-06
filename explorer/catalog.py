@@ -199,6 +199,22 @@ class MultiMatchedCatalog(MatchedCatalog):
     def match_inds(self):
         return [c.match_inds for c in self.subcats]
 
+    def _apply_func(self, func, query=None, how='stats'):
+        coadd_vals = self.coadd_cat._apply_func(func, query=query)
+        visit_vals = [c._apply_func(func, query=query, how='second') for c in self.subcats]
+        aligned_vals = [coadd_vals.align(v)[1] for v in visit_vals]
+        val_df = pd.DataFrame(pd.concat(aligned_vals, axis=1))
+        if how=='all':
+            return val_df
+        elif how=='stats':
+            return pd.DataFrame({'mean':val_df.mean(axis=1),
+                                 'std':val_df.std(axis=1),
+                                 'count':val_df.count(axis=1)})
+        elif how=='mean':
+            return val_df.mean(axis=1)
+        elif how=='std':
+            return val_df.std(axis=1)
+
 class ParquetCatalog(Catalog):
     def __init__(self, filenames, client=None):
         if type(filenames) not in [list, tuple]:

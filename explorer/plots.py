@@ -274,4 +274,21 @@ class skyplot(Operation):
         return dynspread(sky_shaded) * decimated
 
 class skyplot_layout(ParameterizedFunction):
+    crosshair = param.Boolean(default=True)
 
+    def __call__(self, skyplots, cols=None, **params):
+        self.p = param.ParamOverrides(self, params)
+        
+        pointer = hv.streams.PointerXY(x=0, y=0)
+        cross_opts = dict(style={'line_width':1, 'color':'black'})
+        cross_dmap = hv.DynamicMap(lambda x, y: (hv.VLine(x).opts(**cross_opts) * 
+                                                 hv.HLine(y).opts(**cross_opts)), streams=[pointer])    
+        
+        plots = []
+        for s in skyplots:
+            if self.p.crosshair:
+                plots.append(s*cross_dmap)
+            else:
+                plots.append(s)
+                
+        return hv.Layout(plots)

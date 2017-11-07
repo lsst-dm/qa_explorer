@@ -228,3 +228,38 @@ class multi_scattersky(ParameterizedFunction):
         return hv.Layout([scattersky(dset, filter_stream=self.p.filter_stream,
                                   ydim=ydim) 
                        for ydim in self._get_ydims(dset)]).cols(3)
+
+
+class skyplot(Operation):
+    """Pass pts with ra,dec as kdims
+    """
+    cmap = param.String(default='coolwarm')
+    aggregator = param.ObjectSelector(default='mean', objects=['mean', 'std', 'count'])
+    vdim = param.String(default=None)
+    width = param.Number(default=None)
+    height = param.Number(default=None)
+    streams = param.List(default=None)
+    sampling = param.Number(default=None)
+    
+    def _process(self, dset, key=None):
+        if self.p.vdim is None:
+            vdim = dset.vdims[0].name
+        else:
+            vdim = self.p.vdim
+        pts = hv.Points(dset, kdims=['ra', 'dec'], vdims=[vdim])
+        
+        if self.p.aggregator == 'mean':
+            aggregator = ds.mean(vdim)
+        elif self.p.aggregator == 'std':
+            aggregator = ds.std(vdim)
+        elif self.p.aggregator == 'count':
+            aggregator = ds.count()
+        
+        kwargs = dict(cmap=cc.palette[self.p.cmap],
+                      aggregator=aggregator)
+        if self.p.width is not None:
+            kwargs.update(width=self.p.width, height=self.p.height,
+                         streams=[hv.streams.RangeXY])
+            
+        sky_shaded = datashade(pts, **kwargs)
+        return dynspread(sky_shaded)

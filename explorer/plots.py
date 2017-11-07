@@ -246,7 +246,7 @@ class skyplot(Operation):
             vdim = dset.vdims[0].name
         else:
             vdim = self.p.vdim
-        pts = hv.Points(dset, kdims=['ra', 'dec'], vdims=[vdim])
+        pts = hv.Points(dset, kdims=['ra', 'dec'], vdims=[vdim, 'label'])
         
         if self.p.aggregator == 'mean':
             aggregator = ds.mean(vdim)

@@ -5,7 +5,9 @@ import dask.array as da
 from distributed import Future
 import fastparquet
 import glob, re
+import random
 import logging
+
 
 from .match import match_lists
 from .functors import Labeller
@@ -13,10 +15,10 @@ from .functors import Labeller
 class Catalog(object):
     index_column = 'id'
 
-    def __init__(self, data):
+    def __init__(self, data, name=None):
         self.data
         self.columns = data.columns
-
+        self.name = name
         self._coords = None
 
     def _sanitize_columns(self, columns):
@@ -237,17 +239,23 @@ class MultiMatchedCatalog(MatchedCatalog):
         return self._match_distance
 
 class ParquetCatalog(Catalog):
-    def __init__(self, filenames, client=None):
+    def __init__(self, filenames, client=None, name=None):
         if type(filenames) not in [list, tuple]:
             self.filenames = [filenames]
         self.filenames = filenames
         self.client = client
-        self._coords = None
 
+        self._name = name 
+        self._coords = None
         self._df = None
         self._columns = None
         self._flags = None
 
+    @property
+    def name(self):
+        if self._name is None:
+            self._name = ''.join(random.choices(string.ascii_lowercase, k=5))
+        return self._name
 
     @property
     def columns(self):

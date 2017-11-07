@@ -103,7 +103,7 @@ class MatchedCatalog(Catalog):
 
         good = np.isfinite(dist)
 
-        print('{0} matched within {1} arcsec, {2} did not.'.format(good.sum(), self.match_radius, (~good).sum()))
+        logging.info('{0} matched within {1} arcsec, {2} did not.'.format(good.sum(), self.match_radius, (~good).sum()))
 
         # Save indices as labels, not positions, as required by dask
         self._match_inds1 = id1[good]
@@ -141,7 +141,7 @@ class MatchedCatalog(Catalog):
 
         return df1, df2
 
-    def _apply_func(self, func, query=None, how='difference'):
+
         df1, df2 = self.get_columns(func.columns, query=query)
         if func.allow_difference:
             id1, id2 = self.match_inds

@@ -214,16 +214,12 @@ class scattersky(ParameterizedFunction):
         
         raw_scatter = datashade(scatter_filterpoints(dset), cmap=Greys9[::-1][:5])
         
-        cross_opts = dict(style={'line_width':1, 'color':'black'})
-        cross_dmap = hv.DynamicMap(lambda x, y: (hv.VLine(x).opts(**cross_opts) * 
-                                                 hv.HLine(y).opts(**cross_opts)), streams=[self.p.sky_pointer])    
-
         if self.p.show_rawsky:
             raw_sky = datashade(sky_filterpoints(dset), cmap=Greys9[::-1][:5])
-            return table + raw_scatter*scatter + raw_sky*sky*cross_dmap
+            return table + raw_scatter*scatter + raw_sky*sky
 
         else:
-            return table + raw_scatter*scatter + sky*cross_dmap
+            return table + raw_scatter*scatter + sky
 
 class multi_scattersky(ParameterizedFunction):
     

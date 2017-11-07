@@ -4,20 +4,26 @@ import holoviews as hv
 
 from .functors import Functor, CompositeFunctor, Column, RAColumn, DecColumn, Mag
 from .functors import StarGalaxyLabeller
-from .catalog import MatchedCatalog
+from .catalog import MatchedCatalog, MultiMatchedCatalog
 
 class QADataset(object):
     def __init__(self, catalog, funcs, flags=None, 
                  xFunc=Mag('base_PsfFlux', allow_difference=False), 
                  labeller=StarGalaxyLabeller(),
                  query=None):
+
+        self._set_catalog(catalog)
+        self._set_funcs(funcs, xFunc, labeller)
+        self._set_flags(flags)
+
+        self._df = None
+        self._ds = None
+        self._query = query
+
+    def _set_catalog(self, catalog):
         self.catalog = catalog
 
-        if flags is None:
-            self.flags = []
-        else:
-            self.flags = flags # TODO: check to make sure flags are valid            
-
+    def _set_funcs(self, funcs, xFunc, labeller):
         if isinstance(funcs, list) or isinstance(funcs, tuple):
             self.funcs = {'y{}'.format(i):f for i,f in enumerate(funcs)}
         elif isinstance(funcs, Functor):
@@ -28,9 +34,11 @@ class QADataset(object):
         self.xFunc = xFunc
         self.labeller = labeller
 
-        self._df = None
-        self._ds = None
-        self._query = query
+    def _set_flags(self, flags):
+        if flags is None:
+            self.flags = []
+        else:
+            self.flags = flags # TODO: check to make sure flags are valid                    
 
     def _reset(self):
         self._df = None
@@ -66,8 +74,14 @@ class QADataset(object):
     def is_matched(self):
         return isinstance(self.catalog, MatchedCatalog)
 
+    @property
+    def is_multi_matched(self):
+        return isinstance(self.catalog, MultiMatchedCatalog)
+
     def _make_df(self, **kwargs):
         f = CompositeFunctor(self.allfuncs)
+        if self.is_multi_matched:
+            kwargs.update(how='std')
         df = f(self.catalog, query=self.query, **kwargs)
         if self.is_matched:
             df['match_distance'] = self.catalog.match_distance

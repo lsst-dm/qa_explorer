@@ -8,6 +8,7 @@ import glob, re
 import logging
 
 from .match import match_lists
+from .functors import Labeller
 
 class Catalog(object):
     index_column = 'id'
@@ -203,6 +204,10 @@ class MultiMatchedCatalog(MatchedCatalog):
 
     def _apply_func(self, func, query=None, how='stats'):
         coadd_vals = func(self.coadd_cat, query=query)
+        if isinstance(func, Labeller) and how != 'all':
+            how = 'coadd'
+        if how=='coadd':
+            return coadd_vals
         visit_vals = [func(c, query=query, how='second') for c in self.subcats]
         aligned_vals = [coadd_vals.align(v)[1] for v in visit_vals]
         val_df = pd.concat(aligned_vals, axis=1)

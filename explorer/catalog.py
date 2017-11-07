@@ -251,7 +251,7 @@ class ParquetCatalog(Catalog):
         self._columns = None
         self._flags = None
 
-    @property
+    @property 
     def name(self):
         if self._name is None:
             self._name = ''.join(random.choices(string.ascii_lowercase, k=5))

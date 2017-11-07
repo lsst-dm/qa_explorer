@@ -2,7 +2,7 @@ import sqlite3
 import os
 
 def get_visits(field, tracts, filt, sqlitedir='/scratch/hchiang2/parejko/'):
-    if not isinstance(tracts, list) or isinstace(tracts, tuple):
+    if not isinstance(tracts, list) or isinstance(tracts, tuple):
         tracts = [tracts]
 
     visits = []

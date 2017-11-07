@@ -284,7 +284,7 @@ class skyplot(Operation):
         decimated = decimate(pts).opts(**decimate_opts)
 
         sky_shaded = datashade(pts, **kwargs)
-        return dynspread(sky_shaded)# * decimated
+        return dynspread(sky_shaded) * decimated
 
 class skyplot_layout(ParameterizedFunction):
     crosshair = param.Boolean(default=True)

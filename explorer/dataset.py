@@ -110,8 +110,11 @@ class QADataset(object):
             if k in ('ra', 'dec', 'x', 'label'):
                 continue
             label = v.name
-            if v.allow_difference and self.is_matched:
-                label = 'diff({})'.format(label)
+            if v.allow_difference:
+                if self.is_multi_matched:
+                    label = 'std({})'.format(label)
+                elif self.is_matched:
+                    label = 'diff({})'.format(label)
             vdims.append(hv.Dimension(k, label=label))
 
         if self.is_matched:

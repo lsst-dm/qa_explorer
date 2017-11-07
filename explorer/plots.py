@@ -12,6 +12,8 @@ from holoviews.core.operation import Operation
 from holoviews.streams import Stream, BoundsXY, LinkedStream
 from holoviews.plotting.bokeh.callbacks import Callback
 from holoviews.operation.datashader import datashade, dynspread
+from holoviews.operation import decimate
+decimate.max_samples = 5000
 
 from bokeh.palettes import Greys9
 
@@ -240,7 +242,8 @@ class skyplot(Operation):
     height = param.Number(default=None)
     streams = param.List(default=None)
     sampling = param.Number(default=None)
-    
+    decimate_size = param.Number(default=5)
+
     def _process(self, dset, key=None):
         if self.p.vdim is None:
             vdim = dset.vdims[0].name
@@ -261,5 +264,14 @@ class skyplot(Operation):
             kwargs.update(width=self.p.width, height=self.p.height,
                          streams=[hv.streams.RangeXY])
             
+        decimate_opts = dict(plot={'tools':['hover', 'box_select']}, 
+                            style={'alpha':0, 'size':self.p.decimate_size, 
+                                   'nonselection_alpha':0})
+
+        decimated = decimate(pts).opts(**decimate_opts)
+
         sky_shaded = datashade(pts, **kwargs)
-        return dynspread(sky_shaded)
+        return dynspread(sky_shaded) * decimated
+
+class skyplot_layout(ParameterizedFunction):
+

@@ -10,8 +10,6 @@ import dask.array as da
 import dask
 import time
 
-from .catalog import Catalog, MatchedCatalog, MultiMatchedCatalog
-
 class Functor(object):
     """Performs computation on catalog(s), read from disk
 

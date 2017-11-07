@@ -156,6 +156,8 @@ class scattersky(ParameterizedFunction):
     width = param.Number(default=900)
     filter_stream = param.ClassSelector(default=FilterStream(), class_=FilterStream)
     show_rawsky = param.Boolean(default=False)
+    sky_pointer = param.ClassSelector(default=hv.streams.PointerXY(x=0, y=0), 
+                                      class_=hv.streams.PointerXY)
 
     def __call__(self, dset, **params):
         self.p = ParamOverrides(self, params)
@@ -184,6 +186,11 @@ class scattersky(ParameterizedFunction):
                                width=self.p.width)
         sky = dynspread(sky_shaded).opts(**sky_opts)
         
+        # # Alternate sky plot
+        # sky_dset = hv.util.Dynamic(dset, operation=filter_dset, 
+        #                             streams=[self.p.filter_stream])
+        # sky = skyplot(sky_dset)
+
 
         # Set up summary table
         table = hv.util.Dynamic(dset, operation=summary_table.instance(ydim=self.p.ydim),
@@ -206,12 +213,17 @@ class scattersky(ParameterizedFunction):
         reset.add_subscriber(partial(reset_stream, self.p.filter_stream))
         
         raw_scatter = datashade(scatter_filterpoints(dset), cmap=Greys9[::-1][:5])
+        
+        cross_opts = dict(style={'line_width':1, 'color':'black'})
+        cross_dmap = hv.DynamicMap(lambda x, y: (hv.VLine(x).opts(**cross_opts) * 
+                                                 hv.HLine(y).opts(**cross_opts)), streams=[self.p.sky_pointer])    
+
         if self.p.show_rawsky:
             raw_sky = datashade(sky_filterpoints(dset), cmap=Greys9[::-1][:5])
-            return table + raw_scatter*scatter + raw_sky*sky
+            return table + raw_scatter*scatter + raw_sky*sky*cross_dmap
 
         else:
-            return table + raw_scatter*scatter + sky
+            return table + raw_scatter*scatter + sky*cross_dmap
 
 class multi_scattersky(ParameterizedFunction):
     
@@ -272,7 +284,7 @@ class skyplot(Operation):
         decimated = decimate(pts).opts(**decimate_opts)
 
         sky_shaded = datashade(pts, **kwargs)
-        return dynspread(sky_shaded) * decimated
+        return dynspread(sky_shaded)# * decimated
 
 class skyplot_layout(ParameterizedFunction):
     crosshair = param.Boolean(default=True)

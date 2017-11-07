@@ -222,8 +222,8 @@ class MultiMatchedCatalog(MatchedCatalog):
         if self._match_distance is None:
             coadd = pd.Series(index=self.coadd_cat.index)
             aligned_dists = [coadd.align(c.match_distance)[1] for c in self.subcats]
-            dist_df = pd.concat(aligned_dists, axis=1)
-            self._match_distance_df = dist_df.dropna(how='all')
+            dist_df = pd.concat(aligned_dists, axis=1).dropna(how='all')
+            self._match_distance_df = dist_df
             self._match_distance = dist_df.mean(axis=1)
         return self._match_distance
 

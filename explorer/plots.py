@@ -287,8 +287,9 @@ class skyplot_layout(ParameterizedFunction):
         plots = []
         for s in skyplots:
             if self.p.crosshair:
-                plots.append(s*cross_dmap)
+                plot = (s*cross_dmap).relabel(s.label)
             else:
-                plots.append(s)
+                plot = s
+            plots.append(plot)
                 
         return hv.Layout(plots)

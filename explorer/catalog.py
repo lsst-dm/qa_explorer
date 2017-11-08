@@ -243,9 +243,6 @@ class MultiMatchedCatalog(MatchedCatalog):
 
         # enforce order for hashing
         self.visit_cats = good_visit_cats
-        self.match_radius = match_radius
-        self.client = client
-
         self.subcats = [MatchedCatalog(self.coadd_cat, v, **kwargs) 
                             for v in self.visit_cats]
 

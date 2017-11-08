@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 import dask.dataframe as dd
@@ -200,6 +201,7 @@ class MultiMatchedCatalog(MatchedCatalog):
             except:
                 continue
 
+        # enforce order for hashing
         self.visit_cats = good_visit_cats
         self.match_radius = match_radius
         self.client = client
@@ -281,7 +283,11 @@ class ParquetCatalog(Catalog):
         self._md5 = None
 
     def _stringify(self):
-        return reduce(add, [open(f, 'rb').read() for f in self.filenames])
+        # To be really careful, you could read the whole file, e.g.:
+        # return reduce(add, [open(f, 'rb').read() for f in self.filenames])
+        
+        # Or, to be fast/sloppy, just read the filenames
+        return reduce(add, [bytes(os.path.abspath(f), encoding='utf8') for f in self.filenames])
 
     @property 
     def name(self):

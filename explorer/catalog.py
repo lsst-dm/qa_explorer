@@ -207,6 +207,7 @@ class MultiMatchedCatalog(MatchedCatalog):
         self.subcats = [MatchedCatalog(self.coadd_cat, v) for v in self.visit_cats]
 
         self._match_distance = None
+        self._md5 = None
 
     @property
     def cat1(self):

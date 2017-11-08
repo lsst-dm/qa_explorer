@@ -376,3 +376,11 @@ class PsfHsmTraceSizeDiff(Functor):
                                df["ext_shapeHSM_HsmPsfMoments_yy"]))
         sizeDiff = 100*(srcSize - psfSize)/(0.5*(srcSize + psfSize))
         return sizeDiff
+
+class Seeing(Functor):
+    name = 'seeing'
+    _columns = ('ext_shapeHSM_HsmPsfMoments_xx', 'ext_shapeHSM_HsmPsfMoments_yy')
+
+    def _func(self, df):
+        return 0.168*2.35*da.sqrt(0.5*(df['ext_shapeHSM_HsmPsfMoments_xx']**2 +
+                                       df['ext_shapeHSM_HsmPsfMoments_yy']**2))

@@ -7,7 +7,9 @@ import fastparquet
 import glob, re
 import random
 import logging
-
+import hashlib
+from functools import reduce
+from operator import add
 
 from .match import match_lists
 from .functors import Labeller
@@ -20,6 +22,24 @@ class Catalog(object):
         self.columns = data.columns
         self.name = name
         self._coords = None
+        self._md5 = None
+
+    def _stringify(self):
+        """Return string form of catalog, for md5 hashing
+        """
+        raise NotImplementedError
+
+    def _compute_md5(self):
+        return hashlib.md5(self._stringify())
+
+    @property
+    def md5(self):
+        if self._md5 is None:
+            self._md5 = self._compute_md5()
+        return self._md5.hexdigest()
+
+    def __hash__(self):
+        return hash(self.md5)
 
     def _sanitize_columns(self, columns):
         bad_cols = [c for c in columns if c not in self.columns]
@@ -87,6 +107,10 @@ class MatchedCatalog(Catalog):
         self._match_inds1 = None
         self._match_inds2 = None
         self._bad_inds = None
+        self._md5 = None
+
+    def _stringify(self):
+        return self.cat1._stringify() + self.cat2._stringify()
 
     @property
     def coords(self):
@@ -242,7 +266,10 @@ class ParquetCatalog(Catalog):
     def __init__(self, filenames, client=None, name=None):
         if type(filenames) not in [list, tuple]:
             self.filenames = [filenames]
-        self.filenames = filenames
+
+        # Ensure sorted list for hash consistency
+        self.filenames = list(set(filenames))
+        self.filenames.sort()
         self.client = client
 
         self._name = name 
@@ -250,6 +277,10 @@ class ParquetCatalog(Catalog):
         self._df = None
         self._columns = None
         self._flags = None
+        self._md5 = None
+
+    def _stringify(self):
+        return reduce(add, [open(f, 'rb').read() for f in self.filenames])
 
     @property 
     def name(self):

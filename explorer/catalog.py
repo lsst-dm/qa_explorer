@@ -229,7 +229,7 @@ class MatchedCatalog(Catalog):
 
 
 class MultiMatchedCatalog(MatchedCatalog):
-    def __init__(self, coadd_cat, visit_cats, **kwargs):
+    def __init__(self, coadd_cat, visit_cats, client=None, **kwargs):
 
         self.coadd_cat = coadd_cat
         # Test each visit cat
@@ -241,9 +241,10 @@ class MultiMatchedCatalog(MatchedCatalog):
             except:
                 continue
 
-        # enforce order for hashing
+        self.client = client
+
         self.visit_cats = good_visit_cats
-        self.subcats = [MatchedCatalog(self.coadd_cat, v, **kwargs) 
+        self.subcats = [MatchedCatalog(self.coadd_cat, v, client=client, **kwargs) 
                             for v in self.visit_cats]
 
         self._match_distance = None

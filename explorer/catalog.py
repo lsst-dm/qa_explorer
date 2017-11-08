@@ -92,7 +92,8 @@ class Catalog(object):
         return vals
 
 class MatchedCatalog(Catalog):
-    def __init__(self, cat1, cat2, match_radius=0.5, tags=None, client=None):
+    def __init__(self, cat1, cat2, match_radius=0.5, tags=None, client=None,
+                    match_registry=None):
         self.cat1 = cat1
         self.cat2 = cat2
 
@@ -102,12 +103,13 @@ class MatchedCatalog(Catalog):
 
         self.client = client
 
+        self.match_registry = match_registry
+
         self._coords = None
 
         self._match_distance = None
         self._match_inds1 = None
         self._match_inds2 = None
-        self._bad_inds = None
         self._md5 = None
 
     def _stringify(self):
@@ -117,26 +119,63 @@ class MatchedCatalog(Catalog):
     def coords(self):
         return self.cat1.coords
 
-    def match(self):
-        return self._match_cats()
+    def match(self, **kwargs):
+        return self._match_cats(**kwargs)
 
-    def _match_cats(self):
-        ra1, dec1 = self.cat1.ra, self.cat1.dec
-        ra2, dec2 = self.cat2.ra, self.cat2.dec
-        id1 = ra1.index
-        id2 = ra2.index
+    def _read_registry(self):
+        if self.match_registry is None:
+            raise ValueError
+        with pd.HDFStore(self.match_registry) as store:
+            df = store['md5_{}'.format(self.md5)]
+            inds1 = df.index
+            inds2 = df['id2'] 
+            dist = df['distance']
+            return inds1, inds2, dist
 
-        dist, inds = match_lists(ra1, dec1, ra2, dec2, self.match_radius/3600)
+    def _write_registry(self, match_df):
+        if self.match_registry is None:
+            return
+        else:
+            match_df.to_hdf(self.match_registry, 'md5_{}'.format(self.md5))
 
-        good = np.isfinite(dist)
+    def _test_registry(self):
+        id1, id2, dist = self._read_registry()
 
-        logging.info('{0} matched within {1} arcsec, {2} did not.'.format(good.sum(), self.match_radius, (~good).sum()))
+        self.match(recalc=True)
+        assert (id1==self._match_inds1).all()
+        assert (id2==self._match_inds2).all()
+        assert (dist==self._match_distance).all()
 
-        # Save indices as labels, not positions, as required by dask
-        self._match_inds1 = id1[good]
-        self._match_inds2 = id2[inds[good]]
-        self._match_distance = pd.Series(dist[good] * 3600, index=id1[good])
-        self._bad_inds = id1[~good]
+    def _match_cats(self, recalc=True):
+        try:
+            if recalc:
+                raise ValueError
+            i1, i2, d = self._read_registry()
+        except (KeyError, ValueError):
+
+            ra1, dec1 = self.cat1.ra, self.cat1.dec
+            ra2, dec2 = self.cat2.ra, self.cat2.dec
+            id1 = ra1.index
+            id2 = ra2.index
+
+            dist, inds = match_lists(ra1, dec1, ra2, dec2, self.match_radius/3600)
+
+            good = np.isfinite(dist)
+
+            logging.info('{0} matched within {1} arcsec, {2} did not.'.format(good.sum(), self.match_radius, (~good).sum()))
+
+            # Save indices as labels, not positions, as required by dask
+            i1 = id1[good]
+            i2 = id2[inds[good]]
+            d = pd.Series(dist[good] * 3600, index=id1[good])
+
+            match_df = pd.DataFrame({'id2':i2, 'distance':d}, index=i1)
+            self._write_registry(match_df)
+
+        self._match_inds1 = i1
+        self._match_inds2 = i2
+        self._match_distance = d
+
 
     @property
     def match_distance(self):
@@ -190,7 +229,8 @@ class MatchedCatalog(Catalog):
 
 
 class MultiMatchedCatalog(MatchedCatalog):
-    def __init__(self, coadd_cat, visit_cats, match_radius=0.5, client=None):
+    def __init__(self, coadd_cat, visit_cats, **kwargs):
+
         self.coadd_cat = coadd_cat
         # Test each visit cat
         good_visit_cats = []
@@ -206,10 +246,14 @@ class MultiMatchedCatalog(MatchedCatalog):
         self.match_radius = match_radius
         self.client = client
 
-        self.subcats = [MatchedCatalog(self.coadd_cat, v) for v in self.visit_cats]
+        self.subcats = [MatchedCatalog(self.coadd_cat, v, **kwargs) 
+                            for v in self.visit_cats]
 
         self._match_distance = None
         self._md5 = None
+
+    def _test_registry(self):
+        [c._test_registry() for c in self.subcats]
 
     @property
     def cat1(self):

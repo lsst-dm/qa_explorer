@@ -261,6 +261,7 @@ class MultiMatchedCatalog(MatchedCatalog):
             try:
                 c.match()
             except:
+                raise
                 logging.warning('Skipping catalog {}.'.format(i))
 
     def get_columns(self, *args, **kwargs):

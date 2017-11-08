@@ -146,7 +146,7 @@ class MatchedCatalog(Catalog):
         assert (id2==self._match_inds2).all()
         assert (dist==self._match_distance).all()
 
-    def _match_cats(self, recalc=True):
+    def _match_cats(self, recalc=False):
         try:
             if recalc:
                 raise ValueError
@@ -256,12 +256,13 @@ class MultiMatchedCatalog(MatchedCatalog):
     def cat1(self):
         return self.coadd_cat
 
-    def match(self):
+    def match(self, raise_exceptions=False):
         for i,c in enumerate(self.subcats):
             try:
                 c.match()
             except:
-                raise
+                if raise_exceptions:
+                    raise
                 logging.warning('Skipping catalog {}.'.format(i))
 
     def get_columns(self, *args, **kwargs):

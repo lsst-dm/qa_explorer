@@ -285,10 +285,10 @@ class MultiMatchedCatalog(MatchedCatalog):
     def cat1(self):
         return self.coadd_cat
 
-    def match(self, raise_exceptions=False):
+    def match(self, raise_exceptions=False, **kwargs):
         for i,c in enumerate(self.subcats):
             try:
-                c.match()
+                c.match(**kwargs)
             except:
                 if raise_exceptions:
                     raise

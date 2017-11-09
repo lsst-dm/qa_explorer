@@ -22,6 +22,17 @@ class Catalog(object):
         self.data
         self.columns = data.columns
         self.name = name
+        self._initialize()
+
+    def __getstate__(self):
+        self._initialize()
+        odict = self.__dict__
+        return odict
+
+    def __setstate__(self, d):
+        self.__dict__ = d
+
+    def _initialize(self):
         self._coords = None
         self._md5 = None
 
@@ -103,8 +114,10 @@ class MatchedCatalog(Catalog):
 
         self.match_registry = match_registry
 
-        self._coords = None
+        self._initialize()
 
+    def _initialize(self):
+        self._coords = None
         self._match_distance = None
         self._match_inds1 = None
         self._match_inds2 = None
@@ -256,7 +269,11 @@ class MultiMatchedCatalog(MatchedCatalog):
         self.visit_cats = good_visit_cats
         self.subcats = [MatchedCatalog(self.coadd_cat, v, **kwargs) 
                             for v in self.visit_cats]
+        self._initialize()
 
+    def _initialize(self):
+        [c._initialize() for c in self.visit_cats]
+        [c._initialize() for c in self.subcats]
         self._match_distance = None
         self._md5 = None
 
@@ -336,6 +353,9 @@ class ParquetCatalog(Catalog):
         self.filenames.sort()
 
         self._name = name 
+        self._initialize()
+
+    def _initialize(self):
         self._coords = None
         self._df = None
         self._columns = None

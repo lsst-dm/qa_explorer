@@ -46,9 +46,10 @@ class Functor(object):
 
         if dropna:
             if client is not None:
-                vals = client.compute(vals[da.isfinite(vals)]).result()
+                vals = client.compute(vals[da.isfinite(vals)])
             else:
                 vals = vals[da.isfinite(vals)]
+
                 
             # try:
             #     if catalog.client:

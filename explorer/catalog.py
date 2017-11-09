@@ -141,7 +141,8 @@ class MatchedCatalog(Catalog):
             inds1 = df.index
             inds2 = pd.Int64Index(df['id2'], name='id')
             dist = df['distance']
-            return inds1, inds2, dist
+
+        return inds1, inds2, dist   
 
     def _write_registry(self, match_df):
         if self.match_registry is None:

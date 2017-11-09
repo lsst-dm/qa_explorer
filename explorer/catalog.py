@@ -225,6 +225,20 @@ class MatchedCatalog(Catalog):
 
         return vals
 
+class FuncWorker(object):
+    def __init__(self, func, **kwargs):
+        self.func = func
+        self.kwargs = kwargs
+
+    def __call__(self, catalog):
+        return self.func(catalog, **kwargs)
+
+class AlignWorker(object):
+    def __init__(self, coadd_vals):
+        self.coadd_vals = coadd_vals
+
+    def __call__(self, vals):
+        return self.coadd_vals.align(vals)[1]
 
 class MultiMatchedCatalog(MatchedCatalog):
     def __init__(self, coadd_cat, visit_cats, **kwargs):
@@ -281,8 +295,15 @@ class MultiMatchedCatalog(MatchedCatalog):
         if how=='coadd':
             return coadd_vals
 
-        visit_vals = [func(c, query=query, how='second', client=client) for c in self.subcats]
-        aligned_vals = [coadd_vals.align(v)[1] for v in visit_vals]
+        if client:
+            func_worker = FuncWorker(func, query=query, how='second', client=client)
+            visit_vals = client.map(func_worker, self.subcats)
+
+            align_worker = AlignWorker(coadd_vals)
+            aligned_vals = client.map(align_worker, visit_vals)
+        else:
+            visit_vals = [func(c, query=query, how='second', client=client) for c in self.subcats]
+            aligned_vals = [coadd_vals.align(v)[1] for v in visit_vals]
         val_df = pd.concat(aligned_vals, axis=1)
         if how=='all':
             return val_df

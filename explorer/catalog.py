@@ -244,7 +244,7 @@ class FuncWorker(object):
         self.kwargs = kwargs
 
     def __call__(self, catalog):
-        return self.func(catalog, **kwargs)
+        return self.func(catalog, **self.kwargs)
 
 class AlignWorker(object):
     def __init__(self, coadd_vals):

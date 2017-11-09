@@ -36,8 +36,8 @@ class Catalog(object):
     @property
     def md5(self):
         if self._md5 is None:
-            self._md5 = self._compute_md5()
-        return self._md5.hexdigest()
+            self._md5 = self._compute_md5().hexdigest()
+        return self._md5
 
     def __hash__(self):
         return hash(self.md5)
@@ -86,13 +86,13 @@ class Catalog(object):
     def index(self):
         return self.coords.index
 
-    def _apply_func(self, func, query=None):
-        df = self.get_columns(func.columns, query=query)
+    def _apply_func(self, func, query=None, client=None):
+        df = self.get_columns(func.columns, query=query, client=client)
         vals = func._func(df)
         return vals
 
 class MatchedCatalog(Catalog):
-    def __init__(self, cat1, cat2, match_radius=0.5, tags=None, client=None,
+    def __init__(self, cat1, cat2, match_radius=0.5, tags=None, 
                     match_registry=None):
         self.cat1 = cat1
         self.cat2 = cat2
@@ -100,8 +100,6 @@ class MatchedCatalog(Catalog):
         self.tags = ['1', '2'] if tags is None else tags
 
         self.match_radius = match_radius
-
-        self.client = client
 
         self.match_registry = match_registry
 
@@ -128,7 +126,7 @@ class MatchedCatalog(Catalog):
         with pd.HDFStore(self.match_registry) as store:
             df = store['md5_{}'.format(self.md5)]
             inds1 = df.index
-            inds2 = df['id2'] 
+            inds2 = pd.Int64Index(df['id2'], name='id')
             dist = df['distance']
             return inds1, inds2, dist
 
@@ -208,8 +206,8 @@ class MatchedCatalog(Catalog):
         return df1, df2
 
 
-    def _apply_func(self, func, query=None, how='difference'):
-        df1, df2 = self.get_columns(func.columns, query=query)
+    def _apply_func(self, func, query=None, how='difference', client=None):
+        df1, df2 = self.get_columns(func.columns, query=query, client=client)
         if func.allow_difference:
             id1, id2 = self.match_inds
             v1 = func._func(df1).compute().loc[id1].values
@@ -229,7 +227,7 @@ class MatchedCatalog(Catalog):
 
 
 class MultiMatchedCatalog(MatchedCatalog):
-    def __init__(self, coadd_cat, visit_cats, client=None, **kwargs):
+    def __init__(self, coadd_cat, visit_cats, **kwargs):
 
         self.coadd_cat = coadd_cat
         # Test each visit cat
@@ -240,8 +238,6 @@ class MultiMatchedCatalog(MatchedCatalog):
                 good_visit_cats.append(v)
             except:
                 continue
-
-        self.client = client
 
         self.visit_cats = good_visit_cats
         self.subcats = [MatchedCatalog(self.coadd_cat, v, client=client, **kwargs) 
@@ -276,8 +272,8 @@ class MultiMatchedCatalog(MatchedCatalog):
     def match_inds(self):
         return [c.match_inds for c in self.subcats]
 
-    def _apply_func(self, func, query=None, how='stats'):
-        coadd_vals = func(self.coadd_cat, query=query)
+    def _apply_func(self, func, query=None, how='stats', client=None):
+        coadd_vals = func(self.coadd_cat, query=query, client=client)
         if (isinstance(func, Labeller) or not func.allow_difference 
             and how != 'all'):
             how = 'coadd'
@@ -285,7 +281,7 @@ class MultiMatchedCatalog(MatchedCatalog):
         if how=='coadd':
             return coadd_vals
 
-        visit_vals = [func(c, query=query, how='second') for c in self.subcats]
+        visit_vals = [func(c, query=query, how='second', client=client) for c in self.subcats]
         aligned_vals = [coadd_vals.align(v)[1] for v in visit_vals]
         val_df = pd.concat(aligned_vals, axis=1)
         if how=='all':
@@ -310,14 +306,13 @@ class MultiMatchedCatalog(MatchedCatalog):
         return self._match_distance
 
 class ParquetCatalog(Catalog):
-    def __init__(self, filenames, client=None, name=None):
+    def __init__(self, filenames, name=None):
         if type(filenames) not in [list, tuple]:
             self.filenames = [filenames]
 
         # Ensure sorted list for hash consistency
         self.filenames = list(set(filenames))
         self.filenames.sort()
-        self.client = client
 
         self._name = name 
         self._coords = None
@@ -356,11 +351,11 @@ class ParquetCatalog(Catalog):
 
         return self.get_columns(flags)
 
-    def _read_data(self, columns, query=None, add_flags=True):
+    def _read_data(self, columns, query=None, add_flags=True, client=None):
         if add_flags:
             columns = columns + self.flags
-        if self.client:
-            df = self.client.persist(dd.read_parquet(self.filenames, columns=columns))
+        if client is not None:
+            df = client.persist(dd.read_parquet(self.filenames, columns=columns))
         else:
             df = dd.read_parquet(self.filenames, columns=columns)
 
@@ -379,31 +374,7 @@ class ParquetCatalog(Catalog):
         else:
             return self._df
 
-    def get_columns(self, columns, query=None, use_cache=False, add_flags=False):
+    def get_columns(self, columns, query=None, add_flags=False, client=None):
         
-        if use_cache and False:
-            if self._df is None:
-                cols_to_get = list(columns)
-
-                if self.client:
-                    self._df = self.client.persist(self._read_data(cols_to_get))
-                else:
-                    self._df = self._read_data(cols_to_get)
-
-            else:
-                cols_to_get = list(set(columns) - set(self._df.columns))
-                if cols_to_get:
-                    new = self._read_data(cols_to_get)
-                    if self.client:
-                        self._df = self.client.persist(self._df.merge(new))
-                    else:
-                        self._df = self._df.merge(new)
-
-            if self.client:
-                return self.client.persist(self.df[list(columns)])
-            else:
-                return self.df[list(columns)]
-
-        else:
-            cols_to_get = list(columns)
-            return self._read_data(cols_to_get, query=query, add_flags=add_flags)
+        cols_to_get = list(columns)
+        return self._read_data(cols_to_get, query=query, add_flags=add_flags, client=client)

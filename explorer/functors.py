@@ -19,6 +19,7 @@ class Functor(object):
     """
     _allow_difference = True
 
+
     def __init__(self, allow_difference=None):
         if allow_difference is not None:
             self.allow_difference = allow_difference
@@ -35,26 +36,32 @@ class Functor(object):
     def _func(self, df, dropna=True):
         raise NotImplementedError('Must define calculation on dataframe')
 
-    def __call__(self, catalog, query=None, dropna=True, dask=False, flags=None, **kwargs):
+    def __call__(self, catalog, client=None, query=None, dropna=True, dask=False, 
+                flags=None, **kwargs):
 
         if isinstance(catalog, dd.DataFrame):
             vals = self._func(catalog)
         else:
-            vals = catalog._apply_func(self, query=query, **kwargs)
+            vals = catalog._apply_func(self, query=query, client=client, **kwargs)
 
         if dropna:
-            try:
-                if catalog.client:
-                    vals = catalog.client.compute(vals[da.isfinite(vals)]).result()
-                else:
-                    vals = vals[da.isfinite(vals)]
-            except TypeError:
-                if catalog.client:
-                    vals = catalog.client.compute(vals[da.notnull(vals)]).result()
-                else:
-                    vals = vals[da.notnull(vals)]
-            except AttributeError:
-                vals = vals[da.notnull(vals)]
+            if client is not None:
+                vals = client.compute(vals[da.isfinite(vals)]).result()
+            else:
+                vals = vals[da.isfinite(vals)]
+                
+            # try:
+            #     if catalog.client:
+            #         vals = catalog.client.compute(vals[da.isfinite(vals)]).result()
+            #     else:
+            #         vals = vals[da.isfinite(vals)]
+            # except TypeError:
+            #     if catalog.client:
+            #         vals = catalog.client.compute(vals[da.notnull(vals)]).result()
+            #     else:
+            #         vals = vals[da.notnull(vals)]
+            # except AttributeError:
+            #     vals = vals[da.notnull(vals)]
 
         if dask:
             return vals
@@ -90,6 +97,17 @@ class ParquetReadWorker(object):
         pfile = fastparquet.ParquetFile(filename)
         return pfile.to_pandas(columns=self.cols)
 
+class func_worker(object):
+    def __init__(self, catalog):
+        self.catalog = catalog
+
+    def __call__(self, func):
+        return func(self.catalog)
+
+# def get_cols(catalog, composite_functor):
+#     worker = func_worker(catalog)
+#     return catalog.client.map(worker, composite_functor.funcDict.values())
+
 class CompositeFunctor(Functor):
     force_ndarray = False
 
@@ -101,9 +119,16 @@ class CompositeFunctor(Functor):
     def columns(self):
         return [x for y in [f.columns for f in self.funcDict.values()] for x in y]
 
-    def __call__(self, catalog, dask=False, **kwargs):        
-        df = pd.DataFrame({k : f(catalog, dask=dask, **kwargs) 
+    def __call__(self, catalog, dask=False, do_map=True, client=None, **kwargs):
+        if client is not None and do_map:
+            worker = func_worker(catalog)
+            cols = client.map(worker, self.funcDict.values())
+            # cols = get_cols(catalog, self)
+            df = pd.DataFrame({k:c.result() for k,c in zip(self.funcDict.keys(), cols)})
+        else:
+            df = pd.DataFrame({k : f(catalog, dask=dask, **kwargs) 
                             for k,f in self.funcDict.items()})
+
         if dask:
             return dd.from_pandas(df, chunksize=1000000)
         else:

@@ -313,7 +313,7 @@ class MultiMatchedCatalog(MatchedCatalog):
             return coadd_vals
 
         if client:
-            func_worker = FuncWorker(func, query=query, how='second', client=client)
+            func_worker = FuncWorker(func, query=query, how='second')
             visit_vals = client.map(func_worker, self.subcats)
 
             align_worker = AlignWorker(coadd_vals)

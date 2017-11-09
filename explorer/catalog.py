@@ -300,10 +300,6 @@ class MultiMatchedCatalog(MatchedCatalog):
         df1 = self.coadd_cat.get_columns(*args, **kwargs)
         return df1, tuple(c.get_columns(*args, **kwargs) for c in self.visit_cats)
 
-    @property
-    def match_inds(self):
-        return [c.match_inds for c in self.subcats]
-
     def _apply_func(self, func, query=None, how='stats', client=None):
         coadd_vals = func(self.coadd_cat, query=query, client=client)
         if (isinstance(func, Labeller) or not func.allow_difference 

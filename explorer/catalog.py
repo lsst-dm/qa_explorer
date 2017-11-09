@@ -240,7 +240,7 @@ class MultiMatchedCatalog(MatchedCatalog):
                 continue
 
         self.visit_cats = good_visit_cats
-        self.subcats = [MatchedCatalog(self.coadd_cat, v, client=client, **kwargs) 
+        self.subcats = [MatchedCatalog(self.coadd_cat, v, **kwargs) 
                             for v in self.visit_cats]
 
         self._match_distance = None

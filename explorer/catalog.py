@@ -333,7 +333,7 @@ class MultiMatchedCatalog(MatchedCatalog):
             aligned_vals = [v.result() for v in aligned_vals]
         else:
             visit_vals = [func(c, query=query, how='second', client=client) for c in self.subcats]
-            aligned_vals = [coadd_vals.align(v)[1] for v in visit_vals]
+            aligned_vals = [coadd_vals.align(v)[1].rename(name) for v, name in zip(visit_vals, self.visit_names)]
         val_df = pd.concat(aligned_vals, axis=1)
         if how=='all':
             return val_df

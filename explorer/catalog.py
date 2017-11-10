@@ -361,7 +361,7 @@ class ParquetCatalog(Catalog):
             self.filenames = [filenames]
 
         # Ensure sorted list for hash consistency
-        self.filenames = list(set(filenames))
+        self.filenames = list(set([os.path.abspath(f) for f in filenames]))
         self.filenames.sort()
 
         self._name = name 

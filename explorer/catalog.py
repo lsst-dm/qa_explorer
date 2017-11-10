@@ -346,7 +346,8 @@ class MultiMatchedCatalog(MatchedCatalog):
         if self._match_distance is None:
             coadd = pd.Series(index=self.coadd_cat.index)
             aligned_dists = [coadd.align(c.match_distance)[1] for c in self.subcats]
-            self._match_distance = pd.concat(aligned_dists, axis=1).dropna(how='all')
+            self._match_distance = pd.concat(aligned_dists, axis=1, 
+                                            keys=[('distance', i) for i in range(len(aligned_dists))]).dropna(how='all')
         return self._match_distance
 
 class ParquetCatalog(Catalog):

@@ -312,7 +312,7 @@ class MultiMatchedCatalog(MatchedCatalog):
             self.match()
 
         coadd_vals = func(self.coadd_cat, query=query, client=client)
-        if (isinstance(func, Labeller) or not func.allow_difference 
+        if ((isinstance(func, Labeller) or not func.allow_difference) 
             and how != 'all'):
             how = 'coadd'
 

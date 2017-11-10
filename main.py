@@ -20,7 +20,6 @@ def modify_doc(doc):
     doc = parambokeh.Widgets(explorer, continuous_update=False, callback=explorer.event, 
                         view_position='right', mode='server')
 
-
     name_input = TextInput(value='selected', title="Save IDs as")
     save_button = Button(label='Save IDs', width=100)
     clear_button = Button(label='Clear saved IDs', width=100)

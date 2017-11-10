@@ -307,7 +307,7 @@ class MultiMatchedCatalog(MatchedCatalog):
         df1 = self.coadd_cat.get_columns(*args, **kwargs)
         return df1, tuple(c.get_columns(*args, **kwargs) for c in self.visit_cats)
 
-    def _apply_func(self, func, query=None, how='stats', client=None):
+    def _apply_func(self, func, query=None, how='all', client=None):
         if client and not self._matched:
             self.match()
 

@@ -25,7 +25,8 @@ class Catalog(object):
         self._initialize()
 
     def __getstate__(self):
-        self._initialize()
+        # Check this out.  something's going funny with unpickling matched catalogs...
+        # self._initialize()
         odict = self.__dict__
         return odict
 

@@ -125,10 +125,10 @@ class CompositeFunctor(Functor):
             worker = func_worker(catalog)
             cols = client.map(worker, self.funcDict.values())
             # cols = get_cols(catalog, self)
-            df = pd.DataFrame({k:c.result() for k,c in zip(self.funcDict.keys(), cols)})
+            df = pd.concat({k:c.result() for k,c in zip(self.funcDict.keys(), cols)}, axis=1)
         else:
-            df = pd.DataFrame({k : f(catalog, dask=dask, client=client, **kwargs) 
-                            for k,f in self.funcDict.items()})
+            df = pd.concat({k : f(catalog, dask=dask, client=client, **kwargs) 
+                            for k,f in self.funcDict.items()}, axis=1)
 
         if dask:
             return dd.from_pandas(df, chunksize=1000000)

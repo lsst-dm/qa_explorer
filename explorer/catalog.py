@@ -118,6 +118,7 @@ class MatchedCatalog(Catalog):
         self._initialize()
 
     def _initialize(self):
+        self._matched = False
         self._coords = None
         self._match_distance = None
         self._match_inds1 = None
@@ -191,6 +192,7 @@ class MatchedCatalog(Catalog):
         self._match_inds2 = i2
         self._match_distance = d
 
+        self._matched = True
 
     @property
     def match_distance(self):
@@ -273,6 +275,7 @@ class MultiMatchedCatalog(MatchedCatalog):
         self.visit_cats = good_visit_cats
         self.subcats = [MatchedCatalog(self.coadd_cat, v, **kwargs) 
                             for v in self.visit_cats]
+        self._matched = False
         self._initialize()
 
     def _initialize(self):
@@ -296,6 +299,7 @@ class MultiMatchedCatalog(MatchedCatalog):
                 if raise_exceptions:
                     raise
                 logging.warning('Skipping catalog {}.'.format(i))
+        self._matched = True
 
     def get_columns(self, *args, **kwargs):
         """Returns list of dataframes: df1, then N x other dfs
@@ -304,6 +308,9 @@ class MultiMatchedCatalog(MatchedCatalog):
         return df1, tuple(c.get_columns(*args, **kwargs) for c in self.visit_cats)
 
     def _apply_func(self, func, query=None, how='stats', client=None):
+        if client and not self._matched:
+            self.match()
+
         coadd_vals = func(self.coadd_cat, query=query, client=client)
         if (isinstance(func, Labeller) or not func.allow_difference 
             and how != 'all'):
@@ -318,6 +325,7 @@ class MultiMatchedCatalog(MatchedCatalog):
 
             align_worker = AlignWorker(coadd_vals)
             aligned_vals = client.map(align_worker, visit_vals)
+            aligned_vals = [v.result() for v in aligned_vals]
         else:
             visit_vals = [func(c, query=query, how='second', client=client) for c in self.subcats]
             aligned_vals = [coadd_vals.align(v)[1] for v in visit_vals]

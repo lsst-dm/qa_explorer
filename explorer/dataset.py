@@ -10,7 +10,7 @@ class QADataset(object):
     def __init__(self, catalog, funcs, flags=None, 
                  xFunc=Mag('base_PsfFlux', allow_difference=False), 
                  labeller=StarGalaxyLabeller(),
-                 query=None):
+                 query=None, client=None):
 
         self._set_catalog(catalog)
         self._set_funcs(funcs, xFunc, labeller)
@@ -81,8 +81,8 @@ class QADataset(object):
     def _make_df(self, **kwargs):
         f = CompositeFunctor(self.allfuncs)
         if self.is_multi_matched:
-            kwargs.update(how='std')
-        df = f(self.catalog, query=self.query, **kwargs)
+            kwargs.update(how='all')
+        df = f(self.catalog, query=self.query, client=self.client, **kwargs)
         if self.is_matched:
             df['match_distance'] = self.catalog.match_distance
         df = df.dropna(how='any')

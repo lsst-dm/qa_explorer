@@ -50,7 +50,7 @@ class Functor(object):
             else:
                 vals = vals[da.isfinite(vals)]
 
-                
+
             # try:
             #     if catalog.client:
             #         vals = catalog.client.compute(vals[da.isfinite(vals)]).result()
@@ -121,13 +121,13 @@ class CompositeFunctor(Functor):
         return [x for y in [f.columns for f in self.funcDict.values()] for x in y]
 
     def __call__(self, catalog, dask=False, do_map=True, client=None, **kwargs):
-        if client is not None and do_map:
+        if client is not None and do_map and False:
             worker = func_worker(catalog)
             cols = client.map(worker, self.funcDict.values())
             # cols = get_cols(catalog, self)
             df = pd.DataFrame({k:c.result() for k,c in zip(self.funcDict.keys(), cols)})
         else:
-            df = pd.DataFrame({k : f(catalog, dask=dask, **kwargs) 
+            df = pd.DataFrame({k : f(catalog, dask=dask, client=client, **kwargs) 
                             for k,f in self.funcDict.items()})
 
         if dask:

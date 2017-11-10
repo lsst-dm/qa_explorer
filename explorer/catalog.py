@@ -11,6 +11,7 @@ import logging
 import hashlib
 from functools import reduce
 from operator import add
+import string
 
 from .match import match_lists
 from .functors import Labeller
@@ -277,6 +278,10 @@ class MultiMatchedCatalog(MatchedCatalog):
                             for v in self.visit_cats]
         self._matched = False
         self._initialize()
+
+    @property
+    def visit_names(self):
+        return [c.name for c in self.visit_cats]
 
     def _initialize(self):
         [c._initialize() for c in self.visit_cats]

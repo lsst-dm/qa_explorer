@@ -137,11 +137,13 @@ class MatchedCatalog(Catalog):
     def _read_registry(self):
         if self.match_registry is None:
             raise ValueError
-        with pd.HDFStore(self.match_registry) as store:
-            df = store['md5_{}'.format(self.md5)]
-            inds1 = df.index
-            inds2 = pd.Int64Index(df['id2'], name='id')
-            dist = df['distance']
+        store = pd.HDFStore(self.match_registry)
+        df = store['md5_{}'.format(self.md5)]
+        store.close()
+        inds1 = df.index
+        inds2 = pd.Int64Index(df['id2'], name='id')
+        dist = df['distance']
+
 
         return inds1, inds2, dist   
 

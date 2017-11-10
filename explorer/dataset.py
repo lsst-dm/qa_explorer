@@ -16,6 +16,7 @@ class QADataset(object):
         self._set_funcs(funcs, xFunc, labeller)
         self._set_flags(flags)
 
+        self.client = client
         self._df = None
         self._ds = None
         self._query = query

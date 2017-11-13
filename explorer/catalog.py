@@ -14,7 +14,7 @@ from operator import add
 import string
 
 from .match import match_lists
-from .functors import Labeller
+from .functors import Labeller, CompositeFunctor, RAColumn, DecColumn
 from .utils import result
 
 class Catalog(object):
@@ -130,9 +130,8 @@ class MatchedCatalog(Catalog):
     def _stringify(self):
         return self.cat1._stringify() + self.cat2._stringify()
 
-    @property
-    def coords(self):
-        return self.cat1.coords
+    def _get_coords(self):
+        self._coords = self.cat1.coords
 
     def match(self, **kwargs):
         return self._match_cats(**kwargs)
@@ -280,6 +279,7 @@ class MultiMatchedCatalog(MatchedCatalog):
         self.subcats = [MatchedCatalog(self.coadd_cat, v, **kwargs) 
                             for v in self.visit_cats]
         self._matched = False
+        self._coords = None
         self._initialize()
 
     @property
@@ -357,6 +357,10 @@ class MultiMatchedCatalog(MatchedCatalog):
             self._match_distance = pd.concat(aligned_dists, axis=1, 
                                             keys=[('distance', n) for n in self.visit_names]).dropna(how='all')
         return self._match_distance
+
+    def _get_coords(self):
+        coords_func = CompositeFunctor({'ra':RAColumn(), 'dec':DecColumn()})
+        self._coords = coords_func(self, how='all')
 
 class ParquetCatalog(Catalog):
     def __init__(self, filenames, name=None):

@@ -113,8 +113,8 @@ class CompositeFunctor(Functor):
     def columns(self):
         return [x for y in [f.columns for f in self.funcDict.values()] for x in y]
 
-    def __call__(self, catalog, dask=False, do_map=True, client=None, **kwargs):
-        if client is not None and do_map and False:
+    def __call__(self, catalog, dask=False, do_map=False, client=None, **kwargs):
+        if client is not None and do_map:
             worker = func_worker(catalog)
             cols = client.map(worker, self.funcDict.values())
             # cols = get_cols(catalog, self)

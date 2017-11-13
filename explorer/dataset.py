@@ -17,6 +17,7 @@ class QADataset(object):
         self._set_flags(flags)
 
         self.client = client
+
         self._df = None
         self._ds = None
         self._query = query
@@ -57,8 +58,13 @@ class QADataset(object):
     @property
     def allfuncs(self):
         allfuncs = self.funcs.copy()
+
+        # Set coordinates and x value
         allfuncs.update({'ra':RAColumn(), 'dec': DecColumn(), 
                          'x':self.xFunc})
+
+        # Include flags
+        allfuncs.update({f:Column(f) for f in self.flags})
 
         if self.labeller is not None:
             allfuncs.update({'label':self.labeller})
@@ -83,18 +89,19 @@ class QADataset(object):
         f = CompositeFunctor(self.allfuncs)
         if self.is_multi_matched:
             kwargs.update(how='all')
-        df = f(self.catalog, query=self.query, client=self.client, **kwargs)
+        df = f(self.catalog, query=self.query, client=self.client, dropna=False, **kwargs)
         if self.is_matched:
-            df['match_distance'] = self.catalog.match_distance
-        df = df.dropna(how='any')
+            df = pd.concat([df, self.catalog.match_distance], axis=1)
+        if not self.is_matched: 
+            df = df.dropna(how='any')
         ids = df.index
 
-        if self.is_matched:
-            flags, _ = self.catalog.get_columns(self.flags)
-        else:
-            flags = self.catalog.get_columns(self.flags)
-        flags = flags.compute().loc[ids]
-        df = df.join(flags)
+        # if self.is_matched:
+        #     flags, _ = self.catalog.get_columns(self.flags)
+        # else:
+        #     flags = self.catalog.get_columns(self.flags)
+        # flags = flags.compute().loc[ids]
+        # df = df.join(flags)
         self._df = df        
 
     @property

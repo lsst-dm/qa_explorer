@@ -10,6 +10,8 @@ import dask.array as da
 import dask
 import time
 
+from .utils import result
+
 class Functor(object):
     """Performs computation on catalog(s), read from disk
 
@@ -44,6 +46,7 @@ class Functor(object):
         else:
             vals = catalog._apply_func(self, query=query, client=client, **kwargs)
 
+        # dropna=True can be buggy; e.g. for boolean types perhaps?
         if dropna:
             if client is not None:
                 vals = client.compute(vals[da.isfinite(vals)])
@@ -67,22 +70,12 @@ class Functor(object):
         if dask:
             return vals
         else:
-            if hasattr(vals, 'compute'):
-                return vals.compute()
-            elif hasattr(vals, 'result'):
-                return vals.result()
-            else:
-                return vals
+            return result(vals)
 
     def test(self, catalog, dropna=True, dask=False):
         start = time.time()
         res = self(catalog, dropna=dropna, dask=dask)
-        if hasattr(res, 'result'):
-            n = len(res.result())
-        elif hasattr(res, 'compute'):
-            n = len(res.compute())
-        else:
-            n = len(res)
+        n = len(result(res))
         end = time.time()
         
         runtime = end - start
@@ -125,7 +118,7 @@ class CompositeFunctor(Functor):
             worker = func_worker(catalog)
             cols = client.map(worker, self.funcDict.values())
             # cols = get_cols(catalog, self)
-            df = pd.concat({k:c.result() for k,c in zip(self.funcDict.keys(), cols)}, axis=1)
+            df = pd.concat({k:result(c) for k,c in zip(self.funcDict.keys(), cols)}, axis=1)
         else:
             df = pd.concat({k : f(catalog, dask=dask, client=client, **kwargs) 
                             for k,f in self.funcDict.items()}, axis=1)
@@ -230,7 +223,10 @@ class RAColumn(CoordColumn):
         super(RAColumn, self).__init__('coord_ra', **kwargs)
 
     def __call__(self, catalog, **kwargs):
-        return catalog.ra
+        if len(kwargs) > 0:
+            return super(RAColumn, self).__call__(catalog, **kwargs)
+        else:
+            return catalog.ra
 
 class DecColumn(CoordColumn):
     name = 'Dec'
@@ -238,7 +234,10 @@ class DecColumn(CoordColumn):
         super(DecColumn, self).__init__('coord_ra', **kwargs)
 
     def __call__(self, catalog, **kwargs):
-        return catalog.dec
+        if len(kwargs) > 0:
+            return super(DecColumn, self).__call__(catalog, **kwargs)
+        else:
+            return catalog.dec
 
 
 def fluxName(col):

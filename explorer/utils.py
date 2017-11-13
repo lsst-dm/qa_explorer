@@ -10,3 +10,12 @@ def get_visits(field, tract, filt, sqlitedir='/scratch/hchiang2/parejko/'):
     return [x[0] for x in result]
     # return '^'.join(str(x[0]) for x in result)
 
+def result(df):
+    """Returns in-memory dataframe or series, getting result if necessary from dask
+    """
+    if hasattr(df, 'compute'):
+        return df.compute()
+    elif hasattr(df, 'result'):
+        return df.result()
+    else:
+        return df

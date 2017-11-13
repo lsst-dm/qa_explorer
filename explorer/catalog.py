@@ -15,6 +15,7 @@ import string
 
 from .match import match_lists
 from .functors import Labeller
+from .utils import result
 
 class Catalog(object):
     index_column = 'id'
@@ -70,7 +71,7 @@ class Catalog(object):
         df = self.get_columns(['coord_ra', 'coord_dec'], add_flags=False)
 
         # Hack to avoid phantom 'dir0' column 
-        df = df.compute()
+        df = result(df)
         if 'dir0' in df.columns:
             df = df.drop('dir0', axis=1)
 
@@ -228,10 +229,10 @@ class MatchedCatalog(Catalog):
 
     def _apply_func(self, func, query=None, how='difference', client=None):
         df1, df2 = self.get_columns(func.columns, query=query, client=client)
-        if func.allow_difference:
+        if func.allow_difference or how in ['all', 'second']:
             id1, id2 = self.match_inds
-            v1 = func._func(df1).compute().loc[id1].values
-            v2 = func._func(df2).compute().loc[id2].values
+            v1 = result(func._func(df1)).loc[id1].values
+            v2 = result(func._func(df2)).loc[id2].values
             if how=='difference':
                 vals = pd.Series(v1 - v2, index=id1)
             elif how=='sum':
@@ -240,6 +241,8 @@ class MatchedCatalog(Catalog):
                 vals = pd.Series(v2, index=id1)
             elif how=='first':
                 vals = pd.Series(v1, index=id1)
+            elif how=='all':
+                raise NotImplementedError
         else:
             vals = func._func(df1)
 
@@ -330,11 +333,11 @@ class MultiMatchedCatalog(MatchedCatalog):
 
             align_worker = AlignWorker(coadd_vals)
             aligned_vals = client.map(align_worker, visit_vals)
-            aligned_vals = [v.result() for v in aligned_vals]
+            aligned_vals = [result(v) for v in aligned_vals]
         else:
             visit_vals = [func(c, query=query, how='second', client=client) for c in self.subcats]
             aligned_vals = [coadd_vals.align(v)[1] for v in visit_vals]
-        val_df = pd.concat(aligned_vals, axis=1, names=self.visit_names)
+        val_df = pd.concat([coadd_vals] + aligned_vals, axis=1, keys=['coadd'] + self.visit_names)
         if how=='all':
             return val_df
         elif how=='stats':
@@ -352,7 +355,7 @@ class MultiMatchedCatalog(MatchedCatalog):
             coadd = pd.Series(index=self.coadd_cat.index)
             aligned_dists = [coadd.align(c.match_distance)[1] for c in self.subcats]
             self._match_distance = pd.concat(aligned_dists, axis=1, 
-                                            keys=[('distance', i) for i in range(len(aligned_dists))]).dropna(how='all')
+                                            keys=[('distance', n) for n in self.visit_names]).dropna(how='all')
         return self._match_distance
 
 class ParquetCatalog(Catalog):
@@ -422,10 +425,7 @@ class ParquetCatalog(Catalog):
 
     @property
     def df(self):
-        if isinstance(self._df, Future):
-            return self._df.result()
-        else:
-            return self._df
+        return result(self._df)
 
     def get_columns(self, columns, query=None, add_flags=False, client=None):
         

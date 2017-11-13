@@ -94,8 +94,9 @@ class QADataset(object):
             df = pd.concat([df, self.catalog.match_distance], axis=1)
         if not self.is_matched: 
             df = df.dropna(how='any')
-        ids = df.index
+        df = df.replace([-np.inf, np.inf], np.nan)
 
+        # ids = df.index
         # if self.is_matched:
         #     flags, _ = self.catalog.get_columns(self.flags)
         # else:
@@ -115,7 +116,7 @@ class QADataset(object):
         kdims += self.flags
         vdims = []
         for k,v in self.allfuncs.items():
-            if k in ('ra', 'dec', 'x', 'label'):
+            if k in ('ra', 'dec', 'x', 'label') or k in self.flags:
                 continue
             label = v.name
             if v.allow_difference:
@@ -127,6 +128,13 @@ class QADataset(object):
 
         if self.is_matched:
             vdims += [hv.Dimension('match_distance', label='Match Distance [arcsec]')]
-        ds = hv.Dataset(self.df, kdims=kdims, vdims=vdims)
+
+        if self.is_multi_matched:
+            # reduce df appropriately here
+            pass
+        else:
+            df = self.df.dropna(how='any')
+
+        ds = hv.Dataset(df, kdims=kdims, vdims=vdims)
         self._ds = ds        
 

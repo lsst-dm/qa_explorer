@@ -144,7 +144,7 @@ class MatchedCatalog(Catalog):
         store.close()
         inds1 = df.index
         inds2 = pd.Int64Index(df['id2'], name='id')
-        dist = df['distance']
+        dist = df['distance'].rename('match_distance')
 
 
         return inds1, inds2, dist   
@@ -355,7 +355,7 @@ class MultiMatchedCatalog(MatchedCatalog):
             coadd = pd.Series(index=self.coadd_cat.index)
             aligned_dists = [coadd.align(c.match_distance)[1] for c in self.subcats]
             self._match_distance = pd.concat(aligned_dists, axis=1, 
-                                            keys=[('distance', n) for n in self.visit_names]).dropna(how='all')
+                                            keys=[('match_distance', n) for n in self.visit_names]).dropna(how='all')
         return self._match_distance
 
     def _get_coords(self):

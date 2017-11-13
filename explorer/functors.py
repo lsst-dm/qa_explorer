@@ -223,10 +223,7 @@ class RAColumn(CoordColumn):
         super(RAColumn, self).__init__('coord_ra', **kwargs)
 
     def __call__(self, catalog, **kwargs):
-        if len(kwargs) > 0:
-            return super(RAColumn, self).__call__(catalog, **kwargs)
-        else:
-            return catalog.ra
+        return catalog.ra
 
 class DecColumn(CoordColumn):
     name = 'Dec'
@@ -234,10 +231,7 @@ class DecColumn(CoordColumn):
         super(DecColumn, self).__init__('coord_ra', **kwargs)
 
     def __call__(self, catalog, **kwargs):
-        if len(kwargs) > 0:
-            return super(DecColumn, self).__call__(catalog, **kwargs)
-        else:
-            return catalog.dec
+        return catalog.dec
 
 
 def fluxName(col):

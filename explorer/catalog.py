@@ -360,7 +360,7 @@ class MultiMatchedCatalog(MatchedCatalog):
 
     def _get_coords(self):
         coords_func = CompositeFunctor({'ra':RAColumn(), 'dec':DecColumn()})
-        self._coords = coords_func(self, how='all')
+        self._coords = coords_func(self, how='all', calculate=True)
 
 class ParquetCatalog(Catalog):
     def __init__(self, filenames, name=None):

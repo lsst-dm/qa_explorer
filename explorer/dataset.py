@@ -111,7 +111,7 @@ class QADataset(object):
             self._make_ds()
         return self._ds
 
-    def _make_ds(self):
+    def _make_ds(self, **kwargs):
         kdims = ['ra', 'dec', hv.Dimension('x', label=self.xFunc.name), 'label']
         kdims += self.flags
         vdims = []
@@ -131,7 +131,16 @@ class QADataset(object):
 
         if self.is_multi_matched:
             # reduce df appropriately here
-            pass
+            coadd_cols = ['ra', 'dec', 'x', 'label'] + self.flags
+            visit_cols = list(set(self.df.columns.levels[0]) - set(coadd_cols))
+
+            coadd_df = self.df.swaplevel(axis=1).loc[:, 'coadd'][coadd_cols]
+            visit_df = self.df[visit_cols].drop('coadd', axis=1, level=1)
+            dfs = dfs = [coadd_df, visit_df.std(axis=1, level=0).dropna(how='any')]
+
+
+            # Keep only rows that aren't nan in visit values
+            df = pd.concat(dfs, axis=1, join='inner')
         else:
             df = self.df.dropna(how='any')
 

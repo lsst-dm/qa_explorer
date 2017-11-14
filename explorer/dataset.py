@@ -5,6 +5,7 @@ import holoviews as hv
 from .functors import Functor, CompositeFunctor, Column, RAColumn, DecColumn, Mag
 from .functors import StarGalaxyLabeller
 from .catalog import MatchedCatalog, MultiMatchedCatalog
+from .plots import filter_dset
 
 class QADataset(object):
     def __init__(self, catalog, funcs, flags=None, 
@@ -153,13 +154,21 @@ class QADataset(object):
         ds = hv.Dataset(df, kdims=kdims, vdims=vdims)
         self._ds = ds        
 
-    def visit_points(self, visit, vdim, x_max, label):
+    def visit_points(self, visit, vdim, x_max, label,
+                     filter_range=None, flags=None, bad_flags=None):
+
         dset = self.get_ds(visit).select(x=(None, x_max), label=label)
-        pts = hv.Points(dset, kdims=['ra', 'dec'], vdims=[vdim]).redim(**{vdim:'y'})
+        # filter_range = {} if filter_range is None else filter_range
+        # flags = [] if flags is None else flags
+        # bad_flags = [] if bad_flags is None else bad_flags
+        dset = filter_dset(dset, filter_range=filter_range, flags=flags, bad_flags=bad_flags)
+        dset = dset.redim(**{vdim:'y'})
+        pts = hv.Points(dset, kdims=['ra', 'dec'], vdims=['y'])
         return pts
 
-    def visit_explore(self, x_range=np.arange(15,24.1,0.5)):
-        dmap = hv.DynamicMap(self.visit_points, kdims=['visit', 'y', 'x_max', 'label'])
+    def visit_explore(self, x_range=np.arange(15,24.1,0.5), filter_stream=None):
+        dmap = hv.DynamicMap(self.visit_points, kdims=['visit', 'y', 'x_max', 'label'],
+                             streams=[filter_stream])
         dmap = dmap.redim.values(visit=self.catalog.visit_names, 
                                  y=list(self.funcs.keys()) + ['match_distance'], 
                                  label=['galaxy', 'star'],

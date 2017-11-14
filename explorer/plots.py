@@ -297,3 +297,38 @@ class skyplot_layout(ParameterizedFunction):
             plots.append(plot)
                 
         return hv.Layout(plots)
+
+class skyshade(Operation):
+    cmap = param.String(default='coolwarm')
+    aggregator = param.ObjectSelector(default='mean', objects=['mean', 'std', 'count'])
+    width = param.Number(default=None)
+    height = param.Number(default=None)
+    vdim = param.String(default='y')
+    decimate_size = param.Number(default=5)
+    max_samples = param.Number(default=10000)
+
+    def _process(self, element, key=None):
+
+        vdim = self.p.vdim
+        if self.p.aggregator == 'mean':
+            aggregator = ds.mean(vdim)
+        elif self.p.aggregator == 'std':
+            aggregator = ds.std(vdim)
+        elif self.p.aggregator == 'count':
+            aggregator = ds.count()
+
+        kwargs = dict(cmap=cc.palette[self.p.cmap],
+                      aggregator=aggregator)
+        if self.p.width is not None:
+            kwargs.update(width=self.p.width, height=self.p.height,
+                         streams=[hv.streams.RangeXY])
+
+        datashaded = dynspread(datashade(element, **kwargs))
+
+        # decimate_opts = dict(plot={'tools':['hover', 'box_select']}, 
+        #                     style={'alpha':0, 'size':self.p.decimate_size, 
+        #                            'nonselection_alpha':0})
+
+        # decimated = decimate(element, max_samples=self.p.max_samples).opts(**decimate_opts)
+
+        return datashaded #* decimated

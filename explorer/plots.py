@@ -232,6 +232,11 @@ class multi_scattersky(ParameterizedFunction):
                        for ydim in self._get_ydims(dset)]).cols(3)
 
 
+class skypoints(Operation):
+    def _process(self, dset, key=None):
+        return hv.Points(dset, kdims=['ra', 'dec'], vdims=dset.vdims + ['label'])
+
+
 class skyplot(Operation):
     """Pass pts with ra,dec as kdims
     """
@@ -240,8 +245,6 @@ class skyplot(Operation):
     vdim = param.String(default=None)
     width = param.Number(default=None)
     height = param.Number(default=None)
-    streams = param.List(default=None)
-    sampling = param.Number(default=None)
     decimate_size = param.Number(default=5)
 
     def _process(self, dset, key=None):
@@ -250,7 +253,7 @@ class skyplot(Operation):
         else:
             vdim = self.p.vdim
         
-        pts = hv.Points(dset, kdims=['ra', 'dec'], vdims=dset.vdims + ['label'])
+        pts = skypoints(dset, key=key)
         
         if self.p.aggregator == 'mean':
             aggregator = ds.mean(vdim)

@@ -153,3 +153,15 @@ class QADataset(object):
         ds = hv.Dataset(df, kdims=kdims, vdims=vdims)
         self._ds = ds        
 
+    def visit_points(self, visit, vdim, x_max, label):
+        dset = self.get_ds(visit).select(x=(None, x_max), label=label)
+        pts = hv.Points(dset, kdims=['ra', 'dec'], vdims=[vdim]).redim(**{vdim:'y'})
+        return pts
+
+    def visit_explore(self, x_range=np.arange(15,24.1,0.5)):
+        dmap = hv.DynamicMap(self.visit_points, kdims=['visit', 'y', 'x_max', 'label'])
+        dmap = dmap.redim.values(visit=self.catalog.visit_names, 
+                                 y=list(self.funcs.keys()) + ['match_distance'], 
+                                 label=['galaxy', 'star'],
+                                 x_max=x_range)
+        return dmap

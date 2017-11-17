@@ -62,7 +62,7 @@ class QADataset(object):
 
         # Set coordinates and x value
         allfuncs.update({'ra':RAColumn(), 'dec': DecColumn(), 
-                         'x':self.xFunc})
+                         'x':self.xFunc, 'ccdId':Column('ccdId')})
 
         # Include flags
         allfuncs.update({f:Column(f) for f in self.flags})
@@ -116,7 +116,7 @@ class QADataset(object):
         return self._ds_dict[key]
 
     def _make_ds(self, **kwargs):
-        kdims = ['ra', 'dec', hv.Dimension('x', label=self.xFunc.name), 'label']
+        kdims = ['ra', 'dec', hv.Dimension('x', label=self.xFunc.name), 'label', 'ccdId']
         kdims += self.flags
         vdims = []
         for k,v in self.allfuncs.items():
@@ -143,7 +143,8 @@ class QADataset(object):
             visit_df = self.df[visit_cols].drop('coadd', axis=1, level=1)
             dfs = dfs = [coadd_df, visit_df.std(axis=1, level=0).dropna(how='any')]
 
-            df_dict = {k:df_swap[k].dropna(how='any') for k in ['coadd'] + self.catalog.visit_names}
+            df_dict = {k:df_swap[k].dropna(how='any').reset_index() 
+                            for k in ['coadd'] + self.catalog.visit_names}
             self._ds_dict = {k:hv.Dataset(df_dict[k], kdims=kdims, vdims=vdims) for k in df_dict}
 
             # Keep only rows that aren't nan in visit values
@@ -151,7 +152,7 @@ class QADataset(object):
         else:
             df = self.df.dropna(how='any')
 
-        ds = hv.Dataset(df, kdims=kdims, vdims=vdims)
+        ds = hv.Dataset(df.reset_index(), kdims=kdims, vdims=vdims)
         self._ds = ds        
 
     def visit_points(self, visit, vdim, x_max, label,
@@ -163,7 +164,7 @@ class QADataset(object):
         # bad_flags = [] if bad_flags is None else bad_flags
         dset = filter_dset(dset, filter_range=filter_range, flags=flags, bad_flags=bad_flags)
         dset = dset.redim(**{vdim:'y'})
-        pts = hv.Points(dset, kdims=['ra', 'dec'], vdims=['y'])
+        pts = hv.Points(dset, kdims=['ra', 'dec'], vdims=['y', 'id', 'ccdId'])
         return pts
 
     def visit_explore(self, x_range=np.arange(15,24.1,0.5), filter_stream=None):

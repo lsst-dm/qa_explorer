@@ -102,7 +102,10 @@ class Catalog(object):
 
     def _apply_func(self, func, query=None, client=None):
         df = self.get_columns(func.columns, query=query, client=client)
-        vals = func._func(df)
+        if len(df.columns)==0:
+            vals = pd.Series(np.nan, index=df.index)
+        else:
+            vals = func._func(df)
         return vals
 
 class MatchedCatalog(Catalog):
@@ -228,10 +231,23 @@ class MatchedCatalog(Catalog):
 
     def _apply_func(self, func, query=None, how='difference', client=None):
         df1, df2 = self.get_columns(func.columns, query=query, client=client)
+
+        # Check if either returned empty dataframe
+        df1_empty = len(df1.columns)==0
+        df2_empty = len(df2.columns)==0
+
         if func.allow_difference or how in ['all', 'second']:
             id1, id2 = self.match_inds
-            v1 = result(func._func(df1)).loc[id1].values
-            v2 = result(func._func(df2)).loc[id2].values
+            if df1_empty:
+                v1 = pd.Series(np.nan, index=id1)
+            else:
+                v1 = result(func._func(df1)).loc[id1].values
+    
+            if df2_empty:
+                v2 = pd.Series(np.nan, index=id1)
+            else:
+                v2 = result(func._func(df2)).loc[id2].values
+
             if how=='difference':
                 vals = pd.Series(v1 - v2, index=id1)
             elif how=='sum':
@@ -434,5 +450,6 @@ class ParquetCatalog(Catalog):
 
     def get_columns(self, columns, query=None, add_flags=False, client=None):
         
-        cols_to_get = list(columns)
+        # Drop unwanted columns
+        cols_to_get = [c for c in columns if c in self.columns]
         return self._read_data(cols_to_get, query=query, add_flags=add_flags, client=client)

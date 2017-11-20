@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import holoviews as hv
+from functools import partial
 
 from .functors import Functor, CompositeFunctor, Column, RAColumn, DecColumn, Mag
 from .functors import StarGalaxyLabeller
@@ -155,7 +156,7 @@ class QADataset(object):
         ds = hv.Dataset(df.reset_index(), kdims=kdims, vdims=vdims)
         self._ds = ds        
 
-    def visit_points(self, visit, vdim, x_max, label,
+    def visit_points(self, vdim, visit, x_max, label,
                      filter_range=None, flags=None, bad_flags=None):
 
         dset = self.get_ds(visit).select(x=(None, x_max), label=label)
@@ -167,11 +168,17 @@ class QADataset(object):
         pts = hv.Points(dset, kdims=['ra', 'dec'], vdims=['y', 'id', 'ccdId'])
         return pts
 
-    def visit_explore(self, x_range=np.arange(15,24.1,0.5), filter_stream=None):
-        dmap = hv.DynamicMap(self.visit_points, kdims=['visit', 'y', 'x_max', 'label'],
+    def visit_explore(self, vdim, x_range=np.arange(15,24.1,0.5), filter_stream=None):
+        fn = partial(QADataset.visit_points, self=self, vdim=vdim)
+        dmap = hv.DynamicMap(fn, kdims=['visit', 'x_max', 'label'],
                              streams=[filter_stream])
+
+        y_min = self.df[vdim].drop('coadd', axis=1).quantile(0.001).min()
+        y_max = self.df[vdim].drop('coadd', axis=1).quantile(0.999).max()
+
         dmap = dmap.redim.values(visit=self.catalog.visit_names, 
-                                 y=list(self.funcs.keys()) + ['match_distance'], 
+                                 # vdim=list(self.funcs.keys()) + ['match_distance'], 
+                                 # vdim=[vdim], 
                                  label=['galaxy', 'star'],
-                                 x_max=x_range)
+                                 x_max=x_range).redim.range(y=(y_min, y_max))
         return dmap

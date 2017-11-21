@@ -164,9 +164,9 @@ class QADataset(object):
         # flags = [] if flags is None else flags
         # bad_flags = [] if bad_flags is None else bad_flags
         dset = filter_dset(dset, filter_range=filter_range, flags=flags, bad_flags=bad_flags)
-        dset = dset.redim(**{vdim:'y'})
-        pts = hv.Points(dset, kdims=['ra', 'dec'], vdims=['y', 'id', 'ccdId'])
-        return pts
+        # dset = dset.redim(**{vdim:'y'})
+        pts = hv.Points(dset, kdims=['ra', 'dec'], vdims=[vdim, 'id', 'ccdId'])
+        return pts.opts(plot={'color_index':vdim})
 
     def visit_explore(self, vdim, x_range=np.arange(15,24.1,0.5), filter_stream=None):
         fn = partial(QADataset.visit_points, self=self, vdim=vdim)
@@ -176,9 +176,16 @@ class QADataset(object):
         y_min = self.df[vdim].drop('coadd', axis=1).quantile(0.001).min()
         y_max = self.df[vdim].drop('coadd', axis=1).quantile(0.999).max()
 
+        ra_min, ra_max = self.catalog.coadd_cat.ra.quantile([0, 1])
+        dec_min, dec_max = self.catalog.coadd_cat.dec.quantile([0, 1])
+
+        ranges = {vdim : (y_min, y_max),
+                  'ra' : (ra_min, ra_max),
+                  'dec' : (dec_min, dec_max)}
+
         dmap = dmap.redim.values(visit=self.catalog.visit_names, 
                                  # vdim=list(self.funcs.keys()) + ['match_distance'], 
                                  # vdim=[vdim], 
                                  label=['galaxy', 'star'],
-                                 x_max=x_range).redim.range(y=(y_min, y_max))
+                                 x_max=x_range).redim.range(**ranges)
         return dmap

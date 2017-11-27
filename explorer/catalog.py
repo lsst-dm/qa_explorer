@@ -372,7 +372,7 @@ class MultiMatchedCatalog(MatchedCatalog):
             aligned_dists = [coadd.align(c.match_distance)[1] for c in self.subcats]
             self._match_distance = pd.concat(aligned_dists, axis=1, 
                                             keys=[('match_distance', n) for n in self.visit_names]).dropna(how='all')
-            self._match_distance[('match_distance', 'coadd')] = 0.
+            self._match_distance[('match_distance', 'coadd')] = np.nan
         return self._match_distance
 
     def _get_coords(self):

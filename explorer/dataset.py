@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import holoviews as hv
 from functools import partial
-from distributed import Client
 
 from .functors import Functor, CompositeFunctor, Column, RAColumn, DecColumn, Mag
 from .functors import StarGalaxyLabeller
@@ -18,23 +17,9 @@ class QADataset(object):
         self._set_catalog(catalog)
         self._set_funcs(funcs, xFunc, labeller)
         self._set_flags(flags)
-        self._set_client(client)
 
+        self.client = client
         self._query = query
-
-    @property
-    def client(self):
-        return self._client
-
-    def _set_client(self, client):
-        if client is None:
-            self._client = None
-        if client=='local':
-            self._client = Client()
-        elif isinstance(client, Client):
-            self._client = client
-        else:
-            self._client = Client(client)
 
     def _set_catalog(self, catalog):
         self.catalog = catalog

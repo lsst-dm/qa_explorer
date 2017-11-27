@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import holoviews as hv
 from functools import partial
+import pickle
 
 from .functors import Functor, CompositeFunctor, Column, RAColumn, DecColumn, Mag
 from .functors import StarGalaxyLabeller
@@ -20,6 +21,15 @@ class QADataset(object):
 
         self.client = client
         self._query = query
+
+    def save(self, filename):
+        pickle.dump(self, open(filename, 'wb'))
+
+    @classmethod
+    def load(cls, filename, client=None):
+        new = pickle.load(open(filename, 'rb'))
+        new.client = client
+        return new
 
     def __getstate__(self):
         odict = self.__dict__

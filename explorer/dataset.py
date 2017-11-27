@@ -21,6 +21,15 @@ class QADataset(object):
         self.client = client
         self._query = query
 
+    def __getstate__(self):
+        odict = self.__dict__
+        client = self.client
+        odict['client'] = None
+        return odict
+
+    def __setstate__(self, d):
+        self.__dict__ = d
+
     def _set_catalog(self, catalog):
         self.catalog = catalog
         self._reset()

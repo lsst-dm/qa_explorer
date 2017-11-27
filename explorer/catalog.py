@@ -371,9 +371,13 @@ class MultiMatchedCatalog(MatchedCatalog):
             coadd = pd.Series(index=self.coadd_cat.index)
             aligned_dists = [coadd.align(c.match_distance)[1] for c in self.subcats]
             self._match_distance = pd.concat(aligned_dists, axis=1, 
-                                            keys=[('match_distance', n) for n in self.visit_names]).dropna(how='all')
+                                            keys=[('match_distance', n) for n in self.visit_names])
             self._match_distance[('match_distance', 'coadd')] = np.nan
         return self._match_distance
+
+    @property
+    def n_visits(self):
+        return self.match_distance.count(axis=1).rename('n_visits')
 
     def _get_coords(self):
         coords_func = CompositeFunctor({'ra':RAColumn(), 'dec':DecColumn()})

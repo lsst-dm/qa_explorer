@@ -29,7 +29,7 @@ class QADataset(object):
     def _set_client(self, client):
         if client is None:
             self._client = None
-        elif client=='local':
+        if client=='local':
             self._client = Client()
         elif isinstance(client, Client):
             self._client = client

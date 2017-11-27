@@ -19,13 +19,11 @@ class QADataset(object):
         self._set_flags(flags)
 
         self.client = client
-
-        self._df = None
-        self._ds = None
         self._query = query
 
     def _set_catalog(self, catalog):
         self.catalog = catalog
+        self._reset()
 
     def _set_funcs(self, funcs, xFunc, labeller):
         if isinstance(funcs, list) or isinstance(funcs, tuple):
@@ -37,12 +35,14 @@ class QADataset(object):
 
         self.xFunc = xFunc
         self.labeller = labeller
+        self._reset()
 
     def _set_flags(self, flags):
         if flags is None:
             self.flags = []
         else:
             self.flags = flags # TODO: check to make sure flags are valid                    
+        self._reset()
 
     def _reset(self):
         self._df = None
@@ -93,7 +93,7 @@ class QADataset(object):
             kwargs.update(how='all')
         df = f(self.catalog, query=self.query, client=self.client, dropna=False, **kwargs)
         if self.is_matched:
-            df = pd.concat([df, self.catalog.match_distance], axis=1)
+            df = pd.concat([df, self.catalog.match_distance.dropna(how='all')], axis=1)
         if not self.is_matched: 
             df = df.dropna(how='any')
         df = df.replace([-np.inf, np.inf], np.nan)

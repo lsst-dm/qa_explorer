@@ -108,7 +108,7 @@ class QADataset(object):
 
     @property
     def id_name(self):
-        if is_multi_matched:
+        if self.is_multi_matched:
             name = 'ccdId'
         elif 'ccdId' in self.catalog.columns:
             name = 'ccdId'

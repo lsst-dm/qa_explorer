@@ -82,7 +82,11 @@ class QADataset(object):
 
         # Set coordinates and x value
         allfuncs.update({'ra':RAColumn(), 'dec': DecColumn(), 
-                         'x':self.xFunc, 'ccdId':Column('ccdId')})
+                         'x':self.xFunc})
+        idCols = ['ccdId', 'patchId']
+        for c in idCols:
+            if c in self.catalog.columns:
+                allfuncs.update({c:Columns(c)})
 
         # Include flags
         allfuncs.update({f:Column(f) for f in self.flags})

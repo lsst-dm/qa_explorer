@@ -108,9 +108,9 @@ class QADataset(object):
 
     @property
     def id_name(self):
-        if 'ccdId' in catalog.columns:
+        if 'ccdId' in self.catalog.columns:
             name = 'ccdId'
-        elif 'patchId' in catalog.columns:
+        elif 'patchId' in self.catalog.columns:
             name = 'patchId'
         else:
             raise ValueError('No id name available (looked for ccdId, patchId)?')

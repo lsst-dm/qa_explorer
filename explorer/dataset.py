@@ -86,7 +86,7 @@ class QADataset(object):
         idCols = ['ccdId', 'patchId']
         for c in idCols:
             if c in self.catalog.columns:
-                allfuncs.update({c:Columns(c)})
+                allfuncs.update({c:Column(c)})
 
         # Include flags
         allfuncs.update({f:Column(f) for f in self.flags})

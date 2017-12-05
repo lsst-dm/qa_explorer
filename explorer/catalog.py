@@ -315,6 +315,10 @@ class MultiMatchedCatalog(MatchedCatalog):
     def cat1(self):
         return self.coadd_cat
 
+    @property
+    def columns(self):
+        return self.coadd_cat.columns
+
     def match(self, raise_exceptions=False, **kwargs):
         for i,c in enumerate(self.subcats):
             try:

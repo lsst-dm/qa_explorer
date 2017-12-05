@@ -82,11 +82,7 @@ class QADataset(object):
 
         # Set coordinates and x value
         allfuncs.update({'ra':RAColumn(), 'dec': DecColumn(), 
-                         'x':self.xFunc})
-        idCols = ['ccdId', 'patchId']
-        for c in idCols:
-            if c in self.catalog.columns:
-                allfuncs.update({c:Column(c)})
+                         'x':self.xFunc, self.id_name : Column(self.id_name)})
 
         # Include flags
         allfuncs.update({f:Column(f) for f in self.flags})
@@ -109,6 +105,17 @@ class QADataset(object):
     @property
     def is_multi_matched(self):
         return isinstance(self.catalog, MultiMatchedCatalog)
+
+    @property
+    def id_name(self):
+        if 'ccdId' in catalog.columns:
+            name = 'ccdId'
+        elif 'patchId' in catalog.columns:
+            name = 'patchId'
+        else:
+            raise ValueError('No id name available (looked for ccdId, patchId)?')
+
+        return name
 
     def _make_df(self, **kwargs):
         f = CompositeFunctor(self.allfuncs)
@@ -140,7 +147,7 @@ class QADataset(object):
         return self._ds_dict[key]
 
     def _make_ds(self, **kwargs):
-        kdims = ['ra', 'dec', hv.Dimension('x', label=self.xFunc.name), 'label', 'ccdId']
+        kdims = ['ra', 'dec', hv.Dimension('x', label=self.xFunc.name), 'label', self.id_name]
         kdims += self.flags
         vdims = []
         for k,v in self.allfuncs.items():
@@ -188,7 +195,7 @@ class QADataset(object):
         # bad_flags = [] if bad_flags is None else bad_flags
         dset = filter_dset(dset, filter_range=filter_range, flags=flags, bad_flags=bad_flags)
         # dset = dset.redim(**{vdim:'y'})
-        pts = hv.Points(dset, kdims=['ra', 'dec'], vdims=[vdim, 'id', 'ccdId'])
+        pts = hv.Points(dset, kdims=['ra', 'dec'], vdims=[vdim, 'id', self.id_name])
         return pts.opts(plot={'color_index':vdim})
 
     def visit_explore(self, vdim, x_range=np.arange(15,24.1,0.5), filter_stream=None):

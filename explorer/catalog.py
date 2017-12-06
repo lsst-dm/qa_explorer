@@ -471,16 +471,20 @@ class ParquetCatalog(Catalog):
 class ButlerCatalog(ParquetCatalog):
     _dataset_name = None # must define for subclasses
     _default_description = None
-    def __init__(self, butler, dataId, description=None, **kwargs):
+    def __init__(self, butler, dataIdList, description=None, **kwargs):
         self.butler = butler
-        self.dataId = dataId
+        if type(dataIdList) not in [list, tuple]:
+            dataIdList = [dataIdList]
+        self.dataIdList = dataIdList
         if description is None:
             description = self._default_description
         self.description = description
         
-        tableFilenamer = Filenamer(butler, self._dataset_name, dataId)
-        filename = tableFilenamer(dataId, description=description)
-        super(ButlerCatalog, self).__init__([filename], **kwargs)
+        filenames = []
+        for dataId in dataIdList:
+            tableFilenamer = Filenamer(butler, self._dataset_name, dataId)
+            filenames.append(tableFilenamer(dataId, description=description))
+        super(ButlerCatalog, self).__init__(filenames, **kwargs)
 
 class CoaddCatalog(ButlerCatalog):
     _dataset_name = 'qaTableCoadd'

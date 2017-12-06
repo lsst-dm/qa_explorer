@@ -146,6 +146,8 @@ class QADataset(object):
         return self._ds
 
     def get_ds(self, key):
+        if self._ds is None:
+            self._make_ds()
         return self._ds_dict[key]
 
     def _make_ds(self, **kwargs):
@@ -174,7 +176,7 @@ class QADataset(object):
             df_swap = self.df.swaplevel(axis=1)
             coadd_df = df_swap.loc[:, 'coadd'][coadd_cols]
             visit_df = self.df[visit_cols].drop('coadd', axis=1, level=1)
-            dfs = dfs = [coadd_df, visit_df.std(axis=1, level=0).dropna(how='any')]
+            dfs = [coadd_df, visit_df.std(axis=1, level=0).dropna(how='any')]
 
             df_dict = {k:df_swap[k].dropna(how='any').reset_index() 
                             for k in ['coadd'] + self.catalog.visit_names}

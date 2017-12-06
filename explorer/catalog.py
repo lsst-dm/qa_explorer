@@ -17,6 +17,11 @@ from .match import match_lists
 from .functors import Labeller, CompositeFunctor, RAColumn, DecColumn
 from .utils import result
 
+try:
+    from lsst.pipe.analysis.utils import Filenamer
+except ImportError:
+    logging.warning('Pipe analysis not available.  ButlerCatalog will not work.')
+
 class Catalog(object):
     index_column = 'id'
 
@@ -461,3 +466,30 @@ class ParquetCatalog(Catalog):
         # Drop unwanted columns
         cols_to_get = [c for c in columns if c in self.columns]
         return self._read_data(cols_to_get, query=query, add_flags=add_flags, client=client)
+
+
+class ButlerCatalog(ParquetCatalog):
+    _dataset_name = None # must define for subclasses
+    _default_description = None
+    def __init__(self, butler, dataId, description=None, **kwargs):
+        self.butler = butler
+        self.dataId = dataId
+        if description is None:
+            description = self._default_description
+        self.description = description
+        
+        tableFilenamer = Filenamer(butler, self._dataset_name, dataId)
+        filename = tableFilenamer(dataId, description=description)
+        super(ButlerCatalog, self).__init__([filename], **kwargs)
+
+class CoaddCatalog(ButlerCatalog):
+    _dataset_name = 'qaTableCoadd'
+    _default_description = 'forced'
+    
+class VisitCatalog(ButlerCatalog):
+    _dataset_name = 'qaTableVisit'
+    _default_description = 'catalog'
+    
+class ColorCatalog(ButlerCatalog):
+    _dataset_name = 'qaTableColor'
+    _default_description = 'forced'

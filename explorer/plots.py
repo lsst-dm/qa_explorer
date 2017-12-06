@@ -80,7 +80,7 @@ class filterpoints(Operation):
         Flags to ignore""")
     xdim = param.String(default='x')
     ydim = param.String(default='y')
-    set_title = param.Boolean(default=True)
+    set_title = param.Boolean(default=False)
 
     def _process(self, dset, key=None):
         dset = filter_dset(dset, flags=self.p.flags, bad_flags=self.p.bad_flags, 

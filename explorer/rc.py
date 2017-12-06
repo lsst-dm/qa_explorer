@@ -47,7 +47,7 @@ def get_coadd(butler, field, filt, description=None, **kwargs):
 
 def get_matched(butler, field, filt, description=None, visit_description=None, 
                         match_registry='rc_match_registry.h5', **kwargs):
-    coadd_cat = get_coadd(butler, field, field, description=description, **kwargs)
+    coadd_cat = get_coadd(butler, field, filt, description=description, **kwargs)
     visits = get_visits(field, filt)
     tracts = get_tractList(field)
     visit_cats = [VisitCatalog(butler, {'tract':t, 'visit':v, 'filter':filt}, name=float('{}.{}'.format(v,i))) 

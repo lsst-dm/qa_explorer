@@ -1,6 +1,6 @@
 import re
 
-from .catalog import CoaddCatalog, VisitCatalog, ColorCatalog
+from .catalog import CoaddCatalog, VisitCatalog, ColorCatalog, MultiMatchedCatalog
 
 visits = {'cosmos' : {'HSC-G' : "11690..11712:2^29324^29326^29336^29340^29350^29352",
                       'HSC-R' : "1202..1220:2^23692^23694^23704^23706^23716^23718",
@@ -41,13 +41,13 @@ def get_tractList(field):
         tractList = [8766, 8767]
     return tractList
 
-def get_coadd_catalog(butler, field, filt, description=None, **kwargs):
+def get_coadd(butler, field, filt, description=None, **kwargs):
     dataIds = [{'tract':t, 'filter':filt} for t in get_tractList(field)]
     return CoaddCatalog(butler, dataIds, description=description, **kwargs)
 
-def get_matched_catalog(butler, field, filt, description=None, visit_description=None, 
+def get_matched(butler, field, filt, description=None, visit_description=None, 
                         match_registry='rc_match_registry.h5', **kwargs):
-    coadd_cat = get_coadd_catalog(butler, field, field, description=description, **kwargs)
+    coadd_cat = get_coadd(butler, field, field, description=description, **kwargs)
     visits = get_visits(field, filt)
     tracts = get_tractList(field)
     visit_cats = [VisitCatalog(butler, {'tract':t, 'visit':v, 'filter':filt}, name=float('{}.{}'.format(v,i))) 

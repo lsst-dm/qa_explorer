@@ -472,7 +472,7 @@ class ButlerCatalog(ParquetCatalog):
     _dataset_name = None # must define for subclasses
     _default_description = None
     def __init__(self, butler, dataIdList, description=None, **kwargs):
-        self.butler = butler
+        # self.butler = butler
         if type(dataIdList) not in [list, tuple]:
             dataIdList = [dataIdList]
         self.dataIdList = dataIdList

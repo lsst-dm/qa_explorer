@@ -217,7 +217,7 @@ class multi_scattersky(ParameterizedFunction):
     
     filter_stream = param.ClassSelector(default=FilterStream(), class_=FilterStream)
 
-    ignored_dimensions = param.List(default=['x', 'ra', 'dec', 'label'])
+    ignored_dimensions = param.List(default=['x', 'ra', 'dec', 'label', 'ccdId', 'patchId'])
     
     def _get_ydims(self, dset):
         # Get dimensions from first Dataset type found in input

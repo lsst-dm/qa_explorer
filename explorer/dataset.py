@@ -155,7 +155,7 @@ class QADataset(object):
         kdims += self.flags
         vdims = []
         for k,v in self.allfuncs.items():
-            if k in ('ra', 'dec', 'x', 'label') or k in self.flags:
+            if k in ('ra', 'dec', 'x', 'label', self.id_name) or k in self.flags:
                 continue
             label = v.name
             if v.allow_difference:

@@ -4,7 +4,7 @@ import holoviews as hv
 from functools import partial
 import pickle
 import tempfile
-import os
+import os, shutil
 
 from .functors import Functor, CompositeFunctor, Column, RAColumn, DecColumn, Mag
 from .functors import StarGalaxyLabeller
@@ -52,6 +52,10 @@ class QADataset(object):
 
     def __setstate__(self, d):
         self.__dict__ = d
+
+    def __del__(self):
+        if self._df_computed:
+            shutil.remove(self.df_file)
 
     def _set_catalog(self, catalog):
         self.catalog = catalog

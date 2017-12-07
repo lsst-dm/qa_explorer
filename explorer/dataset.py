@@ -134,7 +134,7 @@ class QADataset(object):
 
     @property
     def df_file(self):
-        if _df_file is None:
+        if self._df_file is None:
             self._df_file = os.path.join(self._cachedir, next(tempfile._get_candidate_names()))
         self._df_file
 

@@ -37,8 +37,10 @@ def field_name(tract):
 def get_tractList(field):
     if field=='cosmos':
         tractList = [9813]
-    elif field=='wide':
-        tractList = [8766, 8767]
+    elif field=='wide-8766':
+        tractList = [8766]
+    elif field=='wide-8767':
+        tractlist = [8767]
     return tractList
 
 def get_coadd(butler, field, filt, description=None, **kwargs):

@@ -109,7 +109,8 @@ class QADataset(object):
         if not self._df_computed:
             self._make_df()
 
-        return pd.read_hdf(self.df_file, 'df')
+        # df = pd.read_hdf(self.df_file, 'df')
+        df = pd.read_parquet(self.df_file)
 
     @property
     def is_matched(self):
@@ -149,7 +150,8 @@ class QADataset(object):
             df = df.dropna(how='any')
         df = df.replace([-np.inf, np.inf], np.nan)
 
-        df.to_hdf(self.df_file, 'df') #must be format='table' if categoricals included
+        # df.to_hdf(self.df_file, 'df') #must be format='table' if categoricals included
+        df.to_parquet(self.df_file)
         self._df_computed = True
 
         # ids = df.index

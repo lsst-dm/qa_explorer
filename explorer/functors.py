@@ -286,7 +286,7 @@ class Labeller(Functor):
     _null_label = 'null'
     _allow_difference = False
     name = 'label'
-    _force_str = True
+    _force_str = False
 
     def __call__(self, catalog, dropna=False, **kwargs):
         return super(Labeller, self).__call__(catalog, dropna=False, **kwargs)

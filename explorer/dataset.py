@@ -4,6 +4,7 @@ import holoviews as hv
 from functools import partial
 import pickle
 import tempfile
+import os
 
 from .functors import Functor, CompositeFunctor, Column, RAColumn, DecColumn, Mag
 from .functors import StarGalaxyLabeller

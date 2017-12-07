@@ -9,6 +9,7 @@ import dask.dataframe as dd
 import dask.array as da
 import dask
 import time
+import inspect
 
 from .utils import result
 
@@ -27,6 +28,9 @@ class Functor(object):
             self.allow_difference = allow_difference
         else:
             self.allow_difference = self._allow_difference
+
+    def __hash__(self):
+        return hash(inspect.getsource(type(self)))
 
     @property
     def columns(self):

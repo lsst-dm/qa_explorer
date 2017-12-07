@@ -14,7 +14,8 @@ class QADataset(object):
     def __init__(self, catalog, funcs, flags=None, 
                  xFunc=Mag('base_PsfFlux', allow_difference=False), 
                  labeller=StarGalaxyLabeller(),
-                 query=None, client=None):
+                 query=None, client=None,
+                 cachedir=None):
 
         self._set_catalog(catalog)
         self._set_funcs(funcs, xFunc, labeller)
@@ -23,8 +24,9 @@ class QADataset(object):
         self.client = client
         self._query = query
 
-        self._tmpdir = tempdir.gettempdir()
-        self._df_file = None
+        if cachedir is None:
+            cachedir = tempdir.gettempdir()
+        self._cachedir = cachedir
 
     def __hash__(self):
         h = hash(self.catalog)
@@ -74,7 +76,7 @@ class QADataset(object):
         self._reset()
 
     def _reset(self):
-        self._df = None
+        self._df_computed = False
         self._ds = None
 
     @property
@@ -104,9 +106,10 @@ class QADataset(object):
 
     @property
     def df(self):
-        if self._df is None:
+        if not self._df_computed:
             self._make_df()
-        return self._df
+            
+        return pd.read_hdf(self.df_file, 'df')
 
     @property
     def is_matched(self):
@@ -131,8 +134,7 @@ class QADataset(object):
 
     @property
     def df_file(self):
-        if self._df_file is None:
-            self._df_file = os.path.join(self._tmpdir, '{}.h5'.format())
+        return os.path.join(self._cachedir, '{}.h5'.format(hash(self)))
 
     def _make_df(self, **kwargs):
         f = CompositeFunctor(self.allfuncs)
@@ -145,7 +147,8 @@ class QADataset(object):
             df = df.dropna(how='any')
         df = df.replace([-np.inf, np.inf], np.nan)
 
-        df.to_hdf(self.df_file)
+        df.to_hdf(self.df_file, 'df')
+        self._df_computed = True
 
         # ids = df.index
         # if self.is_matched:
@@ -154,7 +157,7 @@ class QADataset(object):
         #     flags = self.catalog.get_columns(self.flags)
         # flags = flags.compute().loc[ids]
         # df = df.join(flags)
-        self._df = df        
+        # self._df = df        
 
     @property
     def ds(self):

@@ -3,6 +3,7 @@ import pandas as pd
 import holoviews as hv
 from functools import partial
 import pickle
+import tempdir
 
 from .functors import Functor, CompositeFunctor, Column, RAColumn, DecColumn, Mag
 from .functors import StarGalaxyLabeller
@@ -21,6 +22,15 @@ class QADataset(object):
 
         self.client = client
         self._query = query
+
+        self._tmpdir = tempdir.gettempdir()
+        self._df_file = None
+
+    def __hash__(self):
+        h = hash(self.catalog)
+        for f in self.allfuncs.values():
+            h += hash(f)
+        return h
 
     def save(self, filename):
         pickle.dump(self, open(filename, 'wb'))
@@ -119,6 +129,11 @@ class QADataset(object):
 
         return name
 
+    @property
+    def df_file(self):
+        if self._df_file is None:
+            self._df_file = os.path.join(self._tmpdir, '{}.h5'.format())
+
     def _make_df(self, **kwargs):
         f = CompositeFunctor(self.allfuncs)
         if self.is_multi_matched:
@@ -129,6 +144,8 @@ class QADataset(object):
         if not self.is_matched: 
             df = df.dropna(how='any')
         df = df.replace([-np.inf, np.inf], np.nan)
+
+        df.to_hdf(self.df_file)
 
         # ids = df.index
         # if self.is_matched:

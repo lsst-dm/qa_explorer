@@ -33,8 +33,10 @@ def get_visits(field, filt):
 def field_name(tract):
     if tract==9813:
         return 'cosmos'
-    elif tract in [8766, 8767]:
-        return 'wide'
+    elif tract==8766:
+        return 'wide-8766' 
+    elif tract==8767::
+        return 'wide-8767'
 
 def get_tractList(field):
     if field=='cosmos':

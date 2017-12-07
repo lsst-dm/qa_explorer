@@ -29,9 +29,6 @@ class Functor(object):
         else:
             self.allow_difference = self._allow_difference
 
-    def __hash__(self):
-        return hash(inspect.getsource(type(self)))
-
     @property
     def columns(self):
         try:

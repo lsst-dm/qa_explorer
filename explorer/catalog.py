@@ -303,6 +303,12 @@ class MultiMatchedCatalog(MatchedCatalog):
         self._coords = None
         self._initialize()
 
+    def _stringify(self):
+        s = self.coadd_cat._stringify()
+        for c in self.visit_cats:
+            s += c._stringify()
+        return s
+
     @property
     def visit_names(self):
         return [c.name for c in self.visit_cats]

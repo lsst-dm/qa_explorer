@@ -35,7 +35,7 @@ def field_name(tract):
         return 'cosmos'
     elif tract==8766:
         return 'wide-8766' 
-    elif tract==8767::
+    elif tract==8767:
         return 'wide-8767'
 
 def get_tractList(field):

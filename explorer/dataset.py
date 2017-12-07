@@ -114,6 +114,7 @@ class QADataset(object):
         # df = pd.read_hdf(self.df_file, 'df')
         # df = pd.read_parquet(self.df_file) # wait for pandas 0.22
         df = dd.read_parquet(self.df_file)
+        return df
 
     @property
     def is_matched(self):

@@ -28,12 +28,7 @@ class QADataset(object):
         if cachedir is None:
             cachedir = tempfile.gettempdir()
         self._cachedir = cachedir
-
-    def __hash__(self):
-        h = hash(self.catalog)
-        for f in self.allfuncs.values():
-            h += hash(f)
-        return h
+        self._df_file = None
 
     def save(self, filename):
         pickle.dump(self, open(filename, 'wb'))
@@ -139,7 +134,9 @@ class QADataset(object):
 
     @property
     def df_file(self):
-        return os.path.join(self._cachedir, '{}.h5'.format(hash(self)))
+        if _df_file is None:
+            self._df_file = os.path.join(self._cachedir, next(tempfile._get_candidate_names()))
+        self._df_file
 
     def _make_df(self, **kwargs):
         f = CompositeFunctor(self.allfuncs)

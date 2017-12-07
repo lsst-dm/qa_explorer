@@ -18,7 +18,7 @@ class QADataset(object):
                  xFunc=Mag('base_PsfFlux', allow_difference=False), 
                  labeller=StarGalaxyLabeller(),
                  query=None, client=None,
-                 cachedir=None):
+                 cachedir=None, oom=False):
 
         self._set_catalog(catalog)
         self._set_funcs(funcs, xFunc, labeller)
@@ -31,6 +31,8 @@ class QADataset(object):
             cachedir = tempfile.gettempdir()
         self._cachedir = cachedir
         self._df_file = None
+
+        self.oom = oom
 
     def save(self, filename):
         pickle.dump(self, open(filename, 'wb'))
@@ -51,7 +53,7 @@ class QADataset(object):
         self.__dict__ = d
 
     def __del__(self):
-        if self._df_computed:
+        if self._df_computed and self.oom:
             os.remove(self.df_file)
 
     def _set_catalog(self, catalog):
@@ -155,9 +157,10 @@ class QADataset(object):
             df = df.dropna(how='any')
         df = df.replace([-np.inf, np.inf], np.nan)
 
-        # df.to_hdf(self.df_file, 'df') #must be format='table' if categoricals included
-        df.to_parquet(self.df_file) # wait for pandas 0.22
-        # fastparquet.write(self.df_file, df) # Doesn't work with multiindexing
+        if self.oom:
+            # df.to_hdf(self.df_file, 'df') #must be format='table' if categoricals included
+            df.to_parquet(self.df_file) # wait for pandas 0.22
+            # fastparquet.write(self.df_file, df) # Doesn't work with multiindexing
 
         self._df_computed = True
 

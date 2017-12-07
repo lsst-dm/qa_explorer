@@ -241,8 +241,8 @@ class QADataset(object):
         dmap = hv.DynamicMap(fn, kdims=['visit', 'x_max', 'label'],
                              streams=[filter_stream])
 
-        y_min = self.df[vdim].drop('coadd', axis=1).quantile(0.001).min()
-        y_max = self.df[vdim].drop('coadd', axis=1).quantile(0.999).max()
+        y_min = self.df[vdim].drop('coadd', axis=1).quantile(0.005).min()
+        y_max = self.df[vdim].drop('coadd', axis=1).quantile(0.995).max()
 
         ra_min, ra_max = self.catalog.coadd_cat.ra.quantile([0, 1])
         dec_min, dec_max = self.catalog.coadd_cat.dec.quantile([0, 1])

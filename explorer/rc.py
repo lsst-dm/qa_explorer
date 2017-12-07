@@ -44,7 +44,7 @@ def get_tractList(field):
     elif field=='wide-8766':
         tractList = [8766]
     elif field=='wide-8767':
-        tractlist = [8767]
+        tractList = [8767]
     return tractList
 
 def get_coadd(butler, field, filt, description=None, **kwargs):

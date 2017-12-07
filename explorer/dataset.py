@@ -110,7 +110,8 @@ class QADataset(object):
     def df(self):
         if not self._df_computed:
             self._make_df()
-
+        return self._df
+        # Save below for when trying to do more out-of-memory
         # df = pd.read_hdf(self.df_file, 'df')
         df = pd.read_parquet(self.df_file) # wait for pandas 0.22
         # df = dd.read_parquet(self.df_file)
@@ -167,7 +168,7 @@ class QADataset(object):
         #     flags = self.catalog.get_columns(self.flags)
         # flags = flags.compute().loc[ids]
         # df = df.join(flags)
-        # self._df = df        
+        self._df = df  
 
     @property
     def ds(self):

@@ -218,7 +218,9 @@ class multi_scattersky(ParameterizedFunction):
     filter_stream = param.ClassSelector(default=FilterStream(), class_=FilterStream)
 
     ignored_dimensions = param.List(default=['x', 'ra', 'dec', 'label', 'ccdId', 'patchId'])
-    
+    height = param.Number(default=300)
+    width = param.Number(default=900)
+
     def _get_ydims(self, dset):
         # Get dimensions from first Dataset type found in input
         return [dim.name for dim in dset.traverse(lambda x: x, [hv.Dataset])[0].vdims]
@@ -228,7 +230,7 @@ class multi_scattersky(ParameterizedFunction):
     def __call__(self, dset, **params):
         self.p = param.ParamOverrides(self, params)
         return hv.Layout([scattersky(dset, filter_stream=self.p.filter_stream,
-                                  ydim=ydim) 
+                                  ydim=ydim, height=self.p.height, width=self.p.width) 
                        for ydim in self._get_ydims(dset)]).cols(3)
 
 

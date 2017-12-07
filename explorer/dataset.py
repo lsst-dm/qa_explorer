@@ -148,7 +148,7 @@ class QADataset(object):
             df = df.dropna(how='any')
         df = df.replace([-np.inf, np.inf], np.nan)
 
-        df.to_hdf(self.df_file, 'df')
+        df.to_hdf(self.df_file, 'df', format='table') #If this is slow, get rid of categoricals
         self._df_computed = True
 
         # ids = df.index

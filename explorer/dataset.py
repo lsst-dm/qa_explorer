@@ -52,7 +52,7 @@ class QADataset(object):
 
     def __del__(self):
         if self._df_computed:
-            shutil.remove(self.df_file)
+            os.remove(self.df_file)
 
     def _set_catalog(self, catalog):
         self.catalog = catalog

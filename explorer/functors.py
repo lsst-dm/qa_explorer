@@ -286,6 +286,8 @@ class Labeller(Functor):
     _null_label = 'null'
     _allow_difference = False
     name = 'label'
+    _force_str = True
+
     def __call__(self, catalog, dropna=False, **kwargs):
         return super(Labeller, self).__call__(catalog, dropna=False, **kwargs)
 
@@ -309,6 +311,8 @@ class StarGalaxyLabeller(Labeller):
         #are these backwards?
         label = pd.Series(pd.Categorical.from_codes(test, categories=['galaxy', 'star', self._null_label]), 
                             index=x.index, name='label')
+        if self._force_str:
+            label = label.astype(str)
         return label
         # return np.where(df[self._column] < 0.5, 'star', 'galaxy')
 
@@ -323,6 +327,9 @@ class NumStarLabeller(Labeller):
         n = len(x.unique()) - 1 
 
         label = pd.cut(x, [-1, 0, n-1 , n], labels=['noStar', 'maybe', 'star'])        
+
+        if self._force_str:
+            label = label.astype(str)
 
         return label
 

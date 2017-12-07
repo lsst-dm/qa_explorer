@@ -5,6 +5,8 @@ from functools import partial
 import pickle
 import tempfile
 import os, shutil
+import fastparquet
+import dask.dataframe as dd
 
 from .functors import Functor, CompositeFunctor, Column, RAColumn, DecColumn, Mag
 from .functors import StarGalaxyLabeller
@@ -110,7 +112,8 @@ class QADataset(object):
             self._make_df()
 
         # df = pd.read_hdf(self.df_file, 'df')
-        df = pd.read_parquet(self.df_file)
+        # df = pd.read_parquet(self.df_file) # wait for pandas 0.22
+        df = dd.read_parquet(self.df_file)
 
     @property
     def is_matched(self):
@@ -151,7 +154,9 @@ class QADataset(object):
         df = df.replace([-np.inf, np.inf], np.nan)
 
         # df.to_hdf(self.df_file, 'df') #must be format='table' if categoricals included
-        df.to_parquet(self.df_file)
+        # df.to_parquet(self.df_file) # wait for pandas 0.22
+        fastparquet.write(self.df_file, df)
+
         self._df_computed = True
 
         # ids = df.index

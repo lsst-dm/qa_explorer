@@ -3,7 +3,7 @@ import pandas as pd
 import holoviews as hv
 from functools import partial
 import pickle
-import tempdir
+import tempfile
 
 from .functors import Functor, CompositeFunctor, Column, RAColumn, DecColumn, Mag
 from .functors import StarGalaxyLabeller
@@ -25,7 +25,7 @@ class QADataset(object):
         self._query = query
 
         if cachedir is None:
-            cachedir = tempdir.gettempdir()
+            cachedir = tempfile.gettempdir()
         self._cachedir = cachedir
 
     def __hash__(self):
@@ -108,7 +108,7 @@ class QADataset(object):
     def df(self):
         if not self._df_computed:
             self._make_df()
-            
+
         return pd.read_hdf(self.df_file, 'df')
 
     @property

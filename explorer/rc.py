@@ -59,3 +59,7 @@ def get_matched(butler, field, filt, description=None, visit_description=None,
     visit_cats = [VisitCatalog(butler, {'tract':t, 'visit':v, 'filter':filt}, name=float('{}.{}'.format(v,i))) 
                                  for i,t in enumerate(tracts) for v in visits]
     return MultiMatchedCatalog(coadd_cat, visit_cats, match_registry=match_registry)
+
+def get_color(butler, field, filt, description=None, **kwargs):
+    dataIds = [{'tract':t, 'filter':filt} for t in get_tractList(field)]
+    return ColorCatalog(butler, dataIds, description=description, **kwargs)

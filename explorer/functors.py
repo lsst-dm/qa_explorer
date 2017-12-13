@@ -326,7 +326,8 @@ class NumStarLabeller(Labeller):
         # Number of filters
         n = len(x.unique()) - 1 
 
-        label = pd.Series(pd.cut(x, [-1, 0, n-1 , n], labels=['noStar', 'maybe', 'star']))
+        label = pd.Series(pd.cut(x, [-1, 0, n-1 , n], labels=['noStar', 'maybe', 'star']),
+                            index=x.index, name='label')
 
         if self._force_str:
             label = label.astype(str)

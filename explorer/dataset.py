@@ -98,7 +98,9 @@ class QADataset(object):
 
         # Set coordinates and x value
         allfuncs.update({'ra':RAColumn(), 'dec': DecColumn(), 
-                         'x':self.xFunc, self.id_name : Column(self.id_name)})
+                         'x':self.xFunc})
+        if self.id_name is not None:
+            allfuncs.update({self.id_name : Column(self.id_name)})
 
         # Include flags
         allfuncs.update({f:Column(f) for f in self.flags})
@@ -136,7 +138,8 @@ class QADataset(object):
         elif 'patchId' in self.catalog.columns:
             name = 'patchId'
         else:
-            raise ValueError('No id name available (looked for ccdId, patchId)?')
+            # logging.warning('No id name available (looked for ccdId, patchId)?')
+            name = None
 
         return name
 
@@ -185,7 +188,9 @@ class QADataset(object):
         return self._ds_dict[key]
 
     def _make_ds(self, **kwargs):
-        kdims = ['ra', 'dec', hv.Dimension('x', label=self.xFunc.name), 'label', self.id_name]
+        kdims = ['ra', 'dec', hv.Dimension('x', label=self.xFunc.name), 'label']
+        if self.id_name is not None:
+            kdims.append(self.id_name)
         kdims += self.flags
         vdims = []
         for k,v in self.allfuncs.items():
@@ -233,7 +238,10 @@ class QADataset(object):
         # bad_flags = [] if bad_flags is None else bad_flags
         dset = filter_dset(dset, filter_range=filter_range, flags=flags, bad_flags=bad_flags)
         # dset = dset.redim(**{vdim:'y'})
-        pts = hv.Points(dset, kdims=['ra', 'dec'], vdims=[vdim, 'id', self.id_name])
+        vdims = [vdim, 'id']
+        if self.id_name is not None:
+            vdims.append(self.id_name)
+        pts = hv.Points(dset, kdims=['ra', 'dec'], vdims=vdims)
         return pts.opts(plot={'color_index':vdim})
 
     def visit_explore(self, vdim, x_range=np.arange(15,24.1,0.5), filter_stream=None):

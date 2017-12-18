@@ -1,6 +1,7 @@
 from itertools import product
 from functools import partial
 import numpy as np
+import holoviews as hv
 
 try:
     from lsst.pipe.analysis.utils import Filenamer

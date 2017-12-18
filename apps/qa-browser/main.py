@@ -31,7 +31,8 @@ def modify_doc(doc):
     # Create HoloViews plot and attach the document
     hvplot = renderer.get_widget(dmap, None, doc)
 
-    repo_box = TextInput(value='/project/tmorton/DM-12873/w44', title='rerun', width=600)
+    repo_box = TextInput(value='/project/tmorton/DM-12873/w44', title='rerun', 
+                            css_classes=['customTextInput'])
 
     def update_repo(attr, old, new):
         butler = Butler(new)

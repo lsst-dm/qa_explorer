@@ -8,6 +8,7 @@ try:
 except ImportError:
     logging.warning('Pipe analysis not available.')
 
+from explorer.rc import wide_filters, cosmos_filters
 
 def get_color_plot(butler, tract=8766, description='color_wPerp', style='psfMagHist', scale=1.0):
     dataId = {'tract':tract}

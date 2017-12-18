@@ -5,7 +5,7 @@ from bokeh.application.handlers import FunctionHandler
 from bokeh.application import Application
 from bokeh.io import show, curdoc
 from bokeh.layouts import layout
-from bokeh.models import Slider, Button
+from bokeh.models import Slider, Button, TextInput
 
 import holoviews as hv
 
@@ -25,16 +25,22 @@ descriptions = ['mag_modelfit_CModel', 'mag_base_GaussianFlux', 'mag_ext_photome
 
 stream = hv.streams.Stream.define('Butler', butler=butler44)()
 
-dmap = filter_layout_dmap_coadd(butler=butler44, descriptions=descriptions)#, streams=[stream])
+dmap = filter_layout_dmap_coadd(butler=butler44, descriptions=descriptions)
 
 def modify_doc(doc):
     # Create HoloViews plot and attach the document
     hvplot = renderer.get_widget(dmap, None, doc)
 
-    doc.add_root(hvplot.state)
+    repo_box = TextInput(value='/project/tmorton/DM-12873/w44', title='rerun')
 
-    # plot = layout([hvplot.state], sizing_mode='fixed')
-    # doc.add_root(plot)
+    def update_repo(attr, old, new):
+        butler = Butler(new)
+        dmap = filter_layout_dmap_coadd(butler=butler, descriptions=descriptions)
+        new_plot = renderer.get_widget(dmap, None, doc)
+        l.children[1] = new_plot.state
+
+    l = layout([[repo_box], [hvplot.state]], sizing_mode='fixed')
+    doc.add_root(l)
     return doc
 
 

@@ -19,12 +19,13 @@ rerun46 = '/project/tmorton/DM-12873/w46'
 butler44 = Butler(rerun44)
 butler46 = Butler(rerun46)
 
-butler = butler44
-
 renderer = hv.renderer('bokeh').instance(mode='server')
 
 descriptions = ['mag_modelfit_CModel', 'mag_base_GaussianFlux', 'mag_ext_photometryKron_KronFlux']
-dmap = filter_layout_dmap_coadd(butler, descriptions=descriptions)
+
+stream = hv.streams.Stream.define('Butler', butler=butler44)()
+
+dmap = filter_layout_dmap_coadd(butler=butler44, descriptions=descriptions, streams=[stream])
 
 def modify_doc(doc):
     # Create HoloViews plot and attach the document

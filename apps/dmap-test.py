@@ -15,7 +15,7 @@ def waves_image(alpha, beta):
     return hv.Image(np.sin(((ys/alpha)**alpha+beta)*xs))
 
 dmap = hv.DynamicMap(waves_image, kdims=['alpha', 'beta'])
-dmap = dmap.redim.range(alpha=(0,5.0), beta=(1,5.0))
+dmap = dmap.redim.range(alpha=np.linspace(0,5.0,10), beta=np.linspace(1,5.0,10))
 
 def modify_doc(doc):
     # Create HoloViews plot and attach the document

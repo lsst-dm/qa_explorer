@@ -61,9 +61,9 @@ def description_layout(butler, descriptions, tract=9813, filt='HSC-I', style='ps
                                for desc in descriptions]).cols(columns)
     
 def filter_layout_dmap_coadd(butler, descriptions, tracts=[8766, 8767, 9813], 
-                            styles=['psfMagHist', 'sky-stars', 'sky-gals'], scale=0.66, streams=None):
+                            styles=['psfMagHist', 'sky-stars', 'sky-gals'], scale=0.66:
     dmap = hv.DynamicMap(partial(filter_layout, butler=butler, visit=None, kind='coadd', scale=scale), 
-                     kdims=['tract', 'description', 'style'], streams=streams)
+                     kdims=['tract', 'description', 'style'])
     dmap = dmap.redim.values(tract=tracts, description=descriptions, style=styles) 
 
     return dmap

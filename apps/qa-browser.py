@@ -30,9 +30,10 @@ def modify_doc(doc):
     # Create HoloViews plot and attach the document
     hvplot = renderer.get_widget(dmap, None, doc)
 
-    plot = layout([hvplot.state], sizing_mode='fixed')
-    
-    doc.add_root(plot)
+    doc.add_root(hvplot.state)
+
+    # plot = layout([hvplot.state], sizing_mode='fixed')
+    # doc.add_root(plot)
     return doc
 
 

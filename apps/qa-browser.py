@@ -41,9 +41,10 @@ def modify_doc(doc):
 
     repo_box.on_change('value', update_repo)
 
-    # l = layout([hvplot.state], sizing_mode='fixed')
+    l = layout([[repo_box], [hvplot.state]], sizing_mode='fixed')
+    doc.add_root(l)
     # doc.add_root(repo_box)
-    doc.add_root(hvplot.state)
+    # doc.add_root(hvplot.state)
     return doc
 
 

@@ -17,6 +17,9 @@ visits = {'cosmos' : {'HSC-G' : "11690..11712:2^29324^29326^29336^29340^29350^29
 visits['wide-8766'] = visits['wide']
 visits['wide-8767'] = visits['wide']
 
+wide_filters = ['HSC-G', 'HSC-R', 'HSC-I', 'HSC-Z', 'HSC-Y']
+cosmos_filters = ['HSC-G', 'HSC-R', 'HSC-I', 'HSC-Z', 'HSC-Y', 'NB0921']
+
 def visit_list(visit_string):
     l = []
     for v in visit_string.split('^'):

@@ -28,7 +28,7 @@ dmap = filter_layout_dmap_coadd(butler, descriptions=descriptions)
 
 def modify_doc(doc):
     # Create HoloViews plot and attach the document
-    hvplot = renderer.get_plot(dmap, doc)
+    hvplot = renderer.get_widget(dmap, None, doc)
 
     plot = layout([hvplot.state], sizing_mode='fixed')
     

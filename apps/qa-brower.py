@@ -7,6 +7,8 @@ from bokeh.io import show
 from bokeh.layouts import layout
 from bokeh.models import Slider, Button
 
+import holoviews as hv
+
 from explorer.static import filter_layout_dmap_coadd
 
 from lsst.daf.persistence import Butler

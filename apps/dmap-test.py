@@ -5,6 +5,7 @@ from bokeh.io import curdoc
 from bokeh.layouts import layout
 
 import holoviews as hv
+renderer = hv.renderer('bokeh').instance(mode='server')
 
 xvals = np.linspace(-4,0,202)
 yvals = np.linspace(4,0,202)

@@ -39,6 +39,8 @@ def modify_doc(doc):
         new_plot = renderer.get_widget(dmap, None, doc)
         l.children[1] = new_plot.state
 
+    repo_box.on_change('value', update_repo)
+
     l = layout([[repo_box], [hvplot.state]], sizing_mode='fixed')
     doc.add_root(l)
     return doc

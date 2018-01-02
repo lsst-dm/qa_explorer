@@ -32,8 +32,7 @@ def modify_doc(doc):
     hvplot = renderer.get_widget(dmap, None, doc)
 
     repo_box = TextInput(value='/project/tmorton/DM-12873/w44', title='rerun',
-                         width=600)
-                            # css_classes=['customTextInput'])
+                         css_classes=['customTextInput'])
 
     def update_repo(attr, old, new):
         butler = Butler(new)

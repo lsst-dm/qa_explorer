@@ -6,6 +6,7 @@ from bokeh.application import Application
 from bokeh.io import show, curdoc
 from bokeh.layouts import layout
 from bokeh.models import Slider, Button, TextInput
+from bokeh.models.widgets import Panel, Tabs
 
 import holoviews as hv
 
@@ -43,8 +44,12 @@ def modify_doc(doc):
     repo_box.on_change('value', update_repo)
 
     plot = layout([hvplot.state], sizing_mode='fixed')
+    tab1 = Panel(child=plot, title='tab1')
+    tab2 = Panel(child=plot, title='tab2')
+
+    tabs = Tabs(tabs=[tab1, tab2])
     doc.add_root(repo_box)
-    doc.add_root(plot)
+    doc.add_root(tabs)
     return doc
 
 

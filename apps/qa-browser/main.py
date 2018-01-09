@@ -44,10 +44,10 @@ def modify_doc(doc):
     repo_box.on_change('value', update_repo)
 
     plot = layout([hvplot.state], sizing_mode='fixed')
-    # tab1 = Panel(child=plot, title='tab1')
-    # tab2 = Panel(child=plot, title='tab2')
+    tab1 = Panel(child=plot, title='tab1')
+    tab2 = Panel(child=plot, title='tab2')
 
-    tabs = Tabs(tabs=[plot, plot])
+    tabs = Tabs(tabs=[tab1, tab2])
     doc.add_root(repo_box)
     doc.add_root(tabs)
     return doc

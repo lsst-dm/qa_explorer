@@ -22,6 +22,12 @@ butler44 = Butler(rerun44)
 
 renderer = hv.renderer('bokeh').instance(mode='server')
 
+import os
+if os.path.exists('config.yaml'):
+    print('yes, i can find the file')
+else:
+    print('no luck!')
+
 with open('config.yaml') as fin:
     config = yaml.load(fin)
 print(config)

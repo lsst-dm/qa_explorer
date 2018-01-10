@@ -31,6 +31,7 @@ with open(config_file) as fin:
 # stream = hv.streams.Stream.define('Butler', butler=butler44)()
 
 def get_kwargs(section, category, default_styles=['psfMagHist', 'sky-stars', 'sky-gals']):
+    print(section, category)
     d = config[section][category]
     print(d)
     descriptions = d['descriptions']

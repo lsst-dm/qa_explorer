@@ -55,10 +55,10 @@ sections:
     - refcat_astrometry
   object:
     - aperture
-    - psf_quiver
-    - psf
-    - refcat_photometry
-    - refcat_astrometry
+    # - psf_quiver
+    # - psf
+    # - refcat_photometry
+    # - refcat_astrometry
   forced_compare:
     - forced_compare
   color:

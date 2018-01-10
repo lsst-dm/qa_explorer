@@ -21,10 +21,11 @@ rerun46 = '/project/tmorton/DM-12873/w46'
 butler44 = Butler(rerun44)
 # butler46 = Butler(rerun46)
 
-renderer = hv.renderer('bokeh').instance(mode='server')
-
+print('I get here.')
 config_file = resource_filename('explorer', os.path.join('data',
                                               'browser_config.yaml'))
+print('and here.')
+
 print(config_file)
 import os
 if os.path.exists(config_file):
@@ -49,6 +50,9 @@ def get_object_dmaps(butler):
                  for cat in config['object'].keys()]
 
 object_dmaps = get_object_dmaps(butler44)
+
+
+renderer = hv.renderer('bokeh').instance(mode='server')
 
 def modify_doc(doc):
     repo_box = TextInput(value='/project/tmorton/DM-12873/w44', title='rerun',

@@ -31,9 +31,7 @@ with open(config_file) as fin:
 # stream = hv.streams.Stream.define('Butler', butler=butler44)()
 
 def get_kwargs(section, category, default_styles=['psfMagHist', 'sky-stars', 'sky-gals']):
-    print(section, category)
     d = config[category]
-    print(d)
     descriptions = d['descriptions']
     print(descriptions)
     styles = default_styles if 'styles' not in d else d['styles']
@@ -49,7 +47,7 @@ def get_object_dmaps(butler):
                  for cat, kws in zip(categories, kwargs)]
 
 object_dmaps = get_object_dmaps(butler44)
-
+print('made initial dmaps')
 
 renderer = hv.renderer('bokeh').instance(mode='server')
 

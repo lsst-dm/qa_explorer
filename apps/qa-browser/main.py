@@ -23,6 +23,7 @@ butler44 = Butler(rerun44)
 renderer = hv.renderer('bokeh').instance(mode='server')
 
 config = yaml.read('config.yaml')
+print(config)
 
 # stream = hv.streams.Stream.define('Butler', butler=butler44)()
 

@@ -27,7 +27,6 @@ config_file = resource_filename('explorer', os.path.join('data',
 
 with open(config_file) as fin:
     config = yaml.load(fin)
-print(config)
 
 # stream = hv.streams.Stream.define('Butler', butler=butler44)()
 
@@ -42,9 +41,10 @@ def get_object_dmaps(butler):
     return [filter_layout_dmap_coadd(butler=butler, **kwargs)
                  for cat in config['object'].keys()]
 
+print('got here')
+
 object_dmaps = get_object_dmaps(butler44)
 
-print('got here')
 
 renderer = hv.renderer('bokeh').instance(mode='server')
 

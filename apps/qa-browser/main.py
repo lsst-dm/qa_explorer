@@ -1,3 +1,4 @@
+import os
 from pkg_resources import resource_filename
 import yaml
 import numpy as np
@@ -21,13 +22,10 @@ rerun46 = '/project/tmorton/DM-12873/w46'
 butler44 = Butler(rerun44)
 # butler46 = Butler(rerun46)
 
-print('I get here.')
 config_file = resource_filename('explorer', os.path.join('data',
                                               'browser_config.yaml'))
-print('and here.')
 
 print(config_file)
-import os
 if os.path.exists(config_file):
     print('yes, i can find the file.')
 else:

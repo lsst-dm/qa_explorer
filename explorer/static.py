@@ -32,13 +32,17 @@ def color_dmap(butler, tracts=[8766, 8767, 9813], descriptions=['color_wPerp', '
     dmap = dmap.redim.values(description=descriptions, style=styles)
     return dmap
 
-def get_plot(butler, tract, filt, description, style, visit=None, kind='coadd', scale=1.0):
+def get_plot_filename(butler, tract, filt, description, style, visit=None, kind='coadd'):
     dataId = {'tract':tract, 'filter':filt}
     if visit is not None:
         dataId.update({'visit':visit})
         
     filenamer = Filenamer(butler, 'plot{}'.format(kind.capitalize()), dataId)
     filename = filenamer(description=description, style=style, dataId=dataId)
+    return filename    
+
+def get_plot(butler, tract, filt, description, style, visit=None, kind='coadd', scale=1.0):
+    filename = get_plot_filename(butler, tract, filt, description, style, visit=visit, kind=kind)
     try:
         return hv.RGB.load_image(filename).opts(plot={'xaxis':None, 'yaxis':None,
                                                       'width':int(640*scale), 'height':int(480*scale)})
@@ -74,3 +78,5 @@ def description_layout_dmap_visit(butler, tract, descriptions, filt='HSC-I', sty
                      kdims=['visit', 'style'])
     dmap = dmap.redim.values(visit=visits, style=styles)
     return dmap
+
+    

@@ -70,7 +70,7 @@ def modify_doc(doc):
 
     object_plots = [layout([hvplot.state], sizing_mode='fixed') for hvplot in object_hvplots]
     object_tabs = Tabs(tabs=[Panel(child=plot, title=name) 
-                            for plot,name in zip(object_plots, config['object'].keys())])
+                            for plot,name in zip(object_plots, config['sections']['object'])])
 
     doc.add_root(repo_box)
     # doc.add_root(plot)

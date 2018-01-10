@@ -2,13 +2,14 @@ from itertools import product
 from functools import partial
 import numpy as np
 import holoviews as hv
+import logging
 
 try:
     from lsst.pipe.analysis.utils import Filenamer
 except ImportError:
     logging.warning('Pipe analysis not available.')
 
-from explorer.rc import wide_filters, cosmos_filters
+from .rc import wide_filters, cosmos_filters
 
 def get_color_plot(butler, tract=8766, description='color_wPerp', style='psfMagHist', scale=1.0):
     dataId = {'tract':tract}

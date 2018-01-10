@@ -4,8 +4,8 @@ import yaml
 import numpy as np
 import holoviews as hv
 
-from bokeh.application.handlers import FunctionHandler
-from bokeh.application import Application
+# from bokeh.application.handlers import FunctionHandler
+# from bokeh.application import Application
 from bokeh.io import show, curdoc
 from bokeh.layouts import layout
 from bokeh.models import Slider, Button, TextInput

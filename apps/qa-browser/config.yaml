@@ -1,0 +1,66 @@
+# What plots different categories contain
+aperture:
+  descriptions:
+    - mag_base_GaussianFlux  
+    - mag_ext_photometryKron_KronFlux
+psf_quiver:
+  descriptions:
+    - ellipResids
+  styles:
+    - quiver
+psf:
+  descriptions:
+    - e1ResidsHsm
+    - e2ResidsHsm
+refcat_photometry:
+  descriptions:
+    - matches_mag
+    - matches_mag_calib_psfUsed
+  styles:
+    - psfMagHist
+    - sky-stars
+refcat_astrometry:
+  descriptions:
+    - matches_distance
+    - matches_raCosDec
+    - matches_dec
+  styles:
+    - psfMagHist
+    - sky-stars
+forced_compare:
+  descriptions:
+    - compareUnforced_modelfit_CModel
+principal_colors:
+  descriptions:
+    - color_wPerp
+    - color_xPerp
+    - color_yPerp
+color_color:
+  descriptions:
+    - gri
+    - izy
+    - riz
+  styles:
+    - fit
+    - psfMagHist
+    - sky-stars
+
+# Which categories are in which section
+sections:
+  source:
+    - aperture
+    - psf_quiver
+    - psf
+    - refcat_photometry
+    - refcat_astrometry
+  object:
+    - aperture
+    # - psf_quiver
+    # - psf
+    # - refcat_photometry
+    # - refcat_astrometry
+  forced_compare:
+    - forced_compare
+  color:
+    - principal_colors
+    - color_color

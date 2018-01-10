@@ -33,22 +33,16 @@ with open(config_file) as fin:
 def get_kwargs(section, category, default_styles=['psfMagHist', 'sky-stars', 'sky-gals']):
     d = config[category]
     descriptions = d['descriptions']
-    print(descriptions)
     styles = default_styles if 'styles' not in d else d['styles']
-    print(styles)
     return {'descriptions' : descriptions, 'styles' : styles}
 
 def get_object_dmaps(butler):
     categories = config['sections']['object']
-    print(categories)
     kwargs = [get_kwargs('object', cat) for cat in categories]
-    print(kwargs)
     return [filter_layout_dmap_coadd(butler=butler, **kws)
                  for cat, kws in zip(categories, kwargs)]
 
 object_dmaps = get_object_dmaps(butler44)
-print('made initial dmaps')
-print(object_dmaps)
 
 renderer = hv.renderer('bokeh').instance(mode='server')
 

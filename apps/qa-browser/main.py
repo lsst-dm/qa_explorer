@@ -4,8 +4,8 @@ import yaml
 import numpy as np
 import holoviews as hv
 
-# from bokeh.application.handlers import FunctionHandler
-# from bokeh.application import Application
+from bokeh.application.handlers import FunctionHandler
+from bokeh.application import Application
 from bokeh.io import show, curdoc
 from bokeh.layouts import layout
 from bokeh.models import Slider, Button, TextInput
@@ -72,6 +72,7 @@ def modify_doc(doc):
     doc.add_root(repo_box)
     # doc.add_root(plot)
     doc.add_root(object_tabs)
+    raise ValueError
     return doc
 
 

@@ -32,16 +32,18 @@ with open(config_file) as fin:
 
 def get_kwargs(section, category, default_styles=['psfMagHist', 'sky-stars', 'sky-gals']):
     d = config[section][category]
+    print(d)
     descriptions = d['descriptions']
+    print(descriptions)
     styles = default_styles if 'styles' not in d else d['styles']
+    print(styles)
     return {'descriptions' : descriptions, 'styles' : styles}
 
 def get_object_dmaps(butler):
-    kwargs = get_kwargs('object',cat)
+    kwargs = get_kwargs('object', cat)
+    print(kwargs)
     return [filter_layout_dmap_coadd(butler=butler, **kwargs)
                  for cat in config['object'].keys()]
-
-print('got here')
 
 object_dmaps = get_object_dmaps(butler44)
 

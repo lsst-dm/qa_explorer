@@ -1,3 +1,4 @@
+from pkg_resources import resource_filename
 import yaml
 import numpy as np
 import holoviews as hv
@@ -22,12 +23,13 @@ butler44 = Butler(rerun44)
 
 renderer = hv.renderer('bokeh').instance(mode='server')
 
-config_file = 'config.yaml'
+config_file = resource_filename('explorer', os.path.join('data',
+                                              'browser_config.yaml'))
 import os
 if os.path.exists(config_file):
-    print('yes, i can find the file')
+    print('yes, i can find the file.')
 else:
-    print('no luck!')
+    print('no luck! (looked in {})'.format(config_file))
 
 with open(config_file) as fin:
     config = yaml.load(fin)

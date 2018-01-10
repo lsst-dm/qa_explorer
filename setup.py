@@ -7,4 +7,5 @@ setup(name='explorer',
       author='Timothy D Morton',
       license='MIT',
       packages=['explorer'],
+      package_data={'explorer':['data/*']},
       zip_safe=False)

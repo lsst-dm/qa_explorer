@@ -41,10 +41,11 @@ def get_kwargs(section, category, default_styles=['psfMagHist', 'sky-stars', 'sk
     return {'descriptions' : descriptions, 'styles' : styles}
 
 def get_object_dmaps(butler):
-    kwargs = get_kwargs('object', cat)
+    categories = config['object'].keys()
+    kwargs = [get_kwargs('object', cat) for cat in categories]
     print(kwargs)
-    return [filter_layout_dmap_coadd(butler=butler, **kwargs)
-                 for cat in config['object'].keys()]
+    return [filter_layout_dmap_coadd(butler=butler, **kws)
+                 for cat, kws in zip(categories, kwargs)]
 
 object_dmaps = get_object_dmaps(butler44)
 

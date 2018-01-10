@@ -41,7 +41,7 @@ def get_kwargs(section, category, default_styles=['psfMagHist', 'sky-stars', 'sk
     return {'descriptions' : descriptions, 'styles' : styles}
 
 def get_object_dmaps(butler):
-    categories = config['sections']['object'].keys()
+    categories = config['sections']['object']
     print(categories)
     kwargs = [get_kwargs('object', cat) for cat in categories]
     print(kwargs)

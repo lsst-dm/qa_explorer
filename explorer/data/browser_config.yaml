@@ -55,7 +55,7 @@ sections:
     - refcat_astrometry
   object:
     - aperture
-    - psf_quiver
+    # - psf_quiver
     # - psf
     # - refcat_photometry
     # - refcat_astrometry

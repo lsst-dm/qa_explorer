@@ -72,7 +72,6 @@ def modify_doc(doc):
     doc.add_root(repo_box)
     # doc.add_root(plot)
     doc.add_root(object_tabs)
-    raise ValueError
     return doc
 
 

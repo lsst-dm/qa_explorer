@@ -48,7 +48,7 @@ def get_object_dmaps(butler):
 
 
 object_dmaps = get_object_dmaps(butler44)
-
+print(object_dmaps)
 
 def modify_doc(doc):
     repo_box = TextInput(value='/project/tmorton/DM-12873/w44', title='rerun',

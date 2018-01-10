@@ -25,12 +25,6 @@ butler44 = Butler(rerun44)
 config_file = resource_filename('explorer', os.path.join('data',
                                               'browser_config.yaml'))
 
-print(config_file)
-if os.path.exists(config_file):
-    print('yes, i can find the file.')
-else:
-    print('no luck!'.format(config_file))
-
 with open(config_file) as fin:
     config = yaml.load(fin)
 print(config)
@@ -49,6 +43,7 @@ def get_object_dmaps(butler):
 
 object_dmaps = get_object_dmaps(butler44)
 
+print('got here')
 
 renderer = hv.renderer('bokeh').instance(mode='server')
 

@@ -11,6 +11,7 @@ from bokeh.layouts import layout
 from bokeh.models import Slider, Button, TextInput
 from bokeh.models.widgets import Panel, Tabs
 
+from explorer.static import get_plot
 from explorer.static import filter_layout_dmap_coadd
 from explorer.static import description_layout_dmap_visit
 
@@ -28,6 +29,8 @@ config_file = resource_filename('explorer', os.path.join('data',
 with open(config_file) as fin:
     config = yaml.load(fin)
 
+renderer = hv.renderer('bokeh').instance(mode='server')
+
 # stream = hv.streams.Stream.define('Butler', butler=butler44)()
 
 def get_kwargs(section, category, default_styles=['psfMagHist', 'sky-stars', 'sky-gals']):
@@ -43,9 +46,9 @@ def get_object_dmaps(butler):
     return [filter_layout_dmap_coadd(butler=butler, **kws)
                  for cat, kws in zip(categories, kwargs)]
 
+
 object_dmaps = get_object_dmaps(butler44)
 
-renderer = hv.renderer('bokeh').instance(mode='server')
 
 def modify_doc(doc):
     repo_box = TextInput(value='/project/tmorton/DM-12873/w44', title='rerun',

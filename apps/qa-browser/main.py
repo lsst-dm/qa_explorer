@@ -48,6 +48,7 @@ def get_object_dmaps(butler):
 
 object_dmaps = get_object_dmaps(butler44)
 print('made initial dmaps')
+print(object_dmaps)
 
 renderer = hv.renderer('bokeh').instance(mode='server')
 

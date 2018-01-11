@@ -66,13 +66,11 @@ def modify_doc(doc):
     repo_box.on_change('value', update_repo)
 
     object_plots = [layout([hvplot.state], sizing_mode='fixed') for hvplot in object_hvplots]
-    # object_tabs = Tabs(tabs=[Panel(child=plot, title=name) 
-    #                         for plot,name in zip(object_plots, config['sections']['object'])])
+    object_tabs = Tabs(tabs=[Panel(child=plot, title=name) 
+                            for plot,name in zip(object_plots, config['sections']['object'])])
 
     doc.add_root(repo_box)
-    doc.add_root(object_plots[0])    
-    doc.add_root(object_plots[1])
-    # doc.add_root(object_tabs)
+    doc.add_root(object_tabs)
     return doc
 
 

@@ -71,6 +71,7 @@ def modify_doc(doc):
 
     doc.add_root(repo_box)
     doc.add_root(object_plots[0])    
+    doc.add_root(object_plots[1])
     # doc.add_root(object_tabs)
     return doc
 

@@ -70,8 +70,7 @@ def modify_doc(doc):
     #                         for plot,name in zip(object_plots, config['sections']['object'])])
 
     doc.add_root(repo_box)
-    for p in object_plots:
-        doc.add_root(p)
+    doc.add_root(object_plots[0])    
     # doc.add_root(object_tabs)
     return doc
 

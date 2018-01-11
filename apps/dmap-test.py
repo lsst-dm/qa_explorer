@@ -1,4 +1,5 @@
 import numpy as np
+
 import holoviews as hv
 
 from bokeh.io import curdoc
@@ -17,14 +18,19 @@ def waves_image(alpha, beta):
 dmap = hv.DynamicMap(waves_image, kdims=['alpha', 'beta'])
 dmap = dmap.redim.range(alpha=(0,5.0), beta=(1,5.0))
 
+dmap2 = hv.DynamicMap(waves_image, kdims=['alpha', 'beta'])
+dmap2 = dmap2.redim.range(alpha=(0.,5.0), beta=(5., 10))
 
 def modify_doc(doc):
     # Create HoloViews plot and attach the document
     # hvplot = renderer.get_widget(dmap, None, doc)
     hvplot = renderer.get_widget(dmap, None, doc)
+    hvplot2 = renderer.get_widget(dmap2, None, doc)
 
     plot = layout([hvplot.state], sizing_mode='fixed')
+    plot2 = layout([hvplot2.state], sizing_mode='fixed')
     doc.add_root(plot)
+    doc.add_root(plot2)
     return doc
 
 

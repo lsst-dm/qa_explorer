@@ -109,8 +109,8 @@ def modify_doc(doc):
         tract_select.on_change('active', update_source(category))
         filt_select.on_change('active', update_source(category))
 
-        layout = layout([[tract_select, filt_select], plot], sizing_mode='fixed')
-        source_tab_panels.append(Panel(child=layout, title=name))
+        l = layout([[tract_select, filt_select], plot], sizing_mode='fixed')
+        source_tab_panels.append(Panel(child=l, title=name))
 
 
     source_tabs = Tabs(tabs=source_tab_panels)

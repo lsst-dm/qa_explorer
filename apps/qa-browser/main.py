@@ -70,8 +70,10 @@ def modify_doc(doc):
     object_tabs = Tabs(tabs=[Panel(child=plot, title=name) 
                             for plot,name in zip(object_plots, config['sections']['object'])])
 
+    uber_tabs = Tabs(tabs=[Panel(child=object_tabs, name='Object Catalogs')])
+
     doc.add_root(repo_box)
-    doc.add_root(object_tabs)
+    doc.add_root(uber_tabs)
     return doc
 
 

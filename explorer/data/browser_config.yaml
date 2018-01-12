@@ -59,8 +59,11 @@ sections:
     - psf
     - refcat_photometry
     - refcat_astrometry
-  forced_compare:
     - forced_compare
+    # - principal_colors
+    # - color_color
+  # forced_compare:
+  #   - forced_compare
   color:
     - principal_colors
     - color_color

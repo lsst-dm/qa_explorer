@@ -102,14 +102,15 @@ def modify_doc(doc):
         return update
 
     source_tab_panels = []
-    for plot, category in zip(source_plots, config['sections']['source']):
+    for category in source_categories:
         tract_select = source_tract_select[category]
         filt_select = source_filt_select[category]
+        plot = source_plots[category]
 
         tract_select.on_change('active', update_source(category))
         filt_select.on_change('active', update_source(category))
 
-        l = layout([[tract_select, filt_select], plot], sizing_mode='fixed')
+        l = layout([[tract_select, filt_select], [plot]], sizing_mode='fixed')
         source_tab_panels.append(Panel(child=l, title=name))
 
 

@@ -14,7 +14,7 @@ from bokeh.models.widgets import Panel, Tabs, Select
 from explorer.static import get_plot
 from explorer.static import filter_layout_dmap_coadd
 from explorer.static import description_layout_dmap_visit
-from .rc import wide_filters
+from explorer.rc import wide_filters
 
 from lsst.daf.persistence import Butler
 

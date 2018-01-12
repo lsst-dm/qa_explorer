@@ -13,14 +13,23 @@ except ImportError:
 
 from .rc import wide_filters, cosmos_filters, get_visits, field_name
 
-def get_color_plot(butler, tract=8766, description='color_wPerp', style='psfMagHist', scale=1.0):
+def get_color_plot(butler, tract=8766, description='color_wPerp', style='psfMagHist', scale=None):
     dataId = {'tract':tract}
     filenamer = Filenamer(butler, 'plotColor', dataId)
     filename = filenamer(description=description, dataId=dataId, style=style)
-
     try:
-        return hv.RGB.load_image(filename).opts(plot={'xaxis':None, 'yaxis':None,
-                                                      'width':int(640*scale), 'height':int(480*scale)})
+        rgb = hv.RGB.load_image(filename, bare=True)
+        
+        # back out the aspect ratio from bounds
+        l,b,r,t = rgb.bounds.lbrt()
+        aspect = (r-l)/(t-b)
+        h = 480
+        w = int(h * aspect)
+        rgb = rgb.opts(plot={'width':w, 'height':h})
+        if scale is not None:
+            rgb = rgb.opts(plot={'width':int(w*scale), 'height':int(h*scale)})
+
+        return rgb
     except FileNotFoundError:
         return hv.RGB(np.zeros((2,2)))
     

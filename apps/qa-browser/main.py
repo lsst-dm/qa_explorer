@@ -115,8 +115,7 @@ def modify_doc(doc):
 
 
     source_tabs = Tabs(tabs=source_tab_panels)
-    source_layout = layout([[source_tract_select, source_filt_select], [source_tabs]], sizing_mode='fixed')
-    source_panel = Panel(child=source_layout, title='Source Catalogs')
+    source_panel = Panel(child=source_tabs, title='Source Catalogs')
 
     def update_repo(attr, old, new):
         global butler

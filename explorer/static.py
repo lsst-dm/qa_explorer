@@ -54,6 +54,7 @@ def get_plot(butler, tract, filt, description, style, visit=None, kind='coadd', 
         aspect = (l-r)/(t-b)
         h = 480
         w = int(h * aspect)
+        print(h,w)
         rgb = rgb.opts(plot={'width':w, 'height':h})
         if scale is not None:
             rgb = rgb.opts(plot={'width':int(w*scale), 'height':int(h*scale)})

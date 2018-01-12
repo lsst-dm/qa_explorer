@@ -34,7 +34,7 @@ renderer = hv.renderer('bokeh').instance(mode='server')
 # stream = hv.streams.Stream.define('Butler', butler=butler44)()
 
 def get_kwargs(section, category, default_styles=['psfMagHist', 'sky-stars', 'sky-gals'],
-                scale=0.2):
+                scale=1.):
     d = config[category]
     descriptions = d['descriptions']
     styles = default_styles if 'styles' not in d else d['styles']

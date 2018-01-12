@@ -138,6 +138,7 @@ def modify_doc(doc):
                     for c in color_categories}
 
     color_tabs = [Panel(child=color_plots[c], title=c) for c in color_categories]
+    color_panel = Panel(child=color_tabs, title='Color')
 
     def update_repo(attr, old, new):
         global butler
@@ -166,7 +167,7 @@ def modify_doc(doc):
 
     repo_box.on_change('value', update_repo)
 
-    uber_tabs = Tabs(tabs=[object_panel, source_panel])
+    uber_tabs = Tabs(tabs=[object_panel, source_panel, color_panel])
                            
 
     doc.add_root(repo_box)

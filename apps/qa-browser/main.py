@@ -33,12 +33,13 @@ renderer = hv.renderer('bokeh').instance(mode='server')
 
 # stream = hv.streams.Stream.define('Butler', butler=butler44)()
 
-def get_kwargs(section, category, default_styles=['psfMagHist', 'sky-stars', 'sky-gals']):
+def get_kwargs(section, category, default_styles=['psfMagHist', 'sky-stars', 'sky-gals']
+                scale=1.):
     d = config[category]
     descriptions = d['descriptions']
     styles = default_styles if 'styles' not in d else d['styles']
     return {'descriptions' : descriptions, 'styles' : styles,
-            'scale':1.}
+            'scale':scale}
 
 def get_object_dmaps(butler):
     categories = config['sections']['object']

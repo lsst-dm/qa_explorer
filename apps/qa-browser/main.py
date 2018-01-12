@@ -137,7 +137,7 @@ def modify_doc(doc):
     color_plots = {c : layout([color_hvplots[c].state], sizing_mode='fixed') 
                     for c in color_categories}
 
-    color_tabs = [Panel(child=color_plots[c], title=c) for c in color_categories]
+    color_tabs = Tabs(tabs = [Panel(child=color_plots[c], title=c) for c in color_categories])
     color_panel = Panel(child=color_tabs, title='Color')
 
     def update_repo(attr, old, new):

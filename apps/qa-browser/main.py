@@ -93,7 +93,7 @@ def modify_doc(doc):
 
     def update_source(attr, old, new):
         new_tract = int(source_tract_select.labels[source_tract_select.active])
-        new_filt = int(source_filt_select.labels[source_filt_select.active])
+        new_filt = source_filt_select.labels[source_filt_select.active]
         source_dmaps = get_source_dmaps(butler=butler, tract=new_tract, filt=new_filt)
         new_source_hvplots = [renderer.get_widget(dmap, None, doc) for dmap in source_dmaps]
         for plot,new_plot in zip(source_plots, new_source_hvplots):

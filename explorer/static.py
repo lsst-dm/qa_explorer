@@ -1,8 +1,10 @@
+from __future__ import print_function, division
 from itertools import product
 from functools import partial
 import numpy as np
 import holoviews as hv
 import logging
+from matplotlib import pyplot as plt
 
 try:
     from lsst.pipe.analysis.utils import Filenamer
@@ -45,9 +47,16 @@ def get_plot_filename(butler, tract, filt, description, style, visit=None, kind=
 def get_plot(butler, tract, filt, description, style, visit=None, kind='coadd', scale=None):
     filename = get_plot_filename(butler, tract, filt, description, style, visit=visit, kind=kind)
     try:
-        rgb = hv.RGB.load_image(filename).opts(plot={'xaxis':None, 'yaxis':None})
+        rgb = hv.RGB.load_image(filename, bare=True)
+
+        # back out the aspect ratio from bounds
+        l,b,r,t = rgb.bounds.lbrt()
+        aspect = (l-r)/(t-b)
+        h = 480
+        w = int(h * aspect)
+        rgb = rgb.opts(plot={'width':w, 'height':h})
         if scale is not None:
-            rgb = rgb.opts(plot={'width':int(640*scale), 'height':int(480*scale)})
+            rgb = rgb.opts(plot={'width':int(w*scale), 'height':int(h*scale)})
         return rgb
     except FileNotFoundError:
         return hv.RGB(np.zeros((2,2)))

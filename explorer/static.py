@@ -42,11 +42,13 @@ def get_plot_filename(butler, tract, filt, description, style, visit=None, kind=
     filename = filenamer(description=description, style=style, dataId=dataId)
     return filename    
 
-def get_plot(butler, tract, filt, description, style, visit=None, kind='coadd', scale=1.0):
+def get_plot(butler, tract, filt, description, style, visit=None, kind='coadd', scale=None):
     filename = get_plot_filename(butler, tract, filt, description, style, visit=visit, kind=kind)
     try:
-        return hv.RGB.load_image(filename).opts(plot={'xaxis':None, 'yaxis':None,
-                                                      'width':int(640*scale), 'height':int(480*scale)})
+        rgb = hv.RGB.load_image(filename).opts(plot={'xaxis':None, 'yaxis':None})
+        if scale is not None:
+            rgb = rgb.opts(plot={'width':int(640*scale), 'height':int(480*scale)})
+        return rgb
     except FileNotFoundError:
         return hv.RGB(np.zeros((2,2)))
     

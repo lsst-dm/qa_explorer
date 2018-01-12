@@ -9,7 +9,7 @@ from bokeh.application import Application
 from bokeh.io import show, curdoc
 from bokeh.layouts import layout
 from bokeh.models import Slider, Button, TextInput
-from bokeh.models.widgets import Panel, Tabs, Select
+from bokeh.models.widgets import Panel, Tabs, RadioButtonGroup
 
 from explorer.static import get_plot
 from explorer.static import filter_layout_dmap_coadd
@@ -90,9 +90,9 @@ def modify_doc(doc):
     source_plots = [layout([hvplot.state], sizing_mode='fixed') for hvplot in source_hvplots]
     source_tabs = Tabs(tabs=[Panel(child=plot, title=name) 
                             for plot,name in zip(source_plots, config['sections']['source'])])
-    source_tract_select = Select(options=['8766', '8767', '9813'], value='8766')
-    source_filt_select = Select(options=wide_filters, value='HSC-I')
-    source_layout = layout([[source_tract_select, source_filt_select], source_tabs])
+    source_tract_select = RadioButtonGroup(labels=['8766', '8767', '9813'], active=0)
+    source_filt_select = RadioButtonGroup(labels=wide_filters, active=2)
+    source_layout = layout([[source_tract_select], [source_filt_select], [source_tabs]])
     source_panel = Panel(child=source_layout, title='Source Catalogs')
 
     uber_tabs = Tabs(tabs=[object_panel, source_panel])

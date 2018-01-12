@@ -34,12 +34,14 @@ renderer = hv.renderer('bokeh').instance(mode='server')
 # stream = hv.streams.Stream.define('Butler', butler=butler44)()
 
 def get_kwargs(section, category, default_styles=['psfMagHist', 'sky-stars', 'sky-gals'],
-                scale=1.):
+                scale=1., **kwargs):
     d = config[category]
     descriptions = d['descriptions']
     styles = default_styles if 'styles' not in d else d['styles']
-    return {'descriptions' : descriptions, 'styles' : styles,
+    kws = {'descriptions' : descriptions, 'styles' : styles,
             'scale':scale}
+    kws.update(kwargs)
+    return kws
 
 def get_object_dmaps(butler):
     categories = config['sections']['object']
@@ -47,8 +49,14 @@ def get_object_dmaps(butler):
     return [filter_layout_dmap_coadd(butler=butler, **kws)
                  for cat, kws in zip(categories, kwargs)]
 
+def get_source_dmaps(butler, tract=8766, filt='HSC-I'):
+    categories = config['sections']['source']
+    kwargs = [get_kwargs('source', cat, filt=filt) for cat in categories]
+    return [description_layout_dmap_visit(butler, tract, **kws)
+            for cat, kws in zip(categories, kwargs)]
 
 object_dmaps = get_object_dmaps(butler44)
+source_dmaps = get_source_dmaps(butler44)
 
 def modify_doc(doc):
     repo_box = TextInput(value='/project/tmorton/DM-12873/w44', title='rerun',
@@ -56,12 +64,19 @@ def modify_doc(doc):
 
     # Create HoloViews plot and attach the document
     object_hvplots = [renderer.get_widget(dmap, None, doc) for dmap in object_dmaps]
+    source_hvplots = [renderer.get_widget(dmap, None, doc) for dmap in source_dmaps]
 
     def update_repo(attr, old, new):
         butler = Butler(new)
         object_dmaps = get_object_dmaps(butler=butler)
+        source_dmaps = get_source_dmaps(butler=butler)
+
         new_object_plots = [renderer.get_widget(dmap, None, doc) for dmap in object_dmaps]
+        new_source_plots = [renderer.get_widget(dmap, None, doc) for dmap in source_dmaps]
+
         for plot,new_plot in zip(object_plots, new_object_plots):
+            plot.children[0] = new_plot.state
+        for plot,new_plot in zip(source_plots, new_source_plots):
             plot.children[0] = new_plot.state
 
     repo_box.on_change('value', update_repo)
@@ -70,7 +85,13 @@ def modify_doc(doc):
     object_tabs = Tabs(tabs=[Panel(child=plot, title=name) 
                             for plot,name in zip(object_plots, config['sections']['object'])])
 
-    uber_tabs = Tabs(tabs=[Panel(child=object_tabs, name='Object Catalogs')])
+    source_plots = [layout([hvplot.state], sizing_mode='fixed') for hvplot in source_hvplots]
+    source_tabs = Tabs(tabs=[Panel(child=plot, title=name) 
+                            for plot,name in zip(source_plots, config['sections']['source'])])
+
+
+    uber_tabs = Tabs(tabs=[Panel(child=object_tabs, name='Object Catalogs'),
+                           Panel(child=source_tabs, name='Source Catalogs')])
 
     doc.add_root(repo_box)
     doc.add_root(uber_tabs)

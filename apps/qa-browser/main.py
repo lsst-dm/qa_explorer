@@ -97,7 +97,8 @@ def modify_doc(doc):
             new_tract = int(t_sel.labels[t_sel.active])
             new_filt = f_sel.labels[f_sel.active]
 
-            new_hvplot = get_source_dmap(butler, category, tract=new_tract, filt=new_filt)
+            dmap = get_source_dmap(butler, category, tract=new_tract, filt=new_filt)
+            new_hvplot = renderer.get_widget(dmap, None, doc)
             source_plots[category].children[0] = new_hvplot.state
         return update
 

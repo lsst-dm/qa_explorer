@@ -48,7 +48,7 @@ def get_object_dmaps(butler):
                  for cat, kws in zip(categories, kwargs)]
 
 
-object_dmaps = get_object_dmaps(butler44)
+object_dmaps = get_object_dmaps(butler44, scale=0.2)
 
 def modify_doc(doc):
     repo_box = TextInput(value='/project/tmorton/DM-12873/w44', title='rerun',

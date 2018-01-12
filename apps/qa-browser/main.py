@@ -92,7 +92,7 @@ def modify_doc(doc):
                             for plot,name in zip(source_plots, config['sections']['source'])])
     source_tract_select = RadioButtonGroup(labels=['8766', '8767', '9813'], active=0)
     source_filt_select = RadioButtonGroup(labels=wide_filters, active=2)
-    source_layout = layout([[source_tract_select], [source_filt_select], [source_tabs]])
+    source_layout = layout([[source_tract_select, source_filt_select], [source_tabs]], sizing_mode='fixed')
     source_panel = Panel(child=source_layout, title='Source Catalogs')
 
     uber_tabs = Tabs(tabs=[object_panel, source_panel])

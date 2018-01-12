@@ -83,30 +83,26 @@ def modify_doc(doc):
         global butler
         butler = Butler(new)
         object_dmaps = get_object_dmaps(butler=butler)
-        source_dmaps = get_source_dmaps(butler=butler, 
-                                    tract=int(source_tract_select.value),
-                                    filt=source_filt_select.value)
 
         new_object_hvplots = [renderer.get_widget(dmap, None, doc) for dmap in object_dmaps]
-        new_source_hvplots = [renderer.get_widget(dmap, None, doc) for dmap in source_dmaps]
 
         for plot,new_plot in zip(object_plots, new_object_hvplots):
             plot.children[0] = new_plot.state
-        for plot,new_plot in zip(source_plots, new_source_hvplots):
-            plot.children[0] = new_plot.state
 
+        update_source(attr, old, new)
+        
     def update_source(attr, old, new):
-        source_dmaps = get_source_dmaps(butler=butler, 
-                                    tract=int(source_tract_select.value),
-                                    filt=source_filt_select.value)
+        new_tract = int(source_tract_select.labels[source_tract_select.active])
+        new_filt = int(source_filt_select.labels[source_filt_select.active])
+        source_dmaps = get_source_dmaps(butler=butler, tract=new_tract, filt=new_filt)
         new_source_hvplots = [renderer.get_widget(dmap, None, doc) for dmap in source_dmaps]
         for plot,new_plot in zip(source_plots, new_source_hvplots):
             plot.children[0] = new_plot.state
 
 
     repo_box.on_change('value', update_repo)
-    source_tract_select.on_change('value', update_source)
-    source_filter_select.on_change('value', update_source)
+    source_tract_select.on_change('active', update_source)
+    source_filter_select.on_change('active', update_source)
 
     uber_tabs = Tabs(tabs=[object_panel, source_panel])
                            

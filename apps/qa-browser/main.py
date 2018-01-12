@@ -90,7 +90,7 @@ def modify_doc(doc):
     source_plots = [layout([hvplot.state], sizing_mode='fixed') for hvplot in source_hvplots]
     source_tabs = Tabs(tabs=[Panel(child=plot, title=name) 
                             for plot,name in zip(source_plots, config['sections']['source'])])
-    source_tract_select = Select(options=[8766, 8767, 9813], value=8766)
+    source_tract_select = Select(options=['8766', '8767', '9813'], value='8766')
     source_filt_select = Select(options=wide_filters, value='HSC-I')
     source_layout = layout([[source_tract_select, source_filt_select], source_tabs])
     source_panel = Panel(child=source_layout, title='Source Catalogs')

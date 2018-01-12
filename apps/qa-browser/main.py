@@ -130,7 +130,7 @@ def modify_doc(doc):
 
         for cat in source_categories:
             update = update_source(cat)
-            update()
+            update(attr, old, new)
 
     repo_box.on_change('value', update_repo)
 

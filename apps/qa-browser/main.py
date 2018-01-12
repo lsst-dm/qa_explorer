@@ -34,7 +34,7 @@ renderer = hv.renderer('bokeh').instance(mode='server')
 # stream = hv.streams.Stream.define('Butler', butler=butler44)()
 
 def get_kwargs(section, category, default_styles=['psfMagHist', 'sky-stars', 'sky-gals'],
-                scale=1.):
+                scale=0.2):
     d = config[category]
     descriptions = d['descriptions']
     styles = default_styles if 'styles' not in d else d['styles']
@@ -48,7 +48,7 @@ def get_object_dmaps(butler):
                  for cat, kws in zip(categories, kwargs)]
 
 
-object_dmaps = get_object_dmaps(butler44, scale=0.2)
+object_dmaps = get_object_dmaps(butler44)
 
 def modify_doc(doc):
     repo_box = TextInput(value='/project/tmorton/DM-12873/w44', title='rerun',

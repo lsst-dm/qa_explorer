@@ -14,6 +14,7 @@ from bokeh.models.widgets import Panel, Tabs, RadioButtonGroup
 from explorer.static import get_plot
 from explorer.static import filter_layout_dmap_coadd
 from explorer.static import description_layout_dmap_visit
+from explorer.static import color_dmap
 from explorer.rc import wide_filters
 
 from lsst.daf.persistence import Butler
@@ -21,6 +22,7 @@ from lsst.daf.persistence import Butler
 rerun44 = '/project/tmorton/DM-12873/w44'
 
 butler = Butler(rerun44)
+tracts = [8766, 8767, 9813]
 # butler46 = Butler(rerun46)
 
 config_file = resource_filename('explorer', os.path.join('data',
@@ -60,18 +62,27 @@ def get_source_dmaps(butler, tract=8766, filt='HSC-I'):
         d[cat] = get_source_dmap(butler, cat, tract=tract, filt=filt)
     return d
 
+def get_color_dmaps(butler):
+    categories = config['sections']['color']
+    d = {}
+    for cat in categories:
+        kws = get_kwargs('color', cat)
+        d[cat] = color_dmap(butler, **kws)
+    return d
+
 
 # This is a list
 object_dmaps = get_object_dmaps(butler) 
 
-# This is a dictionary
+# These are dictionaries
 source_dmaps = get_source_dmaps(butler)
+color_dmaps = get_color_dmaps(butler)
 
 def modify_doc(doc):
     repo_box = TextInput(value='/project/tmorton/DM-12873/w44', title='rerun',
                          css_classes=['customTextInput'])
 
-    # Create HoloViews plot and attach the document
+    # Object plots
     object_hvplots = [renderer.get_widget(dmap, None, doc) for dmap in object_dmaps]
 
     object_plots = [layout([hvplot.state], sizing_mode='fixed') for hvplot in object_hvplots]
@@ -79,6 +90,7 @@ def modify_doc(doc):
                             for plot,name in zip(object_plots, config['sections']['object'])])
     object_panel = Panel(child=object_tabs, title='Object Catalogs')
 
+    # Source plots
     source_categories = config['sections']['source']
     source_hvplots = {c : renderer.get_widget(source_dmaps[c], None, doc) 
                         for c in source_categories}
@@ -118,9 +130,20 @@ def modify_doc(doc):
     source_tabs = Tabs(tabs=source_tab_panels)
     source_panel = Panel(child=source_tabs, title='Source Catalogs')
 
+    # Color plots
+    color_categories = config['sections']['color']
+    color_hvplots = {c : renderer.get_widget(color_dmaps[c], None, doc) 
+                        for c in color_categories}
+    color_plots = {c : layout([color_hvplots[c].state], sizing_mode='fixed') 
+                    for c in color_categories}
+
+    color_tabs = [Panel(child=color_plots[c], title=c) for c in color_categories]
+
     def update_repo(attr, old, new):
         global butler
         butler = Butler(new)
+
+        # Update Object plots
         object_dmaps = get_object_dmaps(butler=butler)
 
         new_object_hvplots = [renderer.get_widget(dmap, None, doc) for dmap in object_dmaps]
@@ -128,9 +151,18 @@ def modify_doc(doc):
         for plot,new_plot in zip(object_plots, new_object_hvplots):
             plot.children[0] = new_plot.state
 
+        # Update Source plots
         for cat in source_categories:
             update = update_source(cat)
             update(attr, old, new)
+
+        # Update Color plots
+        color_dmaps = get_color_dmaps(butler=butler)
+        new_color_hvplots = {c : renderer.get_widget(color_dmaps[c], None, doc) 
+                              for c in color_categories}
+        for plot,new_plot in zip(color_plots, new_color_hvplots):
+            plot.children[0] = new_plot.state
+
 
     repo_box.on_change('value', update_repo)
 

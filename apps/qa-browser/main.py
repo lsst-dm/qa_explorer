@@ -90,8 +90,8 @@ def modify_doc(doc):
                             for plot,name in zip(source_plots, config['sections']['source'])])
 
 
-    uber_tabs = Tabs(tabs=[Panel(child=object_tabs, name='Object Catalogs'),
-                           Panel(child=source_tabs, name='Source Catalogs')])
+    uber_tabs = Tabs(tabs=[Panel(child=object_tabs, title='Object Catalogs'),
+                           Panel(child=source_tabs, title='Source Catalogs')])
 
     doc.add_root(repo_box)
     doc.add_root(uber_tabs)

@@ -90,7 +90,7 @@ def modify_doc(doc):
             plot.children[0] = new_plot.state
 
         update_source(attr, old, new)
-        
+
     def update_source(attr, old, new):
         new_tract = int(source_tract_select.labels[source_tract_select.active])
         new_filt = int(source_filt_select.labels[source_filt_select.active])
@@ -102,7 +102,7 @@ def modify_doc(doc):
 
     repo_box.on_change('value', update_repo)
     source_tract_select.on_change('active', update_source)
-    source_filter_select.on_change('active', update_source)
+    source_filt_select.on_change('active', update_source)
 
     uber_tabs = Tabs(tabs=[object_panel, source_panel])
                            

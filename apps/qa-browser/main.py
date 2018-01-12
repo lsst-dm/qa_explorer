@@ -49,13 +49,22 @@ def get_object_dmaps(butler):
     return [filter_layout_dmap_coadd(butler=butler, **kws)
                  for cat, kws in zip(categories, kwargs)]
 
+def get_source_dmap(butler, category, tract=8766, filt='HSC-I'):
+    kws = get_kwargs('source', category, filt=filt)
+    return description_layout_dmap_visit(butler, tract, **kws)
+
 def get_source_dmaps(butler, tract=8766, filt='HSC-I'):
     categories = config['sections']['source']
-    kwargs = [get_kwargs('source', cat, filt=filt) for cat in categories]
-    return [description_layout_dmap_visit(butler, tract, **kws)
-            for cat, kws in zip(categories, kwargs)]
+    d = {}
+    for cat in categories:
+        d[cat] = get_source_dmap(butler, cat, tract=tract, filt=filt)
+    return d
 
-object_dmaps = get_object_dmaps(butler)
+
+# This is a list
+object_dmaps = get_object_dmaps(butler) 
+
+# This is a dictionary
 source_dmaps = get_source_dmaps(butler)
 
 def modify_doc(doc):
@@ -64,18 +73,47 @@ def modify_doc(doc):
 
     # Create HoloViews plot and attach the document
     object_hvplots = [renderer.get_widget(dmap, None, doc) for dmap in object_dmaps]
-    source_hvplots = [renderer.get_widget(dmap, None, doc) for dmap in source_dmaps]
 
     object_plots = [layout([hvplot.state], sizing_mode='fixed') for hvplot in object_hvplots]
     object_tabs = Tabs(tabs=[Panel(child=plot, title=name) 
                             for plot,name in zip(object_plots, config['sections']['object'])])
     object_panel = Panel(child=object_tabs, title='Object Catalogs')
 
-    source_plots = [layout([hvplot.state], sizing_mode='fixed') for hvplot in source_hvplots]
-    source_tabs = Tabs(tabs=[Panel(child=plot, title=name) 
-                            for plot,name in zip(source_plots, config['sections']['source'])])
-    source_tract_select = RadioButtonGroup(labels=['8766', '8767', '9813'], active=0)
-    source_filt_select = RadioButtonGroup(labels=wide_filters, active=2)
+    source_categories = config['sections']['source']
+    source_hvplots = {c : renderer.get_widget(source_dmaps[c], None, doc) 
+                        for c in source_categories}
+
+    source_plots = {c : layout([source_hvplots[c].state], sizing_mode='fixed') 
+                    for c in source_categories}
+    source_tract_select = {c : RadioButtonGroup(labels=['8766', '8767', '9813'], active=0)
+                                for c in source_categories}
+    source_filt_select = {c : RadioButtonGroup(labels=wide_filters, active=2)
+                                for c in source_categories}
+
+    def update_source(category):
+        def update(attr, old, new):
+            t_sel = source_tract_select[category]
+            f_sel = source_filt_select[category]
+            new_tract = int(t_sel.labels[t_sel.active])
+            new_filt = f_sel.labels[f_sel.active]
+
+            new_hvplot = get_source_dmap(butler, category, tract=new_tract, filt=new_filt)
+            source_plots[category].children[0] = new_hvplot.state
+        return update
+
+    source_tab_panels = []
+    for plot, category in zip(source_plots, config['sections']['source']):
+        tract_select = source_tract_select[category]
+        filt_select = source_filt_select[category]
+
+        tract_select.on_change('active', update_source(category))
+        filt_select.on_change('active', update_source(category))
+
+        layout = layout([[tract_select, filt_select], plot], sizing_mode='fixed')
+        source_tab_panels.append(Panel(child=layout, title=name))
+
+
+    source_tabs = Tabs(tabs=source_tab_panels)
     source_layout = layout([[source_tract_select, source_filt_select], [source_tabs]], sizing_mode='fixed')
     source_panel = Panel(child=source_layout, title='Source Catalogs')
 
@@ -89,20 +127,11 @@ def modify_doc(doc):
         for plot,new_plot in zip(object_plots, new_object_hvplots):
             plot.children[0] = new_plot.state
 
-        update_source(attr, old, new)
-
-    def update_source(attr, old, new):
-        new_tract = int(source_tract_select.labels[source_tract_select.active])
-        new_filt = source_filt_select.labels[source_filt_select.active]
-        source_dmaps = get_source_dmaps(butler=butler, tract=new_tract, filt=new_filt)
-        new_source_hvplots = [renderer.get_widget(dmap, None, doc) for dmap in source_dmaps]
-        for plot,new_plot in zip(source_plots, new_source_hvplots):
-            plot.children[0] = new_plot.state
-
+        for cat in source_categories:
+            update = update_source(cat)
+            update()
 
     repo_box.on_change('value', update_repo)
-    source_tract_select.on_change('active', update_source)
-    source_filt_select.on_change('active', update_source)
 
     uber_tabs = Tabs(tabs=[object_panel, source_panel])
                            

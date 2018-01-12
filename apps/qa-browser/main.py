@@ -9,11 +9,12 @@ from bokeh.application import Application
 from bokeh.io import show, curdoc
 from bokeh.layouts import layout
 from bokeh.models import Slider, Button, TextInput
-from bokeh.models.widgets import Panel, Tabs
+from bokeh.models.widgets import Panel, Tabs, Select
 
 from explorer.static import get_plot
 from explorer.static import filter_layout_dmap_coadd
 from explorer.static import description_layout_dmap_visit
+from .rc import wide_filters
 
 from lsst.daf.persistence import Butler
 
@@ -84,14 +85,18 @@ def modify_doc(doc):
     object_plots = [layout([hvplot.state], sizing_mode='fixed') for hvplot in object_hvplots]
     object_tabs = Tabs(tabs=[Panel(child=plot, title=name) 
                             for plot,name in zip(object_plots, config['sections']['object'])])
+    object_panel = Panel(child=object_tabs, title='Object Catalogs')
 
     source_plots = [layout([hvplot.state], sizing_mode='fixed') for hvplot in source_hvplots]
     source_tabs = Tabs(tabs=[Panel(child=plot, title=name) 
                             for plot,name in zip(source_plots, config['sections']['source'])])
+    source_tract_select = Select(options=[8766, 8767, 9813], value=8766)
+    source_filt_select = Select(options=wide_filters, value='HSC-I')
+    source_layout = layout([[source_tract_select, source_filt_select], source_tabs])
+    source_panel = Panel(child=source_layout, title='Source Catalogs')
 
-
-    uber_tabs = Tabs(tabs=[Panel(child=object_tabs, title='Object Catalogs'),
-                           Panel(child=source_tabs, title='Source Catalogs')])
+    uber_tabs = Tabs(tabs=[object_panel, source_panel])
+                           
 
     doc.add_root(repo_box)
     doc.add_root(uber_tabs)

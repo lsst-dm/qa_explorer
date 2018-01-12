@@ -19,9 +19,8 @@ from explorer.rc import wide_filters
 from lsst.daf.persistence import Butler
 
 rerun44 = '/project/tmorton/DM-12873/w44'
-rerun46 = '/project/tmorton/DM-12873/w46'
 
-butler44 = Butler(rerun44)
+butler = Butler(rerun44)
 # butler46 = Butler(rerun46)
 
 config_file = resource_filename('explorer', os.path.join('data',
@@ -56,8 +55,8 @@ def get_source_dmaps(butler, tract=8766, filt='HSC-I'):
     return [description_layout_dmap_visit(butler, tract, **kws)
             for cat, kws in zip(categories, kwargs)]
 
-object_dmaps = get_object_dmaps(butler44)
-source_dmaps = get_source_dmaps(butler44)
+object_dmaps = get_object_dmaps(butler)
+source_dmaps = get_source_dmaps(butler)
 
 def modify_doc(doc):
     repo_box = TextInput(value='/project/tmorton/DM-12873/w44', title='rerun',
@@ -66,21 +65,6 @@ def modify_doc(doc):
     # Create HoloViews plot and attach the document
     object_hvplots = [renderer.get_widget(dmap, None, doc) for dmap in object_dmaps]
     source_hvplots = [renderer.get_widget(dmap, None, doc) for dmap in source_dmaps]
-
-    def update_repo(attr, old, new):
-        butler = Butler(new)
-        object_dmaps = get_object_dmaps(butler=butler)
-        source_dmaps = get_source_dmaps(butler=butler)
-
-        new_object_plots = [renderer.get_widget(dmap, None, doc) for dmap in object_dmaps]
-        new_source_plots = [renderer.get_widget(dmap, None, doc) for dmap in source_dmaps]
-
-        for plot,new_plot in zip(object_plots, new_object_plots):
-            plot.children[0] = new_plot.state
-        for plot,new_plot in zip(source_plots, new_source_plots):
-            plot.children[0] = new_plot.state
-
-    repo_box.on_change('value', update_repo)
 
     object_plots = [layout([hvplot.state], sizing_mode='fixed') for hvplot in object_hvplots]
     object_tabs = Tabs(tabs=[Panel(child=plot, title=name) 
@@ -94,6 +78,35 @@ def modify_doc(doc):
     source_filt_select = RadioButtonGroup(labels=wide_filters, active=2)
     source_layout = layout([[source_tract_select, source_filt_select], [source_tabs]], sizing_mode='fixed')
     source_panel = Panel(child=source_layout, title='Source Catalogs')
+
+    def update_repo(attr, old, new):
+        global butler
+        butler = Butler(new)
+        object_dmaps = get_object_dmaps(butler=butler)
+        source_dmaps = get_source_dmaps(butler=butler, 
+                                    tract=int(source_tract_select.value),
+                                    filt=source_filt_select.value)
+
+        new_object_hvplots = [renderer.get_widget(dmap, None, doc) for dmap in object_dmaps]
+        new_source_hvplots = [renderer.get_widget(dmap, None, doc) for dmap in source_dmaps]
+
+        for plot,new_plot in zip(object_plots, new_object_hvplots):
+            plot.children[0] = new_plot.state
+        for plot,new_plot in zip(source_plots, new_source_hvplots):
+            plot.children[0] = new_plot.state
+
+    def update_source(attr, old, new):
+        source_dmaps = get_source_dmaps(butler=butler, 
+                                    tract=int(source_tract_select.value),
+                                    filt=source_filt_select.value)
+        new_source_hvplots = [renderer.get_widget(dmap, None, doc) for dmap in source_dmaps]
+        for plot,new_plot in zip(source_plots, new_source_hvplots):
+            plot.children[0] = new_plot.state
+
+
+    repo_box.on_change('value', update_repo)
+    source_tract_select.on_change('value', update_source)
+    source_filter_select.on_change('value', update_source)
 
     uber_tabs = Tabs(tabs=[object_panel, source_panel])
                            

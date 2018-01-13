@@ -40,11 +40,11 @@ def get_visits(butler, tract, filt):
     """
     dataId = {'tract':tract, 'filter':filt}
     filenamer = Filenamer(butler, 'plotCoadd', dataId)
-    
+
     fake_filename = butler.get(filenamer.dataset + '_filename', dataId, description='foo', style='bar')[0]
     tract_dir = os.path.dirname(fake_filename)
     visit_dirs = glob.glob(os.path.join(tract_dir, 'visit*'))
-    visits = [int(re.search('visit-(\d+)', d).group(1)) for d in visit_dirs]
+    visits = [int(re.search('visit-(\d+)', d).group(1)) for d in visit_dirs if len(os.listdir(d)) > 0]
     visits.sort()
     return visits
     

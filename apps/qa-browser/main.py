@@ -146,8 +146,10 @@ def modify_doc(doc):
     def update_repo(attr, old, new):
         global butler
         butler = Butler(new)
+        logging.info('Changing butler to {}'.format(new))
 
         # Update Object plots
+        logging.info('Updating object plots...')
         object_dmaps = get_object_dmaps(butler=butler)
 
         new_object_hvplots = [renderer.get_widget(dmap, None, doc) for dmap in object_dmaps]
@@ -156,6 +158,7 @@ def modify_doc(doc):
             plot.children[0] = new_plot.state
 
         # Update Source plots
+        logging.info('Updating source plots...')
         source_dmaps = get_source_dmaps(butler=butler)
         new_source_hvplots = {c : renderer.get_widget(source_dmaps[c], None, doc) 
                               for c in source_categories}
@@ -163,6 +166,7 @@ def modify_doc(doc):
             plot.children[0] = new_plot.state
 
         # Update Color plots
+        logging.info('Updating color plots...')
         color_dmaps = get_color_dmaps(butler=butler)
         new_color_hvplots = {c : renderer.get_widget(color_dmaps[c], None, doc) 
                               for c in color_categories}

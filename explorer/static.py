@@ -19,7 +19,7 @@ def get_tracts(butler):
 
     Decently hack-y pseudo-butler activity here.
     """     
-    dataId = {'tract':0}
+    dataId = {'tract':0, 'filter':'HSC-I'}
     filenamer = Filenamer(butler, 'plotCoadd', dataId)
 
     fake_filename = butler.get(filenamer.dataset + '_filename', dataId, description='foo', style='bar')[0]

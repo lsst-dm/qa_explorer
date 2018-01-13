@@ -1,4 +1,5 @@
 from __future__ import print_function, division
+import re, os, glob
 from itertools import product
 from functools import partial
 import numpy as np
@@ -11,7 +12,38 @@ try:
 except ImportError:
     logging.warning('Pipe analysis not available.')
 
-from .rc import wide_filters, cosmos_filters, get_visits, field_name
+from .rc import wide_filters, cosmos_filters
+
+def get_tracts(butler):
+    """Reads tracts for which plots are available.
+
+    Decently hack-y pseudo-butler activity here.
+    """     
+    dataId = {'tract':0}
+    fake_filename = butler.get(filenamer.dataset + '_filename', dataId, description='foo', style='bar')[0]
+    m = re.search('(.+/plots)/.+', fake_filename)
+    plot_rootdir = m.group(1)
+    filters = os.listdir(plot_rootdir)
+    tracts = []
+    for f in filters:
+        dirs = os.listdir(os.path.join(plot_rootdir, f))
+        for d in dirs:
+            if len(glob.glob('{}/{}/{}/*/*.png'.format(plot_rootdir,f,d))) > 0:
+                tracts.append(d)
+    tracts = list(set([int(t.replace('tract-', '')) for t in tracts]))
+    return tracts
+
+def get_visits(butler, tract, filt):
+    """Returns visits for which plots exist, for given tract and filt
+    """
+    dataId = {'tract':tract, 'filter':filt}
+    fake_filename = butler.get(filenamer.dataset + '_filename', dataId, description='foo', style='bar')[0]
+    tract_dir = os.path.dirname(fake_filename)
+    visit_dirs = glob.glob(os.path.join(tract_dir, 'visit*'))
+    visits = [int(re.search('visit-(\d+)', d).group(1)) for d in visit_dirs]
+    visits.sort()
+    return visits
+    
 
 def get_color_plot(butler, tract=8766, description='color_wPerp', style='psfMagHist', scale=None):
     dataId = {'tract':tract}
@@ -19,7 +51,7 @@ def get_color_plot(butler, tract=8766, description='color_wPerp', style='psfMagH
     filename = filenamer(description=description, dataId=dataId, style=style)
     try:
         rgb = hv.RGB.load_image(filename, bare=True)
-        
+
         # back out the aspect ratio from bounds
         l,b,r,t = rgb.bounds.lbrt()
         aspect = (r-l)/(t-b)
@@ -94,7 +126,8 @@ def filter_layout_dmap_coadd(butler, descriptions, tracts=[8766, 8767, 9813],
     return dmap
     
 def description_layout_dmap_visit(butler, tract, descriptions, filt='HSC-I', styles=['psfMagHist', 'sky-stars', 'sky-gals'], scale=0.66):
-    visits = get_visits(field_name(tract), filt)
+    # visits = get_visits(field_name(tract), filt)
+    visits = get_visits(butler, tract, filt)
     dmap = hv.DynamicMap(partial(description_layout, descriptions=descriptions, butler=butler, tract=tract, filt=filt, kind='visit', scale=scale), 
                      kdims=['visit', 'style'])
     dmap = dmap.redim.values(visit=visits, style=styles)

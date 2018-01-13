@@ -156,9 +156,11 @@ def modify_doc(doc):
             plot.children[0] = new_plot.state
 
         # Update Source plots
-        for cat in source_categories:
-            update = update_source(cat)
-            update(attr, old, new)
+        source_dmaps = get_source_dmaps(butler=butler)
+        new_source_hvplots = {c : renderer.get_widget(source_dmaps[c], None, doc) 
+                              for c in source_categories}
+        for plot,new_plot in zip(source_plots, new_source_hvplots):
+            plot.children[0] = new_plot.state
 
         # Update Color plots
         color_dmaps = get_color_dmaps(butler=butler)

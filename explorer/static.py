@@ -20,6 +20,8 @@ def get_tracts(butler):
     Decently hack-y pseudo-butler activity here.
     """     
     dataId = {'tract':0}
+    filenamer = Filenamer(butler, 'plotCoadd', dataId)
+
     fake_filename = butler.get(filenamer.dataset + '_filename', dataId, description='foo', style='bar')[0]
     m = re.search('(.+/plots)/.+', fake_filename)
     plot_rootdir = m.group(1)
@@ -37,6 +39,8 @@ def get_visits(butler, tract, filt):
     """Returns visits for which plots exist, for given tract and filt
     """
     dataId = {'tract':tract, 'filter':filt}
+    filenamer = Filenamer(butler, 'plotCoadd', dataId)
+    
     fake_filename = butler.get(filenamer.dataset + '_filename', dataId, description='foo', style='bar')[0]
     tract_dir = os.path.dirname(fake_filename)
     visit_dirs = glob.glob(os.path.join(tract_dir, 'visit*'))

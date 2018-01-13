@@ -69,13 +69,16 @@ def get_color_plot(butler, tract=8766, description='color_wPerp', style='psfMagH
     except FileNotFoundError:
         return hv.RGB(np.zeros((2,2)))
     
-def color_tract_layout(butler, description, style='psfMagHist', tracts=[8766, 8767, 9813], scale=1.0):
+def color_tract_layout(butler, description, style='psfMagHist', tracts=None, scale=1.0):
+    if tracts is None:
+        tracts = get_tracts(butler)
     return hv.Layout([get_color_plot(butler, tract, description=description, style=style, scale=scale) 
                          for tract in tracts])
     
-def color_dmap(butler, tracts=[8766, 8767, 9813], descriptions=['color_wPerp', 'color_xPerp', 'color_yPerp'], 
+def color_dmap(butler, tracts=None, descriptions=['color_wPerp', 'color_xPerp', 'color_yPerp'], 
                styles=['psfMagHist', 'sky-stars'], scale=1.0):
-    
+    if tracts is None:
+        tracts = get_tracts(butler)
     dmap = hv.DynamicMap(partial(color_tract_layout, butler=butler, tracts=tracts, scale=scale), kdims=['description', 'style'])
     dmap = dmap.redim.values(description=descriptions, style=styles)
     return dmap
@@ -121,8 +124,10 @@ def description_layout(butler, descriptions, tract=9813, filt='HSC-I', style='ps
     return hv.Layout([get_plot(butler, tract, filt, desc, style, visit=visit, kind=kind, scale=scale) 
                                for desc in descriptions]).cols(columns)
     
-def filter_layout_dmap_coadd(butler, descriptions, tracts=[8766, 8767, 9813], 
+def filter_layout_dmap_coadd(butler, descriptions, tracts=None, 
                             styles=['psfMagHist', 'sky-stars', 'sky-gals'], scale=0.66):
+    if tracts is None:
+        tracts = get_tracts(butler)
     dmap = hv.DynamicMap(partial(filter_layout, butler=butler, visit=None, kind='coadd', scale=scale), 
                      kdims=['tract', 'description', 'style'])
     dmap = dmap.redim.values(tract=tracts, description=descriptions, style=styles) 

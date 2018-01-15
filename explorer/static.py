@@ -136,6 +136,8 @@ def filter_layout_dmap_coadd(butler, descriptions, tracts=None,
     
 def description_layout_dmap_visit(butler, tract, descriptions, filt='HSC-I', styles=['psfMagHist', 'sky-stars', 'sky-gals'], scale=0.66):
     # visits = get_visits(field_name(tract), filt)
+    if tract is None:
+        tract = get_tracts(butler)[0]
     visits = get_visits(butler, tract, filt)
     dmap = hv.DynamicMap(partial(description_layout, descriptions=descriptions, butler=butler, tract=tract, filt=filt, kind='visit', scale=scale), 
                      kdims=['visit', 'style'])

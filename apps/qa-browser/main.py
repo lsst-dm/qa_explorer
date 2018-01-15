@@ -13,7 +13,7 @@ from bokeh.layouts import layout
 from bokeh.models import Slider, Button, TextInput
 from bokeh.models.widgets import Panel, Tabs, RadioButtonGroup
 
-from explorer.static import get_plot
+from explorer.static import get_plot, get_tracts
 from explorer.static import filter_layout_dmap_coadd
 from explorer.static import description_layout_dmap_visit
 from explorer.static import color_dmap
@@ -24,7 +24,6 @@ from lsst.daf.persistence import Butler
 rerun44 = '/project/tmorton/DM-12873/w44'
 
 butler = Butler(rerun44)
-tracts = [8766, 8767, 9813]
 # butler46 = Butler(rerun46)
 
 config_file = resource_filename('explorer', os.path.join('data',
@@ -53,11 +52,11 @@ def get_object_dmaps(butler):
     return [filter_layout_dmap_coadd(butler=butler, **kws)
                  for cat, kws in zip(categories, kwargs)]
 
-def get_source_dmap(butler, category, tract=8766, filt='HSC-I'):
+def get_source_dmap(butler, category, tract=None, filt='HSC-I'):
     kws = get_kwargs('source', category, filt=filt)
     return description_layout_dmap_visit(butler, tract, **kws)
 
-def get_source_dmaps(butler, tract=8766, filt='HSC-I'):
+def get_source_dmaps(butler, tract=None, filt='HSC-I'):
     categories = config['sections']['source']
     d = {}
     for cat in categories:
@@ -97,9 +96,11 @@ def modify_doc(doc):
     source_hvplots = {c : renderer.get_widget(source_dmaps[c], None, doc) 
                         for c in source_categories}
 
-    source_plots = {c : layout([source_hvplots[c].state], sizing_mode='fixed') 
-                    for c in source_categories}
-    source_tract_select = {c : RadioButtonGroup(labels=['8766', '8767', '9813'], active=0)
+    # source_plots = {c : layout([source_hvplots[c].state], sizing_mode='fixed') 
+    #                 for c in source_categories}
+    source_plots = {c : layout([None], sizing_mode='fixed')
+                        for c in source_categories}
+    source_tract_select = {c : RadioButtonGroup(labels=[str(t) for t in get_tracts(butler)], active=0)
                                 for c in source_categories}
     source_filt_select = {c : RadioButtonGroup(labels=wide_filters, active=2)
                                 for c in source_categories}
@@ -158,12 +159,16 @@ def modify_doc(doc):
             plot.children[0] = new_plot.state
 
         # Update Source plots
-        logging.info('Updating source plots...')
-        source_dmaps = get_source_dmaps(butler=butler)
-        new_source_hvplots = {c : renderer.get_widget(source_dmaps[c], None, doc) 
-                              for c in source_categories}
-        for plot,new_plot in zip(source_plots, new_source_hvplots):
-            plot.children[0] = new_plot.state
+        for c in source_categories:
+            source_tract_select[c].labels = [str(t) for t in get_tracts(butler)]
+
+        # # THIS MUST BE FIXED.  PERHAPS SOURCE PLOTS SHOULD BE EMPTY UNTIL ACTIVATED
+        # logging.info('Updating source plots...')
+        # source_dmaps = get_source_dmaps(butler=butler)
+        # new_source_hvplots = {c : renderer.get_widget(source_dmaps[c], None, doc) 
+        #                       for c in source_categories}
+        # for plot,new_plot in zip(source_plots, new_source_hvplots):
+        #     plot.children[0] = new_plot.state
 
         # Update Color plots
         logging.info('Updating color plots...')

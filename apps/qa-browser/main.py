@@ -93,9 +93,7 @@ def modify_doc(doc):
 
     # Source plots
     source_categories = config['sections']['source']
-    # source_hvplots = {c : renderer.get_widget(source_dmaps[c], None, doc) 
-    #                     for c in source_categories}
-    source_hvplots = {c : renderer.get_plot(hv.Empty(), doc)
+    source_hvplots = {c : renderer.get_widget(source_dmaps[c], None, doc) 
                         for c in source_categories}
 
     source_plots = {c : layout([source_hvplots[c].state], sizing_mode='fixed') 
@@ -163,12 +161,12 @@ def modify_doc(doc):
             source_tract_select[c].labels = [str(t) for t in get_tracts(butler)]
 
         # # THIS MUST BE FIXED.  PERHAPS SOURCE PLOTS SHOULD BE EMPTY UNTIL ACTIVATED
-        # logging.info('Updating source plots...')
-        # source_dmaps = get_source_dmaps(butler=butler)
-        # new_source_hvplots = {c : renderer.get_widget(source_dmaps[c], None, doc) 
-        #                       for c in source_categories}
-        # for plot,new_plot in zip(source_plots, new_source_hvplots):
-        #     plot.children[0] = new_plot.state
+        logging.info('Updating source plots...')
+        source_dmaps = get_source_dmaps(butler=butler)
+        new_source_hvplots = {c : renderer.get_widget(source_dmaps[c], None, doc) 
+                              for c in source_categories}
+        for plot,new_plot in zip(source_plots, new_source_hvplots):
+            plot.children[0] = new_plot.state
 
         # Update Color plots
         logging.info('Updating color plots...')

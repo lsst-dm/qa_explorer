@@ -9,7 +9,7 @@ import logging
 from bokeh.application.handlers import FunctionHandler
 from bokeh.application import Application
 from bokeh.io import show, curdoc
-from bokeh.layouts import layout
+from bokeh.layouts import layout, gridplot
 from bokeh.models import Slider, Button, TextInput
 from bokeh.models.widgets import Panel, Tabs, RadioButtonGroup
 
@@ -93,11 +93,12 @@ def modify_doc(doc):
 
     # Source plots
     source_categories = config['sections']['source']
-    source_hvplots = {c : renderer.get_widget(source_dmaps[c], None, doc) 
-                        for c in source_categories}
+    # source_hvplots = {c : renderer.get_widget(source_dmaps[c], None, doc) 
+    #                     for c in source_categories}
 
-    source_plots = {c : layout([source_hvplots[c].state], sizing_mode='fixed') 
-                    for c in source_categories}
+    # source_plots = {c : layout([source_hvplots[c].state], sizing_mode='fixed') 
+    #                 for c in source_categories}
+    source_plots = {c : gridplot([[None]]) for c in source_categories}
     source_tract_select = {c : RadioButtonGroup(labels=[str(t) for t in get_tracts(butler)], active=0)
                                 for c in source_categories}
     source_filt_select = {c : RadioButtonGroup(labels=wide_filters, active=2)
@@ -162,11 +163,13 @@ def modify_doc(doc):
 
         # # THIS MUST BE FIXED.  PERHAPS SOURCE PLOTS SHOULD BE EMPTY UNTIL ACTIVATED
         logging.info('Updating source plots...')
-        source_dmaps = get_source_dmaps(butler=butler)
-        new_source_hvplots = {c : renderer.get_widget(source_dmaps[c], None, doc) 
-                              for c in source_categories}
-        for plot,new_plot in zip(source_plots, new_source_hvplots):
-            plot.children[0] = new_plot.state
+        source_plots = {c : gridplot([[None]]) for c in source_categories}
+
+        # source_dmaps = get_source_dmaps(butler=butler)
+        # new_source_hvplots = {c : renderer.get_widget(source_dmaps[c], None, doc) 
+        #                       for c in source_categories}
+        # for plot,new_plot in zip(source_plots, new_source_hvplots):
+        #     plot.children[0] = new_plot.state
 
         # Update Color plots
         logging.info('Updating color plots...')

@@ -218,7 +218,9 @@ class QADataset(object):
             dfs = [coadd_df, visit_df.std(axis=1, level=0).dropna(how='any')]
 
             # This dropna thing is a problem when there are NaNs in flags.
-            df_dict = {k:df_swap[k].dropna(how='any').reset_index() 
+            #  Solution: use subset=[...] to define the subset of columns to look for NaNs
+            subset_to_check = [c for c in df_swap.columns if c[1] not in self.flags]
+            df_dict = {k:df_swap[k].dropna(how='any', subset=subset_to_check).reset_index() 
                             for k in ['coadd'] + self.catalog.visit_names}
             self._ds_dict = {k:hv.Dataset(df_dict[k], kdims=kdims, vdims=vdims) for k in df_dict}
 

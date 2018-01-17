@@ -217,6 +217,7 @@ class QADataset(object):
             visit_df = self.df[visit_cols].drop('coadd', axis=1, level=1)
             dfs = [coadd_df, visit_df.std(axis=1, level=0).dropna(how='any')]
 
+            # This dropna thing is a problem when there are NaNs in flags.
             df_dict = {k:df_swap[k].dropna(how='any').reset_index() 
                             for k in ['coadd'] + self.catalog.visit_names}
             self._ds_dict = {k:hv.Dataset(df_dict[k], kdims=kdims, vdims=vdims) for k in df_dict}
@@ -244,7 +245,8 @@ class QADataset(object):
         pts = hv.Points(dset, kdims=['ra', 'dec'], vdims=vdims)
         return pts.opts(plot={'color_index':vdim})
 
-    def visit_explore(self, vdim, x_range=np.arange(15,24.1,0.5), filter_stream=None):
+    def visit_explore(self, vdim, x_range=np.arange(15,24.1,0.5), filter_stream=None,
+                      range_override=None):
         fn = partial(QADataset.visit_points, self=self, vdim=vdim)
         dmap = hv.DynamicMap(fn, kdims=['visit', 'x_max', 'label'],
                              streams=[filter_stream])
@@ -258,6 +260,8 @@ class QADataset(object):
         ranges = {vdim : (y_min, y_max),
                   'ra' : (ra_min, ra_max),
                   'dec' : (dec_min, dec_max)}
+        if range_override is not None:
+            ranges.update(range_override)
 
         dmap = dmap.redim.values(visit=self.catalog.visit_names, 
                                  # vdim=list(self.funcs.keys()) + ['match_distance'], 

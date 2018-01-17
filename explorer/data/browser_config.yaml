@@ -1,6 +1,7 @@
 # What plots different categories contain
 aperture:
   descriptions:
+    - mag_modelfit_CModel
     - mag_base_GaussianFlux  
     - mag_ext_photometryKron_KronFlux
 psf_quiver:

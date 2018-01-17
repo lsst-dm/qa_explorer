@@ -76,7 +76,7 @@ def get_color_dmaps(butler):
 object_dmaps = get_object_dmaps(butler) 
 
 # These are dictionaries
-source_dmaps = get_source_dmaps(butler)
+# source_dmaps = get_source_dmaps(butler)
 color_dmaps = get_color_dmaps(butler)
 
 def modify_doc(doc):

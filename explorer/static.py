@@ -129,9 +129,17 @@ def filter_layout_dmap_coadd(butler, descriptions, tracts=None,
                             styles=['psfMagHist', 'sky-stars', 'sky-gals'], scale=0.66):
     if tracts is None:
         tracts = get_tracts(butler)
-    dmap = hv.DynamicMap(partial(filter_layout, butler=butler, visit=None, kind='coadd', scale=scale), 
-                     kdims=['tract', 'description', 'style'])
-    dmap = dmap.redim.values(tract=tracts, description=descriptions, style=styles) 
+
+    if len(tracts) > 1:
+        layout_fn = partial(filter_layout, butler=butler, visit=None, kind='coadd', scale=scale)
+        values = dict(tract=tracts, description=descriptions, style=styles)
+        dmap = hv.DynamicMap(layout_fn, kdims=['tract', 'description', 'style'])
+    else:
+        layout_fn = partial(filter_layout, butler=butler, tract=tracts[0],
+                            visit=None, kind='coadd', scale=scale)
+        values = dict(description=descriptions, style=styles)
+        dmap = hv.DynamicMap(layout_fn, kdims=['description', 'style'])
+    dmap = dmap.redim.values(**values) 
 
     return dmap
     

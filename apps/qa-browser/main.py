@@ -96,42 +96,42 @@ def modify_doc(doc):
     # source_hvplots = {c : renderer.get_widget(source_dmaps[c], None, doc) 
     #                     for c in source_categories}
 
-    # source_plots = {c : layout([source_hvplots[c].state], sizing_mode='fixed') 
-    #                 for c in source_categories}
-    source_plots = {c : gridplot([[None]]) for c in source_categories}
-    source_tract_select = {c : RadioButtonGroup(labels=[str(t) for t in get_tracts(butler)], active=0)
-                                for c in source_categories}
-    source_filt_select = {c : RadioButtonGroup(labels=wide_filters, active=2)
-                                for c in source_categories}
+    # # source_plots = {c : layout([source_hvplots[c].state], sizing_mode='fixed') 
+    # #                 for c in source_categories}
+    # source_plots = {c : gridplot([[None]]) for c in source_categories}
+    # source_tract_select = {c : RadioButtonGroup(labels=[str(t) for t in get_tracts(butler)], active=0)
+    #                             for c in source_categories}
+    # source_filt_select = {c : RadioButtonGroup(labels=wide_filters, active=2)
+    #                             for c in source_categories}
 
-    def update_source(category):
-        def update(attr, old, new):
-            t_sel = source_tract_select[category]
-            f_sel = source_filt_select[category]
-            new_tract = int(t_sel.labels[t_sel.active])
-            new_filt = f_sel.labels[f_sel.active]
-            logging.info('updating {} to tract={}, filt={}...'.format(category, new_tract, new_filt))
-            dmap = get_source_dmap(butler, category, tract=new_tract, filt=new_filt)
-            new_hvplot = renderer.get_widget(dmap, None, doc)
-            source_plots[category].children[0] = new_hvplot.state
-            logging.info('update complete.')
-        return update
+    # def update_source(category):
+    #     def update(attr, old, new):
+    #         t_sel = source_tract_select[category]
+    #         f_sel = source_filt_select[category]
+    #         new_tract = int(t_sel.labels[t_sel.active])
+    #         new_filt = f_sel.labels[f_sel.active]
+    #         logging.info('updating {} to tract={}, filt={}...'.format(category, new_tract, new_filt))
+    #         dmap = get_source_dmap(butler, category, tract=new_tract, filt=new_filt)
+    #         new_hvplot = renderer.get_widget(dmap, None, doc)
+    #         source_plots[category].children[0] = new_hvplot.state
+    #         logging.info('update complete.')
+    #     return update
 
-    source_tab_panels = []
-    for category in source_categories:
-        tract_select = source_tract_select[category]
-        filt_select = source_filt_select[category]
-        plot = source_plots[category]
+    # source_tab_panels = []
+    # for category in source_categories:
+    #     tract_select = source_tract_select[category]
+    #     filt_select = source_filt_select[category]
+    #     plot = source_plots[category]
 
-        tract_select.on_change('active', update_source(category))
-        filt_select.on_change('active', update_source(category))
+    #     tract_select.on_change('active', update_source(category))
+    #     filt_select.on_change('active', update_source(category))
 
-        l = layout([[tract_select, filt_select], [plot]], sizing_mode='fixed')
-        source_tab_panels.append(Panel(child=l, title=category))
+    #     l = layout([[tract_select, filt_select], [plot]], sizing_mode='fixed')
+    #     source_tab_panels.append(Panel(child=l, title=category))
 
 
-    source_tabs = Tabs(tabs=source_tab_panels)
-    source_panel = Panel(child=source_tabs, title='Source Catalogs')
+    # source_tabs = Tabs(tabs=source_tab_panels)
+    # source_panel = Panel(child=source_tabs, title='Source Catalogs')
 
     # Color plots
     color_categories = config['sections']['color']
@@ -158,12 +158,12 @@ def modify_doc(doc):
             plot.children[0] = new_plot.state
 
         # Update Source plots
-        for c in source_categories:
-            source_tract_select[c].labels = [str(t) for t in get_tracts(butler)]
+        # for c in source_categories:
+        #     source_tract_select[c].labels = [str(t) for t in get_tracts(butler)]
 
-        # # THIS MUST BE FIXED.  PERHAPS SOURCE PLOTS SHOULD BE EMPTY UNTIL ACTIVATED
-        logging.info('Updating source plots...')
-        source_plots = {c : gridplot([[None]]) for c in source_categories}
+        # # # THIS MUST BE FIXED.  PERHAPS SOURCE PLOTS SHOULD BE EMPTY UNTIL ACTIVATED
+        # logging.info('Updating source plots...')
+        # source_plots = {c : gridplot([[None]]) for c in source_categories}
 
         # source_dmaps = get_source_dmaps(butler=butler)
         # new_source_hvplots = {c : renderer.get_widget(source_dmaps[c], None, doc) 
@@ -182,7 +182,8 @@ def modify_doc(doc):
 
     repo_box.on_change('value', update_repo)
 
-    uber_tabs = Tabs(tabs=[object_panel, source_panel, color_panel])
+    # uber_tabs = Tabs(tabs=[object_panel, source_panel, color_panel])
+    uber_tabs = Tabs(tabs=[object_panel, color_panel])
                            
 
     doc.add_root(repo_box)

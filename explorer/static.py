@@ -67,7 +67,7 @@ def get_color_plot(butler, tract=8766, description='color_wPerp', style='psfMagH
 
         return rgb
     except FileNotFoundError:
-        return hv.RGB(np.zeros((2,2)))
+        return hv.RGB(np.zeros((2,2))).opts(plot={'width':640, 'height':480})
     
 def color_tract_layout(butler, description, style='psfMagHist', tracts=None, scale=1.0):
     if tracts is None:
@@ -107,7 +107,7 @@ def get_plot(butler, tract, filt, description, style, visit=None, kind='coadd', 
             rgb = rgb.opts(plot={'width':int(w*scale), 'height':int(h*scale)})
         return rgb
     except FileNotFoundError:
-        return hv.RGB(np.zeros((2,2)))
+        return hv.RGB(np.zeros((2,2))).opts(plot={'width':640, 'height':480})
     
 def filter_layout(butler, tract=9813, description='mag_modelfit_CModel', style='psfMagHist', 
                     visit=None, kind='coadd', scale=0.66, columns=3):

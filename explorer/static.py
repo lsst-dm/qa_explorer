@@ -33,6 +33,7 @@ def get_tracts(butler):
             if len(glob.glob('{}/{}/{}/*/*.png'.format(plot_rootdir,f,d))) > 0:
                 tracts.append(d)
     tracts = list(set([int(t.replace('tract-', '')) for t in tracts]))
+    tracts.sort()
     return tracts
 
 def get_visits(butler, tract, filt):

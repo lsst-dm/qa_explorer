@@ -391,7 +391,7 @@ class MultiMatchedCatalog(MatchedCatalog):
     @property
     def match_distance(self):
         if self._match_distance is None:
-            df = self._compute_match_distance()
+            self._match_distance = self._compute_match_distance()
         return self._match_distance
 
     @property

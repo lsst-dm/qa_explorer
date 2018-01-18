@@ -380,14 +380,18 @@ class MultiMatchedCatalog(MatchedCatalog):
         elif how=='std':
             return val_df.std(axis=1)
 
+    def _compute_match_distance(self):
+        coadd = pd.Series(index=self.coadd_cat.index)
+        aligned_dists = [coadd.align(c.match_distance)[1] for c in self.subcats]
+        df = pd.concat(aligned_dists, axis=1, 
+                                        keys=[('match_distance', n) for n in self.visit_names])
+        df[('match_distance', 'coadd')] = np.nan
+        return df
+
     @property
     def match_distance(self):
         if self._match_distance is None:
-            coadd = pd.Series(index=self.coadd_cat.index)
-            aligned_dists = [coadd.align(c.match_distance)[1] for c in self.subcats]
-            self._match_distance = pd.concat(aligned_dists, axis=1, 
-                                            keys=[('match_distance', n) for n in self.visit_names])
-            self._match_distance[('match_distance', 'coadd')] = np.nan
+            df = self._compute_match_distance()
         return self._match_distance
 
     @property

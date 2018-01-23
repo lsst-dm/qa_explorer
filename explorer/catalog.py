@@ -385,7 +385,7 @@ class MultiMatchedCatalog(MatchedCatalog):
         aligned_dists = [coadd.align(c.match_distance)[1] for c in self.subcats]
         df = pd.concat(aligned_dists, axis=1, 
                                         keys=[('match_distance', n) for n in self.visit_names])
-        df[('match_distance', 'coadd')] = np.nan
+        df[('match_distance', 'coadd')] = 0.
         return df
 
     @property
@@ -507,3 +507,4 @@ class VisitCatalog(ButlerCatalog):
 class ColorCatalog(ButlerCatalog):
     _dataset_name = 'qaTableColor'
     _default_description = 'forced'
+

@@ -13,42 +13,7 @@ except ImportError:
     logging.warning('Pipe analysis not available.')
 
 from .rc import wide_filters, cosmos_filters
-
-def get_tracts(butler):
-    """Reads tracts for which plots are available.
-
-    Decently hack-y pseudo-butler activity here.
-    """     
-    dataId = {'tract':0, 'filter':'HSC-I'}
-    filenamer = Filenamer(butler, 'plotCoadd', dataId)
-
-    fake_filename = butler.get(filenamer.dataset + '_filename', dataId, description='foo', style='bar')[0]
-    m = re.search('(.+/plots)/.+', fake_filename)
-    plot_rootdir = m.group(1)
-    filters = os.listdir(plot_rootdir)
-    tracts = []
-    for f in filters:
-        dirs = os.listdir(os.path.join(plot_rootdir, f))
-        for d in dirs:
-            if len(glob.glob('{}/{}/{}/*.png'.format(plot_rootdir,f,d))) > 0:
-                tracts.append(d)
-    tracts = list(set([int(t.replace('tract-', '')) for t in tracts]))
-    tracts.sort()
-    return tracts
-
-def get_visits(butler, tract, filt):
-    """Returns visits for which plots exist, for given tract and filt
-    """
-    dataId = {'tract':tract, 'filter':filt}
-    filenamer = Filenamer(butler, 'plotCoadd', dataId)
-
-    fake_filename = butler.get(filenamer.dataset + '_filename', dataId, description='foo', style='bar')[0]
-    tract_dir = os.path.dirname(fake_filename)
-    visit_dirs = glob.glob(os.path.join(tract_dir, 'visit*'))
-    visits = [int(re.search('visit-(\d+)', d).group(1)) for d in visit_dirs if len(os.listdir(d)) > 0]
-    visits.sort()
-    return visits
-    
+from .utils import get_tracts, get_visits    
 
 def get_color_plot(butler, tract=8766, description='color_wPerp', style='psfMagHist', scale=None):
     dataId = {'tract':tract}

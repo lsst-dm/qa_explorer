@@ -235,7 +235,13 @@ class QADataset(object):
     def visit_points(self, vdim, visit, x_max, label,
                      filter_range=None, flags=None, bad_flags=None):
 
-        dset = self.get_ds(visit).select(x=(None, x_max), label=label)
+        # Hack to deal with integer visit values, if they are actually strings
+        try:
+            dset = self.get_ds(visit)
+        except KeyError: 
+            dset = self.get_ds(str(visit))
+
+        dset = dset.select(x=(None, x_max), label=label)
         # filter_range = {} if filter_range is None else filter_range
         # flags = [] if flags is None else flags
         # bad_flags = [] if bad_flags is None else bad_flags
@@ -265,7 +271,14 @@ class QADataset(object):
         if range_override is not None:
             ranges.update(range_override)
 
-        dmap = dmap.redim.values(visit=self.catalog.visit_names, 
+        # Force visit names to be integers, if possible
+        try:
+            visit_names = [int(v) for v in self.catalog.visit_names]
+            visit_names.sort()
+        except:
+            visit_names = self.catalog.visit_names
+
+        dmap = dmap.redim.values(visit=visit_names, 
                                  # vdim=list(self.funcs.keys()) + ['match_distance'], 
                                  # vdim=[vdim], 
                                  label=['galaxy', 'star'],

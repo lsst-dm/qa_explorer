@@ -34,8 +34,8 @@ class QADataset(object):
 
         self.oom = oom
 
-    def save(self, filename):
-        pickle.dump(self, open(filename, 'wb'), protocol=4)
+    def save(self, filename, protocol=4):
+        pickle.dump(self, open(filename, 'wb'), protocol=protocol)
 
     @classmethod
     def load(cls, filename, client=None):

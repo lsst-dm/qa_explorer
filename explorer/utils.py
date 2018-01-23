@@ -1,5 +1,6 @@
 import sqlite3
-import os
+import os, glob, re
+
 try:
     from lsst.pipe.analysis.utils import Filenamer
 except ImportError:

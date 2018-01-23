@@ -1,5 +1,10 @@
 import sqlite3
 import os
+try:
+    from lsst.pipe.analysis.utils import Filenamer
+except ImportError:
+    logging.warning('Pipe analysis not available.')
+
 
 def get_visits_sql(field, tract, filt, sqlitedir='/scratch/hchiang2/parejko/'):
     with sqlite3.connect(os.path.join(sqlitedir, 'db{}.sqlite3'.format(field))) as conn:

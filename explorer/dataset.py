@@ -35,7 +35,7 @@ class QADataset(object):
         self.oom = oom
 
     def save(self, filename):
-        pickle.dump(self, open(filename, 'wb'))
+        pickle.dump(self, open(filename, 'wb'), protocol=4)
 
     @classmethod
     def load(cls, filename, client=None):
@@ -138,7 +138,7 @@ class QADataset(object):
         elif 'patchId' in self.catalog.columns:
             name = 'patchId'
         else:
-            # logging.warning('No id name available (looked for ccdId, patchId)?')
+            logging.warning('No id name available (looked for ccdId, patchId)?')
             name = None
 
         return name

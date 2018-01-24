@@ -15,6 +15,8 @@ from holoviews.operation.datashader import datashade, dynspread
 from holoviews.operation import decimate
 decimate.max_samples = 5000
 
+import parambokeh
+
 from bokeh.palettes import Greys9
 
 # Define Stream class that stores filters for various Dimensions 
@@ -41,7 +43,31 @@ class FlagSetter(Stream):
     def event(self, **kwargs):
         self.filter_stream.event(**kwargs)
         
-    
+class SkyFlags(Stream):
+    flags = param.ListSelector(default=[], objects=[])
+    bad_flags = param.ListSelector(default=[], doc="""
+        Flags to ignore""")
+
+    cmap = param.String(default='coolwarm') # make this a list to select from
+
+    output = parambokeh.view.Plot()
+
+    def __init__(self, dset, vdim, filter_stream, **kwargs):
+        super(FlagSetter, self).__init__(**kwargs)
+        self.dset = dset
+        self.filter_stream = filter_stream
+        self.vdim = vdim
+
+    def points(self, *args, **kwargs):
+        return hv.util.Dyanmic(data.ds, operation=skypoints, streams=[self.filter_stream])
+
+    def event(self, **kwargs):
+        if not self.output or any(k in kwargs for k in ['cmap']):
+            self.output = dynspread(datashade(self.points, cmap=cc.palette[kwargs['cmap']]))
+        else:
+            self.filter_stream.event(**kwargs)
+            # super(SkyFlags, self).event(**kwargs)
+
 class ResetCallback(Callback):
 
     models = ['plot']
@@ -234,8 +260,35 @@ class multi_scattersky(ParameterizedFunction):
                        for ydim in self._get_ydims(dset)]).cols(3)
 
 
+def skyplot(ParameterizedFunction):
+    filter_range = param.Dict(default={}, doc="""
+        Dictionary of filter bounds.""")
+    flags = param.List(default=[], doc="""
+        Flags to select.""")
+    bad_flags = param.List(default=[], doc="""
+        Flags to ignore""")
+
+    def __call__(self, dset, vdims, **params):
+        self.p = param.ParamOverrides(self, params)
+
+        dset = filter_dset(dset, filter_range=self.p.filter_range,
+                            flags=self.p.flags, bad_flags=self.p.bad_flags)
+
+        pts = 
+
+
 class skypoints(Operation):
+    filter_range = param.Dict(default={}, doc="""
+        Dictionary of filter bounds.""")
+    flags = param.List(default=[], doc="""
+        Flags to select.""")
+    bad_flags = param.List(default=[], doc="""
+        Flags to ignore""")
+
     def _process(self, dset, key=None):
+        dset = filter_dset(dset, filter_range=self.p.filter_range,
+                            flags=self.p.flags, bad_flags=self.p.bad_flags)
+
         return hv.Points(dset, kdims=['ra', 'dec'], vdims=dset.vdims + ['label'])
 
 
@@ -248,6 +301,14 @@ class skyplot(Operation):
     width = param.Number(default=None)
     height = param.Number(default=None)
     decimate_size = param.Number(default=5)
+
+    filter_range = param.Dict(default={}, doc="""
+        Dictionary of filter bounds.""")
+    flags = param.List(default=[], doc="""
+        Flags to select.""")
+    bad_flags = param.List(default=[], doc="""
+        Flags to ignore""")
+
 
     def _process(self, dset, key=None):
         if self.p.vdim is None:

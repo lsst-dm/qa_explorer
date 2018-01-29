@@ -274,7 +274,7 @@ def skyplot(ParameterizedFunction):
         dset = filter_dset(dset, filter_range=self.p.filter_range,
                             flags=self.p.flags, bad_flags=self.p.bad_flags)
 
-        pts = 
+        # pts = 
 
 
 class skypoints(Operation):

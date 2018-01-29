@@ -285,7 +285,7 @@ class QADataset(object):
                                  x_max=x_range).redim.range(**ranges)
         return dmap
 
-    def coadd_points(self, vdim, x_max, label, **kwargs)
+    def coadd_points(self, vdim, x_max, label, **kwargs):
         return self.visit_points(vdim, xmax, 'coadd', label, **kwargs)
 
 

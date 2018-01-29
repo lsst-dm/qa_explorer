@@ -286,7 +286,7 @@ class QADataset(object):
         return dmap
 
     def coadd_points(self, vdim, x_max, label, **kwargs):
-        return self.visit_points(vdim, xmax, 'coadd', label, **kwargs)
+        return self.visit_points(vdim, x_max, 'coadd', label, **kwargs)
 
 
     def coadd_explore(self, vdim, x_range=np.arange(15,24.1,0.5), filter_stream=None,

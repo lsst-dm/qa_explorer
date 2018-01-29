@@ -284,3 +284,32 @@ class QADataset(object):
                                  label=['galaxy', 'star'],
                                  x_max=x_range).redim.range(**ranges)
         return dmap
+
+    def coadd_points(self, vdim, x_max, label, **kwargs)
+        return self.visit_points(vdim, xmax, 'coadd', label, **kwargs)
+
+
+    def coadd_explore(self, vdim, x_range=np.arange(15,24.1,0.5), filter_stream=None,
+                        range_override=None):
+        fn = partial(QADataset.coadd_points, self=self, vdim=vdim)
+        dmap = hv.DynamicMap(fn, kdims=['x_max', 'label'],
+                             streams=[filter_stream])
+
+        y_min = self.df[(vdim, 'coadd')].quantile(0.005)
+        y_max = self.df[(vdim, 'coadd')].quantile(0.995)
+
+        ra_min, ra_max = self.catalog.coadd_cat.ra.quantile([0, 1])
+        dec_min, dec_max = self.catalog.coadd_cat.dec.quantile([0, 1])
+
+        ranges = {vdim : (y_min, y_max),
+                  'ra' : (ra_min, ra_max),
+                  'dec' : (dec_min, dec_max)}
+        if range_override is not None:
+            ranges.update(range_override)
+
+        # Force visit names to be integers, if possible
+
+        dmap = dmap.redim.values(label=['galaxy', 'star'],
+                                 x_max=x_range).redim.range(**ranges)
+        return dmap
+

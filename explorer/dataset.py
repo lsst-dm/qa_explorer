@@ -236,10 +236,16 @@ class QADataset(object):
                      filter_range=None, flags=None, bad_flags=None):
 
         # Hack to deal with integer visit values, if they are actually strings
-        try:
-            dset = self.get_ds(visit)
-        except KeyError: 
-            dset = self.get_ds(str(visit))
+
+        if self.is_multi_matched:
+            try:
+                dset = self.get_ds(visit)
+            except KeyError: 
+                dset = self.get_ds(str(visit))
+        else:
+            if visit != 'coadd':
+                raise ValueError('visit name must be "coadd"!')
+            dset = self.ds
 
         dset = dset.select(x=(None, x_max), label=label)
         # filter_range = {} if filter_range is None else filter_range
@@ -288,18 +294,23 @@ class QADataset(object):
     def coadd_points(self, vdim, x_max, label, **kwargs):
         return self.visit_points(vdim, 'coadd', x_max, label, **kwargs)
 
-
     def coadd_explore(self, vdim, x_range=np.arange(15,24.1,0.5), filter_stream=None,
                         range_override=None):
         fn = partial(QADataset.coadd_points, self=self, vdim=vdim)
         dmap = hv.DynamicMap(fn, kdims=['x_max', 'label'],
                              streams=[filter_stream])
 
-        y_min = self.df[(vdim, 'coadd')].quantile(0.005)
-        y_max = self.df[(vdim, 'coadd')].quantile(0.995)
+        if self.is_multi_matched:
+            y_min = self.df[(vdim, 'coadd')].quantile(0.005)
+            y_max = self.df[(vdim, 'coadd')].quantile(0.995)
+            ra_min, ra_max = self.catalog.coadd_cat.ra.quantile([0, 1])
+            dec_min, dec_max = self.catalog.coadd_cat.dec.quantile([0, 1])
+        else:
+            y_min = self.df[vdim].quantile(0.005)
+            y_max = self.df[vdim].quantile(0.995)
+            ra_min, ra_max = self.catalog.ra.quantile([0, 1])
+            dec_min, dec_max = self.catalog.dec.quantile([0, 1])
 
-        ra_min, ra_max = self.catalog.coadd_cat.ra.quantile([0, 1])
-        dec_min, dec_max = self.catalog.coadd_cat.dec.quantile([0, 1])
 
         ranges = {vdim : (y_min, y_max),
                   'ra' : (ra_min, ra_max),

@@ -82,7 +82,7 @@ class CoaddDisplay(QADisplay):
     _datasetName = 'deepCoadd_calexp'
 
     def _get_dataId(self, ra, dec, filt, **kwargs):
-        skyMap = butler.get('deepCoadd_skyMap')
+        skyMap = self.butler.get('deepCoadd_skyMap')
         pos = afwCoord.IcrsCoord(ra*afwGeom.degrees, dec*afwGeom.degrees)
         tractInfo, patchInfo = skyMap.findClosestTractPatchList([pos])[0]
         

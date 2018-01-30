@@ -3,7 +3,7 @@ import lsst.afw.geom as afwGeom
 import lsst.afw.image as afwImage
 import lsst.afw.display
 
-class hashable_dict(dict)
+class hashable_dict(dict):
   def __key(self):
     return tuple((k,self[k]) for k in sorted(self))
   def __hash__(self):

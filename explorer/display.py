@@ -67,10 +67,7 @@ class QADisplay(lsst.afw.display.Display):
         return exp
 
     def update(self, ra, dec, **kwargs):
-        exp, xy = self.getExp(ra, dec, **kwargs)
-
-        pos = afwCoord.IcrsCoord(ra*afwGeom.degrees, dec*afwGeom.degrees)
-        xy = exp.getWcs().skyToPixel(pos)
+        exp, (x, y) = self.getExp(ra, dec, **kwargs)
 
         self.mtv(exp)
         self.dot('+', x, y, size=50)

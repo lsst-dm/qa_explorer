@@ -215,6 +215,10 @@ class FootprintNPix(Column):
 class CoordColumn(Column):
     _allow_difference = False
 
+    def __init__(self, calculate=False, **kwargs):
+        self.calculate = calculate
+        super(CoordColumn, self).__init__(**kwargs)
+
     def _func(self, df):
         return df[self.col] * 180 / np.pi
 
@@ -224,7 +228,7 @@ class RAColumn(CoordColumn):
         super(RAColumn, self).__init__('coord_ra', **kwargs)
 
     def __call__(self, catalog, **kwargs):
-        if kwargs.pop('calculate', False):
+        if kwargs.pop('calculate', False) or self.calculate:
             return super(RAColumn, self).__call__(catalog, **kwargs)
         else:
             return catalog.ra
@@ -235,7 +239,7 @@ class DecColumn(CoordColumn):
         super(DecColumn, self).__init__('coord_ra', **kwargs)
 
     def __call__(self, catalog, **kwargs):
-        if kwargs.pop('calculate', False):
+        if kwargs.pop('calculate', False) or self.calculate:
             return super(DecColumn, self).__call__(catalog, **kwargs)
         else:
             return catalog.dec

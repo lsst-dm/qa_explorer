@@ -236,7 +236,7 @@ class RAColumn(CoordColumn):
 class DecColumn(CoordColumn):
     name = 'Dec'
     def __init__(self, **kwargs):
-        super(DecColumn, self).__init__('coord_ra', **kwargs)
+        super(DecColumn, self).__init__('coord_dec', **kwargs)
 
     def __call__(self, catalog, **kwargs):
         if kwargs.pop('calculate', False) or self.calculate:

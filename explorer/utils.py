@@ -42,7 +42,9 @@ def get_tracts(butler):
     for f in filters:
         dirs = os.listdir(os.path.join(plot_rootdir, f))
         for d in dirs:
-            if len(glob.glob('{}/{}/{}/*.png'.format(plot_rootdir,f,d))) > 0:
+            files = glob.glob('{}/{}/{}/*.png'.format(plot_rootdir,f,d)) 
+            files += glob.glob('{}/{}/{}/*.parq'.format(plot_rootdir,f,d)) 
+            if len() > 0:
                 tracts.append(d)
     tracts = list(set([int(t.replace('tract-', '')) for t in tracts]))
     tracts.sort()

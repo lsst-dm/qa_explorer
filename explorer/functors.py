@@ -215,9 +215,9 @@ class FootprintNPix(Column):
 class CoordColumn(Column):
     _allow_difference = False
 
-    def __init__(self, calculate=False, **kwargs):
+    def __init__(self, col, calculate=False, **kwargs):
         self.calculate = calculate
-        super(CoordColumn, self).__init__(**kwargs)
+        super(CoordColumn, self).__init__(col, **kwargs)
 
     def _func(self, df):
         return df[self.col] * 180 / np.pi

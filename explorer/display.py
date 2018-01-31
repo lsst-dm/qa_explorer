@@ -1,3 +1,5 @@
+import numpy as np
+
 import lsst.afw.coord as afwCoord
 import lsst.afw.geom as afwGeom
 import lsst.afw.image as afwImage
@@ -23,9 +25,10 @@ def find_closest(dmap, ra, dec):
 class QADisplay(lsst.afw.display.Display):
     _datasetName = None
 
-    def __init__(self, butler, dmap=None, **kwargs):
+    def __init__(self, butler, **kwargs):
         self.butler = butler
-        self.dmap = dmap
+
+        self.dmap = None
 
         self._expCache = {}
 
@@ -47,7 +50,7 @@ class QADisplay(lsst.afw.display.Display):
 
         pos = afwCoord.IcrsCoord(ra*afwGeom.degrees, dec*afwGeom.degrees)
         xy = exp.getWcs().skyToPixel(pos)
-        
+
         return exp, xy
 
     def _get_dataId(self, *args, **kwargs):
@@ -76,7 +79,7 @@ class QADisplay(lsst.afw.display.Display):
     def connect_tap(self, tap, **kwargs):
         tap.add_subscriber(partial(self.update, **kwargs))
         self.tap_stream = tap
-
+        self.dmap = tap.source
 
 class CoaddDisplay(QADisplay):
     _datasetName = 'deepCoadd_calexp'

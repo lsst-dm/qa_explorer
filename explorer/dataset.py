@@ -133,6 +133,14 @@ class QADataset(object):
     def id_name(self):
         if self.is_multi_matched:
             name = 'ccdId'
+        elif self.is_matched and not self.is_multi_matched:
+            if 'ccdId' in self.catalog.cat1.columns:
+                name = 'ccdId'
+            elif 'patchId' in self.catalog.cat1.columns:
+                name = 'patchId'
+            else:
+                logging.warning('No id name available (looked for ccdId, patchId)?')
+                name = None
         elif 'ccdId' in self.catalog.columns:
             name = 'ccdId'
         elif 'patchId' in self.catalog.columns:

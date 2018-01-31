@@ -13,25 +13,6 @@ class hashable_dict(dict):
   def __eq__(self, other):
     return self.__key() == other.__key()
 
-def get_coaddExp(ra, dec, butler, filt):
-    """Returns exposure of patch from which catalog measurements are made at given ra/dec
-    """
-    skyMap = butler.get('deepCoadd_skyMap')
-    pos = afwCoord.IcrsCoord(ra*afwGeom.degrees, dec*afwGeom.degrees)
-    tractInfo, patchInfo = skyMap.findClosestTractPatchList([pos])[0]
-    
-    tractId = tractInfo.getId()
-    # If two patches returned, then choose one where point is inside inner bbox
-    for p in patchInfo:
-        wcs = tractInfo.getWcs()
-        xy = wcs.skyToPixel(pos)
-        if p.getInnerBBox().contains(afwGeom.Point2I(xy)):
-            patchIndex = p.getIndex()
-            break
-    
-    dataId = {'tract':tractId, 'patch':'{},{}'.format(*patchIndex), 'filter':filt}
-    exp = butler.get('deepCoadd_calexp', dataId)
-    return exp, xy
 
 
 class QADisplay(lsst.afw.display.Display):
@@ -77,8 +58,9 @@ class QADisplay(lsst.afw.display.Display):
         self.zoom(1)
         return self
 
-    def connect_stream(self, stream, **kwargs):
-        stream.add_subscriber(partial(self.update, **kwargs))
+    def connect_tap(self, tap, **kwargs):
+        tap.add_subscriber(partial(self.update, **kwargs))
+        self.tap_stream = tap
 
 
 class CoaddDisplay(QADisplay):

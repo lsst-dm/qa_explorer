@@ -84,7 +84,11 @@ class QADisplay(lsst.afw.display.Display):
 class CoaddDisplay(QADisplay):
     _datasetName = 'deepCoadd_calexp'
 
-    def _get_dataId(self, ra, dec, filt, **kwargs):
+    def __init__(self, butler, filt, **kwargs):
+        self.filt = filt
+        super(CoaddDisplay, self).__init__(butler, **kwargs)
+
+    def _get_dataId(self, ra, dec, **kwargs):
         skyMap = self.butler.get('deepCoadd_skyMap')
         pos = afwCoord.IcrsCoord(ra*afwGeom.degrees, dec*afwGeom.degrees)
         tractInfo, patchInfo = skyMap.findClosestTractPatchList([pos])[0]
@@ -98,7 +102,7 @@ class CoaddDisplay(QADisplay):
                 patchIndex = p.getIndex()
                 break
         
-        dataId = {'tract':tractId, 'patch':'{},{}'.format(*patchIndex), 'filter':filt}
+        dataId = {'tract':tractId, 'patch':'{},{}'.format(*patchIndex), 'filter':self.filt}
         return dataId, xy
 
 

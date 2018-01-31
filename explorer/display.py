@@ -75,6 +75,10 @@ class QADisplay(lsst.afw.display.Display):
         self.zoom(1)
         return self
 
+    def connect_stream(self, stream, **kwargs):
+        stream.add_subscriber(partial(self.update, **kwargs))
+
+
 class CoaddDisplay(QADisplay):
     _datasetName = 'deepCoadd_calexp'
 

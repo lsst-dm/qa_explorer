@@ -50,6 +50,7 @@ class QADisplay(lsst.afw.display.Display):
 
         pos = afwCoord.IcrsCoord(ra*afwGeom.degrees, dec*afwGeom.degrees)
         xy = exp.getWcs().skyToPixel(pos)
+        print(ra, dec, xy)
 
         return exp, xy
 

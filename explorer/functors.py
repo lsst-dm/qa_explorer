@@ -217,7 +217,7 @@ class CoordColumn(Column):
 
     def __init__(self, col, calculate=False, **kwargs):
         self.calculate = calculate
-        super(CoordColumn, self).__init__(col, **kwargs)
+        super(CoordColumn, self).__init__(col, allow_difference=calculate, **kwargs)
 
     def _func(self, df):
         return df[self.col] * 180 / np.pi

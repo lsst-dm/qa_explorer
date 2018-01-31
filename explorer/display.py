@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 import lsst.afw.coord as afwCoord
 import lsst.afw.geom as afwGeom
@@ -20,7 +21,11 @@ class hashable_dict(dict):
 def find_closest(dmap, ra, dec):
     df = dmap.values()[0].data
     _, ind = match_lists(np.array([float(ra)]), np.array([float(dec)]), df.ra, df.dec, 1.)
-    return df.iloc[ind]
+    obj = df.iloc[ind]
+    if isinstance(obj, pd.DataFrame):
+        obj = df.iloc[0]
+
+    return obj
 
 class QADisplay(lsst.afw.display.Display):
     _datasetName = None

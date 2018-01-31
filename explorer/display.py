@@ -3,6 +3,8 @@ import lsst.afw.geom as afwGeom
 import lsst.afw.image as afwImage
 import lsst.afw.display
 
+from functools import partial
+
 class hashable_dict(dict):
   def __key(self):
     return tuple((k,self[k]) for k in sorted(self))

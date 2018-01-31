@@ -5,6 +5,8 @@ import lsst.afw.display
 
 from functools import partial
 
+from .match import match_lists
+
 class hashable_dict(dict):
   def __key(self):
     return tuple((k,self[k]) for k in sorted(self))
@@ -13,13 +15,17 @@ class hashable_dict(dict):
   def __eq__(self, other):
     return self.__key() == other.__key()
 
-
+def find_closest(dmap, ra, dec):
+    df = dmap.values()[0].data
+    _, ind = match_lists(np.array([float(ra)]), np.array([float(dec)]), df.ra, df.dec, 1.)
+    return df.iloc[ind]
 
 class QADisplay(lsst.afw.display.Display):
     _datasetName = None
 
-    def __init__(self, butler, **kwargs):
+    def __init__(self, butler, dmap=None, **kwargs):
         self.butler = butler
+        self.dmap = dmap
 
         self._expCache = {}
 
@@ -32,8 +38,17 @@ class QADisplay(lsst.afw.display.Display):
         return self._datasetName
 
     def getExp(self, ra, dec, **kwargs):
-        dataId, xy = self._get_dataId(ra, dec, **kwargs)
-        return self._expFromId(dataId), xy
+        dataId = self._get_dataId(ra, dec, **kwargs)
+        exp = self._expFromId(dataId)
+
+        if self.dmap is not None:
+            obj = find_closest(self.dmap, ra, dec)
+            ra, dec  = obj.ra, obj.dec
+
+        pos = afwCoord.IcrsCoord(ra*afwGeom.degrees, dec*afwGeom.degrees)
+        xy = exp.getWcs().skyToPixel(pos)
+        
+        return exp, xy
 
     def _get_dataId(self, *args, **kwargs):
         """Returns dataId and xy coords
@@ -85,7 +100,7 @@ class CoaddDisplay(QADisplay):
                 break
         
         dataId = {'tract':tractId, 'patch':'{},{}'.format(*patchIndex), 'filter':self.filt}
-        return dataId, xy
+        return dataId
 
 
 

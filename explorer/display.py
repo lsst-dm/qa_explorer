@@ -54,10 +54,15 @@ class QADisplay(lsst.afw.display.Display):
             ra, dec  = obj.ra, obj.dec
 
         pos = afwCoord.IcrsCoord(ra*afwGeom.degrees, dec*afwGeom.degrees)
-        xy = exp.getWcs().skyToPixel(pos)
+        wcs = self._WcsFromId(dataId)
+        xy = wcs.skyToPixel(pos)
         print(ra, dec, xy)
 
         return exp, xy
+
+    def _WcsFromId(self, dataId):
+        exp = self._expFromId(dataId) # This is by default redundant
+        return exp.getWcs()
 
     def _get_dataId(self, *args, **kwargs):
         """Returns dataId and xy coords
@@ -129,3 +134,8 @@ class VisitDisplay(QADisplay):
 
         dataId = {'visit' : visit, 'filter' : self.filt, 'ccd' : ccd}
         return dataId
+
+    def _WcsFromId(self, dataId):
+        wcsHeader = self.butler.get("wcs_md", dataId, immediate=True)
+        return afwImage.makeWcs(wcsHeader)
+

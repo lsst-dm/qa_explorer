@@ -261,7 +261,7 @@ class QADataset(object):
         # bad_flags = [] if bad_flags is None else bad_flags
         dset = filter_dset(dset, filter_range=filter_range, flags=flags, bad_flags=bad_flags)
         # dset = dset.redim(**{vdim:'y'})
-        vdims = [vdim, 'id']
+        vdims = [vdim, 'id', 'x']
         if self.id_name is not None:
             vdims.append(self.id_name)
         pts = hv.Points(dset, kdims=['ra', 'dec'], vdims=vdims)

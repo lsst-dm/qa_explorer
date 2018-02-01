@@ -30,7 +30,7 @@ def find_closest(dmap, ra, dec):
 class QADisplay(lsst.afw.display.Display):
     _datasetName = None
 
-    def __init__(self, butler, **kwargs):
+    def __init__(self, butler, dmap=None, **kwargs):
         self.butler = butler
 
         self.dmap = None
@@ -112,5 +112,20 @@ class CoaddDisplay(QADisplay):
         return dataId
 
 
+class VisitDisplay(QADisplay):
+    _datasetName = 'calexp'
 
+    def __init__(self, butler, filt, **kwargs):
+        self.filt = filt
+        super(VisitDisplay, self).__init__(butler, **kwargs)
 
+    def _get_dataId(self, ra, dec):
+        if self.dmap is None:
+            raise ValueError('Must connect a visit dmap!')
+
+        visit = int(self.dmap.keys()[0][0]) #Is there a way to do this via key rather than index?
+        obj = find_closest(self.dmap, ra, dec)
+        ccd = int(obj.ccdId)
+
+        dataId = {'visit' : visit, 'filter' : self.filt, 'ccd' : ccd}
+        return dataId

@@ -23,7 +23,7 @@ def find_closest(dmap, ra, dec):
     _, ind = match_lists(np.array([float(ra)]), np.array([float(dec)]), df.ra, df.dec, 1.)
     obj = df.iloc[ind]
     if isinstance(obj, pd.DataFrame):
-        obj = df.iloc[0]
+        obj = obj.iloc[0]
 
     return obj
 

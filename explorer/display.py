@@ -138,5 +138,9 @@ class VisitDisplay(QADisplay):
 
     def _WcsFromId(self, dataId):
         wcsHeader = self.butler.get("wcs_md", dataId, immediate=True)
-        return afwImage.makeWcs(wcsHeader)
+        try:
+            wcs = afwImage.makeWcs(wcsHeader)
+        except AttributeError:
+            wcs = afwGeom.makeSkyWcs(wcsHeader)
+        return wcs
 

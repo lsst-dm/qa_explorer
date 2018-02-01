@@ -120,8 +120,9 @@ class CoaddDisplay(QADisplay):
 class VisitDisplay(QADisplay):
     _datasetName = 'calexp'
 
-    def __init__(self, butler, filt, **kwargs):
+    def __init__(self, butler, filt, tract, **kwargs):
         self.filt = filt
+        self.tract = tract
         super(VisitDisplay, self).__init__(butler, **kwargs)
 
     def _get_dataId(self, ra, dec):
@@ -132,7 +133,7 @@ class VisitDisplay(QADisplay):
         obj = find_closest(self.dmap, ra, dec)
         ccd = int(obj.ccdId)
 
-        dataId = {'visit' : visit, 'filter' : self.filt, 'ccd' : ccd}
+        dataId = {'visit' : visit, 'filter' : self.filt, 'ccd' : ccd, 'tract' : self.tract}
         return dataId
 
     def _WcsFromId(self, dataId):

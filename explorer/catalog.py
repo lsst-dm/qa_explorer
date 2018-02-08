@@ -317,6 +317,10 @@ class MultiMatchedCatalog(MatchedCatalog):
     def visit_names(self):
         return [c.name for c in self.visit_cats]
 
+    @property
+    def names(self):
+        return self.visit_names
+
     def _initialize(self):
         [c._initialize() for c in self.visit_cats]
         [c._initialize() for c in self.subcats]
@@ -437,6 +441,10 @@ class ParquetCatalog(Catalog):
         if self._name is None:
             self._name = ''.join(random.choices(string.ascii_lowercase, k=5))
         return self._name
+
+    @name.setter
+    def name(self, new):
+        self._name = new
 
     @property
     def columns(self):

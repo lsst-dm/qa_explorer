@@ -268,6 +268,7 @@ class MatchedCatalog(Catalog):
 
         return vals
 
+
 class FuncWorker(object):
     def __init__(self, func, **kwargs):
         self.func = func
@@ -297,11 +298,14 @@ class MultiMatchedCatalog(MatchedCatalog):
                 continue
 
         self.visit_cats = good_visit_cats
-        self.subcats = [MatchedCatalog(self.coadd_cat, v, **kwargs) 
-                            for v in self.visit_cats]
+        self.subcats = self._make_subcats(**kwargs)
         self._matched = False
         self._coords = None
         self._initialize()
+
+    def _make_subcats(self, **kwargs):
+        return [MatchedCatalog(self.coadd_cat, v, **kwargs)
+                    for v in self.visit_cats]
 
     def _stringify(self):
         s = self.coadd_cat._stringify()

@@ -184,11 +184,10 @@ class QADataset(object):
             color_dfs = []
             filters = cat.filters
             n_filts = len(filters)
-            cols_to_difference = [(cat.filters[i], cat.filters[i+1]) 
-                                  for i in range(n_filts - 1)]
+            cols_to_difference = cat.color_groups
             for name, fn in self.funcs.items():
                 if isinstance(fn, Mag):
-                    col_names = [('{}_color'.format(name), '{}-{}'.format(cat.short_filters[i], cat.short_filters[i+1])) for i in range(n_filts - 1)]
+                    col_names = [('{}_color'.format(name), color) for color in cat.colors]
                     mags = df[name]
                     color_df = pd.DataFrame({c : mags[c1] - mags[c2] for c, (c1, c2) in zip(col_names, cols_to_difference)})
                     color_df.dropna(how='any', inplace=True)

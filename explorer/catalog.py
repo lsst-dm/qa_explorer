@@ -576,6 +576,14 @@ class MultiBandCatalog(IDMatchedCatalog):
         inds = np.argsort(orders)
         return list(np.array(filts)[inds])
     
+    @property
+    def n_filters(self):
+        return len(self.filters)
+
+    @property
+    def colors(self):
+        return ['{}-{}'.format(self.short_filters[i], cat.short_filters[i+1])
+                    for i in range(self.n_filters - 1)]
 
 
 class ButlerCatalog(ParquetCatalog):

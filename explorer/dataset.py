@@ -178,7 +178,7 @@ class QADataset(object):
             df = df.dropna(how='any')
         df = df.replace([-np.inf, np.inf], np.nan)
 
-        # The following needs to work around circular references to .df!
+        # Add color columns if catalog is a MultiBandCatalog 
         if self.is_multiband:
             cat = self.catalog
             color_dfs = []
@@ -264,26 +264,22 @@ class QADataset(object):
         ds = hv.Dataset(df.reset_index(), kdims=kdims, vdims=vdims)
         self._ds = ds        
 
-    def color_df(self, mag):
+    def color_ds(self, mag):
         if not self.is_multiband:
-            return NotImplementedError('Can only get color_df if catalog is a MultiBandCatalog')
+            return NotImplementedError('Can only get color_ds if catalog is a MultiBandCatalog')
         if not isinstance(self.allfuncs[mag], Mag):
             raise ValueError('Requested column must be a magnitude: {} requested'.format(mag))
 
-        cat = self.catalog
-        filters = cat.filters
-        n_filts = len(filters)
-        cols_to_difference = [(cat.filters[i], cat.filters[i+1]) 
-                              for i in range(n_filts - 1)]
-        col_names = ['{}_{}{}'.format(mag, cat.short_filters[i], cat.short_filters[i+1]) for i in range(n_filts - 1)]
+        filt = self.catalog.filters[0]
+        swap_df = self.df.swaplevel(axis=1)
 
-        mags = self.df[mag]
-        df = pd.DataFrame({c : mags[c1] - mags[c2] for c, (c1, c2) in zip(col_names, cols_to_difference)})
-        df.dropna(how='any', inplace=True)
-        return df
+        color_df = pd.concat([self.df[['ra', 'dec']], 
+                              swap_df[primary], 
+                              gri_data.df['psf_color']], axis=1)
+        color_df = color_df.rename(columns={('ra', 'ra'):'ra', ('dec', 'dec'): 'dec'})    
 
-    def color_ds(self, mag):
-        return hv.Dataset(self.color_df(mag))
+        return hv.Dataset(color_df, kdims=self._get_kdims())
+
 
     def visit_points(self, vdim, visit, x_max, label,
                      filter_range=None, flags=None, bad_flags=None):

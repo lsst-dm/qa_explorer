@@ -183,6 +183,13 @@ class QADataset(object):
             df.to_parquet(self.df_file) # wait for pandas 0.22
             # fastparquet.write(self.df_file, df) # Doesn't work with multiindexing
 
+        if self.is_multiband:
+            color_dfs = []
+            for name, fn in self.funcs:
+                if isinstance(fn, Mag):
+                    color_dfs.append(self.color_df(name))
+            df = df.concat([df] + color_dfs)
+
         self._df_computed = True
 
         # ids = df.index
@@ -261,13 +268,15 @@ class QADataset(object):
         n_filts = len(filters)
         cols_to_difference = [(cat.filters[i], cat.filters[i+1]) 
                               for i in range(n_filts - 1)]
-        col_names = ['{}-{}'.format(cat.short_filters[i], cat.short_filters[i+1]) for i in range(n_filts - 1)]
+        col_names = ['{}_{}{}'.format(mag, cat.short_filters[i], cat.short_filters[i+1]) for i in range(n_filts - 1)]
 
         mags = self.df[mag]
         df = pd.DataFrame({c : mags[c1] - mags[c2] for c, (c1, c2) in zip(col_names, cols_to_difference)})
         df.dropna(how='any', inplace=True)
         return df
 
+    def color_ds(self, mag):
+        return hv.Dataset(self.color_df(mag))
 
     def visit_points(self, vdim, visit, x_max, label,
                      filter_range=None, flags=None, bad_flags=None):

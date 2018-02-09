@@ -201,13 +201,6 @@ class QADataset(object):
 
         self._df_computed = True
 
-        # ids = df.index
-        # if self.is_matched:
-        #     flags, _ = self.catalog.get_columns(self.flags)
-        # else:
-        #     flags = self.catalog.get_columns(self.flags)
-        # flags = flags.compute().loc[ids]
-        # df = df.join(flags)
         self._df = df  
 
     @property

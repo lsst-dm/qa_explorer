@@ -213,6 +213,11 @@ class QADataset(object):
             self._make_ds()
         return self._ds_dict[key]
 
+    def get_color_ds(self, key):
+        if self._ds is None:
+            self._make_ds()
+        return self._color_ds_dict[key]
+
     def _get_kdims(self):
         kdims = ['ra', 'dec', hv.Dimension('x', label=self.xFunc.name), 'label']
         if self.id_name is not None:
@@ -227,7 +232,7 @@ class QADataset(object):
             if k in ('ra', 'dec', 'x', 'label', self.id_name) or k in self.flags:
                 continue
             label = v.name
-            if v.allow_difference:
+            if v.allow_difference and not self.is_multiband:
                 if self.is_multi_matched:
                     label = 'std({})'.format(label)
                 elif self.is_matched:
@@ -237,7 +242,14 @@ class QADataset(object):
         if self.is_matched and not self.is_idmatched:
             vdims += [hv.Dimension('match_distance', label='Match Distance [arcsec]')]
 
-        if self.is_multi_matched:
+        if self.is_multiband:
+            self._color_ds_dict = {}
+            for name, fn in self.funcs.items():
+                if isinstance(fn, Mag):
+                    self._color_ds_dict[name] = self.color_ds(name)
+            df = self.df.dropna(how='any')
+
+        elif self.is_multi_matched:
 
             # reduce df appropriately here
             coadd_cols = ['ra', 'dec', 'x', 'label'] + self.flags

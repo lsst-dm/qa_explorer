@@ -10,7 +10,7 @@ import dask.dataframe as dd
 
 from .functors import Functor, CompositeFunctor, Column, RAColumn, DecColumn, Mag
 from .functors import StarGalaxyLabeller
-from .catalog import MatchedCatalog, MultiMatchedCatalog
+from .catalog import MatchedCatalog, MultiMatchedCatalog, MultiBandCatalog
 from .plots import filter_dset
 
 class QADataset(object):
@@ -129,9 +129,15 @@ class QADataset(object):
     def is_multi_matched(self):
         return isinstance(self.catalog, MultiMatchedCatalog)
 
+    @property 
+    def is_multiband(self):
+        return isinstance(self.catalog MultiBandCatalog)
+
     @property
     def id_name(self):
-        if self.is_multi_matched:
+        if self.is_multiband:
+            name = 'patchId'
+        elif self.is_multi_matched:
             name = 'ccdId'
         elif self.is_matched and not self.is_multi_matched:
             if 'ccdId' in self.catalog.cat1.columns:

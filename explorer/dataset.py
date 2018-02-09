@@ -131,7 +131,7 @@ class QADataset(object):
 
     @property 
     def is_multiband(self):
-        return isinstance(self.catalog MultiBandCatalog)
+        return isinstance(self.catalog, MultiBandCatalog)
 
     @property
     def id_name(self):

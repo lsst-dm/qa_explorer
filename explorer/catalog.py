@@ -31,15 +31,6 @@ class Catalog(object):
         self.name = name
         self._initialize()
 
-    # def __getstate__(self):
-    #     # Check this out.  something's going funny with unpickling matched catalogs...
-    #     # self._initialize()
-    #     odict = self.__dict__
-    #     return odict
-
-    # def __setstate__(self, d):
-    #     self.__dict__ = d
-
     def _initialize(self):
         self._coords = None
         self._md5 = None
@@ -564,7 +555,7 @@ class IDMatchedCatalog(MultiMatchedCatalog):
 
 class MultiBandCatalog(IDMatchedCatalog):
     filter_order = {'HSC-G':0, 'HSC-R':1, 'HSC-I':2, 'HSC-Z':3, 'HSC-Y':4}
-    
+
     def __init__(self, catalog_dict, short_filters=None, **kwargs):
         self.catalog_dict = catalog_dict
         self.short_filters = short_filters

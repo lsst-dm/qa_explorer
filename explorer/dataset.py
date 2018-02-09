@@ -10,7 +10,7 @@ import dask.dataframe as dd
 
 from .functors import Functor, CompositeFunctor, Column, RAColumn, DecColumn, Mag
 from .functors import StarGalaxyLabeller
-from .catalog import MatchedCatalog, MultiMatchedCatalog, IDMatchedCatalog
+from .catalog import MatchedCatalog, MultiMatchedCatalog, IDMatchedCatalog, MultiBandCatalog
 from .plots import filter_dset
 
 class QADataset(object):
@@ -134,6 +134,10 @@ class QADataset(object):
         return isinstance(self.catalog, IDMatchedCatalog)
 
     @property
+    def is_multiband(self):
+        return isinstance(self.catalog, MultiBandCatalog)
+
+    @property
     def id_name(self):
         if self.is_idmatched:
             name = 'patchId'
@@ -246,6 +250,25 @@ class QADataset(object):
         ds = hv.Dataset(df.reset_index(), kdims=kdims, vdims=vdims)
         self._ds = ds        
 
+    def color_df(self, mag):
+        if not self.is_multiband:
+            return NotImplementedError('Can only get color_df if catalog is a MultiBandCatalog')
+        if not isinstance(self.allfuncs[mag], Mag):
+            raise ValueError('Requested column must be a magnitude: {} requested'.format(mag))
+
+        cat = self.catalog
+        filters = cat.filters
+        n_filts = len(filters)
+        cols_to_difference = [(cat.filters[i], cat.filters[i+1]) 
+                              for i in range(n_filts - 1)]
+        col_names = ['{}-{}'.format(cat.short_filters[i], cat.short_filters[i+1]) for i in range(n_filts - 1)]
+
+        mags = self.df[mag]
+        df = pd.DataFrame({c : mags[c1] - mags[c2] for c, (c1, c2) in zip(col_names, cols_to_difference)})
+        df.dropna(how='any', inplace=True)
+        return df
+
+
     def visit_points(self, vdim, visit, x_max, label,
                      filter_range=None, flags=None, bad_flags=None):
 
@@ -337,4 +360,5 @@ class QADataset(object):
         dmap = dmap.redim.values(label=['galaxy', 'star'],
                                  x_max=x_range).redim.range(**ranges)
         return dmap
+
 

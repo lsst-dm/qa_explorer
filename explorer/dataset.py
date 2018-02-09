@@ -185,7 +185,7 @@ class QADataset(object):
 
         if self.is_multiband:
             color_dfs = []
-            for name, fn in self.funcs:
+            for name, fn in self.funcs.items():
                 if isinstance(fn, Mag):
                     color_dfs.append(self.color_df(name))
             df = df.concat([df] + color_dfs)

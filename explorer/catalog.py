@@ -582,7 +582,7 @@ class MultiBandCatalog(IDMatchedCatalog):
 
     @property
     def colors(self):
-        return ['{}-{}'.format(self.short_filters[i], cat.short_filters[i+1])
+        return ['{}-{}'.format(self.short_filters[i], self.short_filters[i+1])
                     for i in range(self.n_filters - 1)]
 
     @property

@@ -275,7 +275,7 @@ class QADataset(object):
 
         color_df = pd.concat([self.df[['ra', 'dec']], 
                               swap_df[filt], 
-                              gri_data.df['psf_color']], axis=1)
+                              self.df['psf_color']], axis=1)
         color_df = color_df.rename(columns={('ra', 'ra'):'ra', ('dec', 'dec'): 'dec'})    
 
         return hv.Dataset(color_df, kdims=self._get_kdims())

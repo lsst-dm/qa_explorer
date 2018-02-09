@@ -162,6 +162,10 @@ class QADataset(object):
         return name
 
     @property
+    def mag_names(self):
+        return [name for name, fn in self.funcs.items() if isinstance(fn, Mag)]
+
+    @property
     def df_file(self):
         if self._df_file is None:
             self._df_file = os.path.join(self._cachedir, next(tempfile._get_candidate_names()))

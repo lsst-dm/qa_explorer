@@ -183,6 +183,8 @@ class QADataset(object):
             df.to_parquet(self.df_file) # wait for pandas 0.22
             # fastparquet.write(self.df_file, df) # Doesn't work with multiindexing
 
+        self._df_computed = True
+
         if self.is_multiband:
             color_dfs = []
             for name, fn in self.funcs.items():
@@ -190,7 +192,6 @@ class QADataset(object):
                     color_dfs.append(self.color_df(name))
             df = df.concat([df] + color_dfs)
 
-        self._df_computed = True
 
         # ids = df.index
         # if self.is_matched:

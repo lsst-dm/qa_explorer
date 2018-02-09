@@ -274,7 +274,7 @@ class QADataset(object):
         swap_df = self.df.swaplevel(axis=1)
 
         color_df = pd.concat([self.df[['ra', 'dec']], 
-                              swap_df[primary], 
+                              swap_df[filt], 
                               gri_data.df['psf_color']], axis=1)
         color_df = color_df.rename(columns={('ra', 'ra'):'ra', ('dec', 'dec'): 'dec'})    
 

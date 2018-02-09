@@ -214,11 +214,15 @@ class QADataset(object):
             self._make_ds()
         return self._ds_dict[key]
 
-    def _make_ds(self, **kwargs):
+    def _get_kdims(self):
         kdims = ['ra', 'dec', hv.Dimension('x', label=self.xFunc.name), 'label']
         if self.id_name is not None:
             kdims.append(self.id_name)
         kdims += self.flags
+        return kdims        
+
+    def _make_ds(self, **kwargs):
+        kdims = self._get_kdims()
         vdims = []
         for k,v in self.allfuncs.items():
             if k in ('ra', 'dec', 'x', 'label', self.id_name) or k in self.flags:
@@ -231,10 +235,11 @@ class QADataset(object):
                     label = 'diff({})'.format(label)
             vdims.append(hv.Dimension(k, label=label))
 
-        if self.is_matched:
+        if self.is_matched and not self.is_idmatched:
             vdims += [hv.Dimension('match_distance', label='Match Distance [arcsec]')]
 
         if self.is_multi_matched:
+
             # reduce df appropriately here
             coadd_cols = ['ra', 'dec', 'x', 'label'] + self.flags
             visit_cols = list(set(self.df.columns.levels[0]) - set(coadd_cols))

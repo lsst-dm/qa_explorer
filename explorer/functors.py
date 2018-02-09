@@ -47,13 +47,18 @@ class Functor(object):
         else:
             vals = catalog._apply_func(self, query=query, client=client, **kwargs)
 
-        # dropna=True can be buggy; e.g. for boolean types perhaps?
+        # dropna=True can be buggy; e.g. for boolean or string types perhaps?
         if dropna:
-            if client is not None:
-                vals = client.compute(vals[da.isfinite(vals)])
-            else:
-                vals = vals[da.isfinite(vals)]
-
+            try:
+                if client is not None:
+                    vals = client.compute(vals[da.isfinite(vals)])
+                else:
+                    vals = vals[da.isfinite(vals)]
+            except TypeError:
+                if client is not None:
+                    vals = client.compute(vals.dropna())
+                else:
+                    vals = vals.dropna()
 
             # try:
             #     if catalog.client:

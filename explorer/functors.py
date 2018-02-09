@@ -54,7 +54,7 @@ class Functor(object):
                     vals = client.compute(vals[da.isfinite(vals)])
                 else:
                     vals = vals[da.isfinite(vals)]
-            except TypeError:
+            except (TypeError, ValueError):
                 if client is not None:
                     vals = client.compute(vals.dropna())
                 else:

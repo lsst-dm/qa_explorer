@@ -183,15 +183,23 @@ class QADataset(object):
             df.to_parquet(self.df_file) # wait for pandas 0.22
             # fastparquet.write(self.df_file, df) # Doesn't work with multiindexing
 
-        self._df_computed = True
-
+        # The following needs to work around circular references to .df!
         if self.is_multiband:
+            cat = self.catalog
             color_dfs = []
+            filters = cat.filters
+            n_filts = len(filters)
+            cols_to_difference = [(cat.filters[i], cat.filters[i+1]) 
+                                  for i in range(n_filts - 1)]
             for name, fn in self.funcs.items():
                 if isinstance(fn, Mag):
-                    color_dfs.append(self.color_df(name))
-            df = df.concat([df] + color_dfs)
+                    col_names = ['{}_{}{}'.format(name, cat.short_filters[i], cat.short_filters[i+1]) for i in range(n_filts - 1)]
+                    mags = df[name]
+                    color_df = pd.DataFrame({c : mags[c1] - mags[c2] for c, (c1, c2) in zip(col_names, cols_to_difference)})
+                    color_df.dropna(how='any', inplace=True)
+                    df = df.concat([df, color_dfs], axis=1)
 
+        self._df_computed = True
 
         # ids = df.index
         # if self.is_matched:

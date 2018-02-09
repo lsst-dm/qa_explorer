@@ -490,6 +490,103 @@ class ParquetCatalog(Catalog):
         return self._read_data(cols_to_get, query=query, add_flags=add_flags, client=client)
 
 
+class IDMatchedCatalog(MultiMatchedCatalog):    
+    def __init__(self, cats, merge_method='intersection'):
+        self.cats = cats
+        if merge_method not in ['union', 'intersection']:
+            raise ValueError('merge_method must be either "union" or "intersection"')
+
+        self.merge_method = merge_method
+        self._initialize()
+
+    def _initialize(self):
+        [c._initialize() for c in self.cats]
+        self._index = None
+        self._matched = False
+        
+
+    @property
+    def coords(self):
+        """All coords should be the same, so just return coords of first
+        """
+        return self.cats[0].coords
+        
+    @property
+    def coadd_cat(self):
+        return self.cats[0]
+        
+    @property
+    def names(self):
+        return [c.name for c in self.cats]
+        
+    @property
+    def index(self):
+        if self._index is None:
+            self.match()
+        return self._index
+        
+    def match(self, **kwargs):
+        if self._index is None:
+            if self.merge_method == 'union':
+                self._index = reduce(lambda i1,i2 : i1.union(i2), [c.index for c in self.cats])
+            elif self.merge_method == 'intersection':
+                self._index = reduce(lambda i1,i2 : i1.intersection(i2), [c.index for c in self.cats])
+            self._matched = True
+            
+    def get_columns(self, *args, **kwargs):
+        return tuple([c.get_columns(*args, **kwargs) for c in self.cats])
+    
+    def _apply_func(self, func, query=None, how='all', client=None):
+        if client and not self._matched:
+            self.match()
+    
+        if client:
+            func_worker = FuncWorker(func, query=query)
+            vals = client.map(func_worker, self.cats)
+            aligned_vals = [v.result().loc[self.index] for v in vals]            
+        else:
+            vals = [func(c, query=query) for c in self.cats]
+            aligned_vals = [v.loc[self.index] for v in vals]            
+        
+        val_df = pd.concat(aligned_vals, axis=1, keys=self.names)
+        if how=='all':
+            return val_df
+        elif how=='stats':
+            return pd.DataFrame({'mean':val_df.mean(axis=1),
+                                 'std':val_df.std(axis=1),
+                                 'count':val_df.count(axis=1)})
+        elif how=='mean':
+            return val_df.mean(axis=1)
+        elif how=='std':
+            return val_df.std(axis=1)
+
+
+
+class MultiBandCatalog(IDMatchedCatalog):
+    filter_order = {'HSC-G':0, 'HSC-R':1, 'HSC-I':2, 'HSC-Z':3, 'HSC-Y':4}
+    
+    def __init__(self, catalog_dict, short_filters=None, **kwargs):
+        self.catalog_dict = catalog_dict
+        self.short_filters = short_filters
+
+        cats = []
+        for filt in self.filters:
+            self.catalog_dict[filt].name = filt
+            cats.append(self.catalog_dict[filt])
+
+        super(MultiBandCatalog, self).__init__(cats, **kwargs)
+    
+    @property
+    def filters(self):
+        """Ensures sorted order
+        """
+        filts = list(self.catalog_dict.keys())
+        orders = [self.filter_order[f] for f in filts]
+        inds = np.argsort(orders)
+        return list(np.array(filts)[inds])
+    
+
+
 class ButlerCatalog(ParquetCatalog):
     _dataset_name = None # must define for subclasses
     _default_description = None

@@ -189,13 +189,12 @@ class QADataset(object):
             filters = cat.filters
             n_filts = len(filters)
             cols_to_difference = cat.color_groups
-            for name, fn in self.funcs.items():
-                if isinstance(fn, Mag):
-                    col_names = [('{}_color'.format(name), color) for color in cat.colors]
-                    mags = df[name]
-                    color_df = pd.DataFrame({c : mags[c1] - mags[c2] for c, (c1, c2) in zip(col_names, cols_to_difference)})
-                    color_df.dropna(how='any', inplace=True)
-                    df = pd.concat([df, color_df], axis=1)
+            for mag in self.mag_names:
+                col_names = [('{}_color'.format(mag), color) for color in cat.colors]
+                mags = df[mag]
+                color_df = pd.DataFrame({c : mags[c1] - mags[c2] for c, (c1, c2) in zip(col_names, cols_to_difference)})
+                color_df.dropna(how='any', inplace=True)
+                df = pd.concat([df, color_df], axis=1)
 
         if self.oom:
             # df.to_hdf(self.df_file, 'df') #must be format='table' if categoricals included
@@ -248,9 +247,8 @@ class QADataset(object):
 
         if self.is_multiband:
             self._color_ds_dict = {}
-            for name, fn in self.funcs.items():
-                if isinstance(fn, Mag):
-                    self._color_ds_dict[name] = self.color_ds(name)
+            for mag in self.mag_names:
+                self._color_ds_dict[mag] = self.color_ds(mag)
             df = self.df.dropna(how='any')
 
         elif self.is_multi_matched:

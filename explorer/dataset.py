@@ -197,7 +197,7 @@ class QADataset(object):
                     mags = df[name]
                     color_df = pd.DataFrame({c : mags[c1] - mags[c2] for c, (c1, c2) in zip(col_names, cols_to_difference)})
                     color_df.dropna(how='any', inplace=True)
-                    df = df.concat([df, color_dfs], axis=1)
+                    df = pd.concat([df, color_dfs], axis=1)
 
         self._df_computed = True
 

@@ -585,6 +585,11 @@ class MultiBandCatalog(IDMatchedCatalog):
         return ['{}-{}'.format(self.short_filters[i], cat.short_filters[i+1])
                     for i in range(self.n_filters - 1)]
 
+    @property
+    def color_groups(self):
+        return [(self.filters[i], self.filters[i+1]) 
+                    for i in range(self.n_filters - 1)]
+
 
 class ButlerCatalog(ParquetCatalog):
     _dataset_name = None # must define for subclasses

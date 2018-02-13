@@ -283,7 +283,8 @@ class QADataset(object):
         if not isinstance(self.allfuncs[mag], Mag):
             raise ValueError('Requested column must be a magnitude: {} requested'.format(mag))
 
-        color_df = self.df[['ra', 'dec']].rename(columns={('ra', 'ra'):'ra', ('dec', 'dec'): 'dec'})
+        color_df = self.df[['ra', 'dec']]
+        color_df.columns = color_df.columns.get_level_values(0)
 
         filt = self.catalog.reference_filt
         swap_df = self.df.swaplevel(axis=1)

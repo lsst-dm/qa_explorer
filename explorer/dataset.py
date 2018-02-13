@@ -290,7 +290,7 @@ class QADataset(object):
         swap_df = self.df.swaplevel(axis=1)
 
         # Get values for functors and 'x' from reference filter
-        func_keys = list(self.funcs.keys()) + ['x']
+        func_keys = list(self.funcs.keys()) + ['x'] + [self.id_name]
         color_df = pd.concat([color_df, swap_df[filt][func_keys]], axis=1)
 
         # Compute flags as the "or" of all 

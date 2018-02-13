@@ -293,7 +293,7 @@ class QADataset(object):
         color_df = pd.concat([color_df, swap_df[filt][func_keys]], axis=1)
 
         # Compute flags as the "or" of all 
-        flag_cols = [self.df[flag].max(axis=1).astype(bool) for flag in self.flags]
+        flag_cols = [pd.Series(self.df[flag].max(axis=1).astype(bool), name=flag) for flag in self.flags]
         color_df = pd.concat([color_df] + flag_cols, axis=1)
 
         # Calculate group label

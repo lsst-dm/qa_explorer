@@ -556,9 +556,10 @@ class IDMatchedCatalog(MultiMatchedCatalog):
 class MultiBandCatalog(IDMatchedCatalog):
     filter_order = {'HSC-G':0, 'HSC-R':1, 'HSC-I':2, 'HSC-Z':3, 'HSC-Y':4}
 
-    def __init__(self, catalog_dict, short_filters=None, **kwargs):
+    def __init__(self, catalog_dict, short_filters=None, reference_filt='HSC-I', **kwargs):
         self.catalog_dict = catalog_dict
         self.short_filters = short_filters
+        self.reference_filt = reference_filt
 
         cats = []
         for filt in self.filters:

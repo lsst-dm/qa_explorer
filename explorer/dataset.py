@@ -283,13 +283,32 @@ class QADataset(object):
         if not isinstance(self.allfuncs[mag], Mag):
             raise ValueError('Requested column must be a magnitude: {} requested'.format(mag))
 
-        filt = self.catalog.filters[0]
+        color_df = self.df[['ra', 'dec']].rename(columns={('ra', 'ra'):'ra', ('dec', 'dec'): 'dec'})
+
+        filt = self.catalog.reference_filt
         swap_df = self.df.swaplevel(axis=1)
 
-        color_df = pd.concat([self.df[['ra', 'dec']], 
-                              swap_df[filt], 
-                              self.df['{}_color'.format(mag)]], axis=1)
-        color_df = color_df.rename(columns={('ra', 'ra'):'ra', ('dec', 'dec'): 'dec'})    
+        # Get values for functors and 'x' from reference filter
+        func_keys = list(self.funcs.keys()) + ['x']
+        color_df = pd.concat([color_df, swap_df[filt][func_keys]], axis=1)
+
+        # Compute flags as the "or" of all 
+        flag_cols = [self.df[flag].max(axis=1).astype(bool) for flag in self.flags]
+        color_df = pd.concat([color_df] + flag_cols, axis=1)
+
+        # Calculate group label
+        n = self.catalog.n_filters
+        n_star = (self.df['label']=='star').sum(axis=1)
+        label = pd.Series(pd.cut(n_star, [-1, 0, n-1 , n], labels=['noStar', 'maybe', 'star']),
+                                    index=n_star.index, name='label')
+        color_df['label'] = label
+
+        color_df = pd.concat([color_df, self.df['{}_color'.format(mag)]], axis=1)
+
+        # color_df = pd.concat([self.df[['ra', 'dec']], 
+        #                       swap_df[filt], 
+        #                       self.df['{}_color'.format(mag)]], axis=1)
+        # color_df = color_df.rename(columns={('ra', 'ra'):'ra', ('dec', 'dec'): 'dec'})    
 
         return hv.Dataset(color_df, kdims=self._get_kdims())
 

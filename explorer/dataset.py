@@ -438,7 +438,7 @@ class QADataset(object):
         streams = [hv.streams.RangeXY()]
         if filter_stream is not None:
             streams += [filter_stream]
-        dmap = hv.DynamicMap(partial(color_points, self=self), kdims=['mag', 'xmax', 'label'], 
+        dmap = hv.DynamicMap(partial(QADataset.color_points, self=self), kdims=['mag', 'xmax', 'label'], 
                              streams=streams)
         dmap = dmap.redim.values(mag=self.mag_names, xmax=xmax_range, label=['star', 'maybe', 'noStar'])
         return dmap
@@ -477,7 +477,7 @@ class QADataset(object):
         streams = [hv.streams.RangeXY(), hv.streams.BoundsXY()]
         if filter_stream is not None:
             streams += [filter_stream]
-        dmap = hv.DynamicMap(partial(color_points_fit, self=self), kdims=['colors','mag', 'xmax', 'label'], 
+        dmap = hv.DynamicMap(partial(QADataset.color_points_fit, self=self), kdims=['colors','mag', 'xmax', 'label'], 
                              streams=streams)
         dmap = dmap.redim.values(mag=self.mag_names, xmax=xmax_range, 
                                  label=['star', 'maybe', 'noStar'],

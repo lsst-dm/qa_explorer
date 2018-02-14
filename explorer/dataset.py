@@ -8,6 +8,8 @@ import os, shutil
 import fastparquet
 import dask.dataframe as dd
 
+from holoviews.operation.datashader import dynspread, datashade
+
 from .functors import Functor, CompositeFunctor, Column, RAColumn, DecColumn, Mag
 from .functors import StarGalaxyLabeller
 from .catalog import MatchedCatalog, MultiMatchedCatalog, IDMatchedCatalog, MultiBandCatalog
@@ -343,9 +345,13 @@ class QADataset(object):
 
     def visit_explore(self, vdim, x_range=np.arange(15,24.1,0.5), filter_stream=None,
                       range_override=None):
+        if filter_stream is not None:
+            streams = [filter_stream]
+        else:
+            streams = []
         fn = partial(QADataset.visit_points, self=self, vdim=vdim)
         dmap = hv.DynamicMap(fn, kdims=['visit', 'x_max', 'label'],
-                             streams=[filter_stream])
+                             streams=streams)
 
         y_min = self.df[vdim].drop('coadd', axis=1).quantile(0.005).min()
         y_max = self.df[vdim].drop('coadd', axis=1).quantile(0.995).max()
@@ -378,9 +384,13 @@ class QADataset(object):
 
     def coadd_explore(self, vdim, x_range=np.arange(15,24.1,0.5), filter_stream=None,
                         range_override=None):
+        if filter_stream is not None:
+            streams = [filter_stream]
+        else:
+            streams = []
         fn = partial(QADataset.coadd_points, self=self, vdim=vdim)
         dmap = hv.DynamicMap(fn, kdims=['x_max', 'label'],
-                             streams=[filter_stream])
+                             streams=streams)
 
         if self.is_multi_matched:
             y_min = self.df[(vdim, 'coadd')].quantile(0.005)
@@ -407,3 +417,69 @@ class QADataset(object):
         return dmap
 
 
+    def color_points(self, mag=None, xmax=21, label='star', 
+                     filter_range=None, flags=None, bad_flags=None,
+                    x_range=None, y_range=None):
+        if mag is None:
+            mag = self.mag_names[0]
+        colors = self.catalog.colors
+        pts_list = []
+        for c1,c2 in zip(colors[:-1], colors[1:]):
+            dset = self.get_color_ds(mag).select(x=(0,xmax), label=label)
+            if filter_range is not None:
+                dset = filter_dset(dset, filter_range=filter_range, flags=flags, bad_flags=bad_flags)
+                
+            pts_list.append(dset.to(hv.Points, kdims=[c1, c2], groupby=[]).redim.range(**{c1:(-0.2,1.5),
+                                                                                          c2:(-0.2,1.5)}))
+        return hv.Layout([dynspread(datashade(pts, dynamic=False, x_range=x_range, y_range=y_range)) for pts in pts_list]).cols(2)
+
+
+    def color_explore(self, xmax_range=np.arange(18,26.1,0.5), filter_stream=None):
+        streams = [hv.streams.RangeXY()]
+        if filter_stream is not None:
+            streams += [filter_stream]
+        dmap = hv.DynamicMap(partial(color_points, self=self), kdims=['mag', 'xmax', 'label'], 
+                             streams=streams)
+        dmap = dmap.redim.values(mag=self.mag_names, xmax=xmax_range, label=['star', 'maybe', 'noStar'])
+        return dmap
+
+    def color_points_fit(self, mag=None, colors='GRI', xmax=21, label='star', 
+                     filter_range=None, flags=None, bad_flags=None,
+                    x_range=None, y_range=None, bounds=None, order=3):
+        if mag is None:
+            mag = self.mag_names[0]
+
+        c1 = '{}_{}'.format(*colors[0:2])
+        c2 = '{}_{}'.format(*colors[1:3])
+
+        dset = self.get_color_ds(mag).select(x=(0,xmax), label=label)
+        if filter_range is not None:
+            dset = filter_dset(dset, filter_range=filter_range, flags=flags, bad_flags=bad_flags)
+
+        pts = dset.to(hv.Points, kdims=[c1, c2], groupby=[]).redim.range(**{c1:(-0.2,1.5),
+                                                                            c2:(-0.2,1.5)})
+        # Fit selected region to polynomial and plot
+        if bounds is None:
+            fit = hv.Curve([])
+        else:
+            l,b,r,t = bounds
+            subdf = pts.data.query('({0} < {4} < {2}) and ({1} < {5} < {3})'.format(l,b,r,t,c1,c2))
+            coeffs = np.polyfit(subdf[c1], subdf[c2], order)
+            x_grid = np.linspace(subdf[c1].min(), subdf[c1].max(), 100)
+            y_grid = np.polyval(coeffs, x_grid)
+    #         print(x_grid, y_grid)
+            fit = hv.Curve(np.array([x_grid, y_grid]).T).opts(style={'color':'black', 'width':3})
+            print(fit)
+        return pts * fit
+    #     return dynspread(datashade(pts, dynamic=False, x_range=x_range, y_range=y_range)) * fit
+
+    def color_fit_explore(self, xmax_range=np.arange(18,26.1,0.5), filter_stream=None):
+        streams = [hv.streams.RangeXY(), hv.streams.BoundsXY()]
+        if filter_stream is not None:
+            streams += [filter_stream]
+        dmap = hv.DynamicMap(partial(color_points_fit, self=self), kdims=['colors','mag', 'xmax', 'label'], 
+                             streams=streams)
+        dmap = dmap.redim.values(mag=self.mag_names, xmax=xmax_range, 
+                                 label=['star', 'maybe', 'noStar'],
+                                colors=self.catalog.color_colors)
+        return dmap

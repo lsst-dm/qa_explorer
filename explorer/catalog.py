@@ -403,8 +403,7 @@ class MultiMatchedCatalog(MatchedCatalog):
 
 class ParquetCatalog(Catalog):
     def __init__(self, filenames, name=None):
-        if type(filenames) not in [list, tuple]:
-            self.filenames = [filenames]
+        self.filenames = filenames if type(filenames) in [list, tuple] else [filenames]
 
         # Ensure sorted list for hash consistency
         if len(self.filenames) > 1:

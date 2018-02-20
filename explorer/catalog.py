@@ -10,7 +10,7 @@ import random
 import logging
 import hashlib
 from functools import reduce
-from operator import add
+from operator import add, mul
 import string
 
 from .match import match_lists
@@ -48,6 +48,10 @@ class Catalog(object):
         if self._md5 is None:
             self._md5 = self._compute_md5().hexdigest()
         return self._md5
+
+    @property
+    def seed(self):
+        return int(str(reduce(mul, [ord(c) for c in self.md5]))[10:18])
 
     def __hash__(self):
         return hash(self.md5)
@@ -432,7 +436,7 @@ class ParquetCatalog(Catalog):
     @property 
     def name(self):
         if self._name is None:
-            self._name = ''.join(random.choices(string.ascii_lowercase, k=5))
+            self._name = ''.join(random.choices(string.ascii_lowercase, k=5, seed=self.seed))
         return self._name
 
     @name.setter

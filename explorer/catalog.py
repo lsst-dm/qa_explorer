@@ -49,10 +49,6 @@ class Catalog(object):
             self._md5 = self._compute_md5().hexdigest()
         return self._md5
 
-    @property
-    def seed(self):
-        return int(str(reduce(mul, [ord(c) for c in self.md5]))[10:18])
-
     def __hash__(self):
         return hash(self.md5)
 
@@ -436,7 +432,8 @@ class ParquetCatalog(Catalog):
     @property 
     def name(self):
         if self._name is None:
-            self._name = ''.join(random.choices(string.ascii_lowercase, k=5, seed=self.seed))
+            random.seed(self.md5)
+            self._name = ''.join(random.choices(string.ascii_lowercase, k=5))
         return self._name
 
     @name.setter

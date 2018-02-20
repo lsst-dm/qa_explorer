@@ -253,7 +253,8 @@ class MatchedCatalog(Catalog):
             elif how=='first':
                 vals = pd.Series(v1, index=id1)
             elif how=='all':
-                vals = pd.concat([v1, v2], axis=1)
+                vals = pd.concat([pd.Series(v1, name=cat1.name, index=id1), 
+                                  pd.Series(v2, name=cat2.name, index=id1)], axis=1)
                 # raise NotImplementedError
         else:
             vals = func._func(df1)

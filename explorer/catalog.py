@@ -433,7 +433,7 @@ class ParquetCatalog(Catalog):
     def name(self):
         if self._name is None:
             random.seed(self.md5)
-            self._name = ''.join(random.choices(string.ascii_lowercase, k=5))
+            self._name = ''.join(random.choices(string.ascii_lowercase, k=6))
         return self._name
 
     @name.setter

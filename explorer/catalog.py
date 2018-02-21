@@ -183,7 +183,7 @@ class MatchedCatalog(Catalog):
             # Save indices as labels, not positions, as required by dask
             i1 = id1[good]
             i2 = id2[inds[good]]
-            d = pd.Series(dist[good] * 3600, index=id1[good])
+            d = pd.Series(dist[good] * 3600, index=id1[good], name='match_distance')
 
             match_df = pd.DataFrame({'id2':i2, 'distance':d}, index=i1)
             self._write_registry(match_df)

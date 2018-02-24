@@ -15,5 +15,5 @@ from explorer.notebook import Coadd_QANotebook
 coadd_nb = Coadd_QANotebook(args.repo, args.tract, args.filt)
 if not os.path.exists(args.output):
     os.makedirs(args.output)
-coadd_nb.write(os.path.join(args.output, 'coadd_{}_{}'.format(args.tract, args.filt)))
+coadd_nb.write(os.path.join(args.output, 'coadd_{}_{}.ipynb'.format(args.tract, args.filt)))
 

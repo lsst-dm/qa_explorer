@@ -1,15 +1,17 @@
 import argparse
+import os
 
 parser = argparse.ArgumentParser()
 
 parser.add_argument('repo', help='data repository')
 parser.add_argument('--tract', type=int)
 parser.add_argument('--filt', type=str)
-parser.add_argument('--output', '-o', default='QA.ipynb')
+parser.add_argument('--output', '-o', default='QA', help='output folder')
 
 args = parser.parse_args()
 
 from explorer.notebook import Coadd_QANotebook
 
-nb = Coadd_QANotebook(args.repo, args.tract, args.filt)
-nb.write(args.output)
+coadd_nb = Coadd_QANotebook(args.repo, args.tract, args.filt)
+coadd_nb.write(os.path.join(args.output, 'coadd_{}_{}'.format(args.tract, args.filt)))
+

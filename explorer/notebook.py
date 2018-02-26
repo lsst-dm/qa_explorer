@@ -235,7 +235,10 @@ class QANotebook(object):
         self.flags = flags
         self.functors = functors
         self.client = client
+        if scheduler_file is not None:
+            self.client = True
         self.scheduler_file = scheduler_file
+
                 
     @property
     def setup_cells(self):

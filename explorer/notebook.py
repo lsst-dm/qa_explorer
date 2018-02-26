@@ -27,7 +27,7 @@ DEFAULT_COLOR_FLAGS = ['calib_psfUsed', 'qaBad_flag', 'base_PixelFlags_flag_inex
 
 HSC_FILTERS = ['HSC-G', 'HSC-R', 'HSC-I', 'HSC-Z', 'HSC-Y']
 HSC_SHORT_FILTERS = 'GRIZY'
-REFERENCE_FILTER = 'HSC_I'
+REFERENCE_FILTER = 'HSC-I'
 
 
 class Cell(object):

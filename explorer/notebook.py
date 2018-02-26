@@ -173,16 +173,18 @@ import lsst.afw.display
 lsst.afw.display.setDefaultBackend("ginga")
 
 from explorer.display import {1}Display
-{0}_display = {1}Display(butler, filt, dims=(500,500))
+{0}_display = {2}
 {0}_display.connect_tap(tap)
-{0}_display.embed()""".format(self.prefix, self.prefix.capitalize())
+{0}_display.embed()""".format(self.prefix, self.prefix.capitalize(), self.displayInit)
         return code
         
 class CoaddGingaCell(GingaCell):
     prefix = 'coadd'
+    displayInit = 'CoaddDisplay(butler, filt, dims=(500,500))'
 
 class VisitGingaCell(GingaCell):
     prefix = 'visit'
+    displayInit = 'VisitDisplay(butler, filt, tract, dims=(500,500))'
     
 class CommentCell(Cell):
     def __init__(self, comment):

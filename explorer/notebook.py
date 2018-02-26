@@ -118,7 +118,8 @@ class DefineFunctorsCell(Cell):
     
     @property
     def code(self):
-        code = self.import_command
+        code = '# Modify this cell to calculate whatever functors you want\n\n'
+        code += self.import_command
         for k, v in self.functors:
             code += '{} = {}\n'.format(k,v)
         

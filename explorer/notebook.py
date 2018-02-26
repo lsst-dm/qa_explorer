@@ -19,6 +19,17 @@ DEFAULT_MATCHED_FUNCTORS = (('gauss', "MagDiff('base_GaussianFlux', 'base_PsfFlu
                             ('seeing', "Seeing()"))
 
 
+DEFAULT_COLOR_FUNCTORS = (('psfmag', "Mag('base_PsfFlux')"),
+                          ('cmodel', "Mag('modelfit_CModel')"),
+                          ('kron',  "Mag('ext_photometryKron_KronFlux')"))
+
+DEFAULT_COLOR_FLAGS = ['calib_psfUsed', 'qaBad_flag', 'base_PixelFlags_flag_inexact_psfCenter']
+
+HSC_FILTERS = ['HSC-G', 'HSC-R', 'HSC-I', 'HSC-Z', 'HSC-Y']
+HSC_SHORT_FILTERS = 'GRIZY'
+REFERENCE_FILTER = 'HSC_I'
+
+
 class Cell(object):
     params = []
     code = ''
@@ -27,6 +38,11 @@ class Cell(object):
             if p not in kwargs:
                 raise ValueError('Must provide {}'.format(p))
         return nbf.v4.new_code_cell(self.code.format(**kwargs))
+
+class CodeCell(Cell):
+    def __init__(self, code):
+        self.code = code
+
 
 class HvImportCell(Cell):
     code = """\
@@ -73,6 +89,20 @@ coaddCat = CoaddCatalog(butler, dataId)
 visitCats = [VisitCatalog(butler, {{'tract': tract, 'filter':filt, 'visit':v}}, name=v) for v in get_visits(butler, tract, filt)]
 catalog = MultiMatchedCatalog(coaddCat, visitCats, match_registry='QAmatchRegistry.h5')"""
     
+class DefineColorCatalogCell(Cell):
+    params = ('tract', 'filters', 'short_filters', 'reference_filter')
+    code = """\
+from explorer.catalog import CoaddCatalog, MultiBandCatalog
+
+tract = 9615
+filts = {filters}
+short_filts = '{short_filters}'
+reference_filt = '{reference_filter}'
+
+catalog = MultiBandCatalog({{filt: CoaddCatalog(butler, {{'tract':tract, 'filter':filt}}, name=filt) for filt in filts}}, 
+                           short_filters=short_filts, reference_filt=reference_filt)"""
+
+
 class DefineFunctorsCell(Cell):
         
     def __init__(self, functors=DEFAULT_FUNCTORS):
@@ -270,3 +300,20 @@ class VisitMatch_QANotebook(QANotebook):
         return [MultiScatterskyCell(), FlagSetterCell(),
                VisitExploreCell(self.functors[0][0]), VisitGingaCell()]
     
+class ColorColor_QANotebook(QANotebook):
+    def __init__(self, repo, tract, 
+                 filters=HSC_FILTERS, short_filters=HSC_SHORT_FILTERS, 
+                 reference_filter=REFERENCE_FILTER, 
+                 flags=DEFAULT_COLOR_FLAGS, functors=DEFAULT_COLOR_FUNCTORS, **kwargs):
+        kwargs.update(dict(tract=tract, filters=filters, short_filters=short_filters,
+                          reference_filter=reference_filter))
+        super(ColorColor_QANotebook, self).__init__(repo=repo, flags=flags, functors=functors, **kwargs)
+        
+    @property
+    def define_catalog_cell(self):
+        return DefineColorCatalogCell()
+
+    @property
+    def plotting_cells(self):
+        return [CodeCell('data.color_explore()'),
+               CodeCell('%%opts Points [width=600, height=600]\ndata.color_fit_explore()')]

@@ -69,7 +69,6 @@ class SkyFlags(Stream):
             # super(SkyFlags, self).event(**kwargs)
 
 class ResetCallback(Callback):
-
     models = ['plot']
     on_events = ['reset']
 
@@ -186,8 +185,8 @@ class scattersky(ParameterizedFunction):
         scatter_filterpoints = filterpoints.instance(xdim=self.p.xdim, ydim=self.p.ydim)
         scatter_pts = hv.util.Dynamic(dset, operation=scatter_filterpoints,
                                       streams=[self.p.filter_stream])
-        scatter_opts = dict(plot={'height':self.p.height, 'width':self.p.width - self.p.height,
-                                  'tools':['box_select']},
+        scatter_opts = dict(plot={'height':self.p.height, 'width':self.p.width - self.p.height},
+                                  # 'tools':['box_select']},
                            norm=dict(axiswise=True))
         scatter_shaded = datashade(scatter_pts, cmap=cc.palette[self.p.scatter_cmap])
         scatter = dynspread(scatter_shaded).opts(**scatter_opts)
@@ -196,8 +195,8 @@ class scattersky(ParameterizedFunction):
         sky_filterpoints = filterpoints.instance(xdim='ra', ydim='dec', set_title=False)
         sky_pts = hv.util.Dynamic(dset, operation=sky_filterpoints,
                                   streams=[self.p.filter_stream])
-        sky_opts = dict(plot={'height':self.p.height, 'width':self.p.height,
-                              'tools':['box_select']},
+        sky_opts = dict(plot={'height':self.p.height, 'width':self.p.height},
+                              # 'tools':['box_select']},
                         norm=dict(axiswise=True))
         sky_shaded = datashade(sky_pts, cmap=cc.palette[self.p.sky_cmap],
                                aggregator=ds.mean(self.p.ydim), height=self.p.height,
@@ -395,3 +394,4 @@ class skyshade(Operation):
         # decimated = decimate(element, max_samples=self.p.max_samples).opts(**decimate_opts)
 
         return datashaded #* decimated
+

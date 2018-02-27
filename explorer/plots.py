@@ -256,7 +256,7 @@ class multi_scattersky(ParameterizedFunction):
         self.p = param.ParamOverrides(self, params)
         return hv.Layout([scattersky(dset, filter_stream=self.p.filter_stream,
                                   ydim=ydim, height=self.p.height, width=self.p.width) 
-                       for ydim in self._get_ydims(dset)]).cols(3)
+                       for ydim in self._get_ydims(dset)]).cols(3).opts(plot={'merge_toolbars':False})
 
 
 def skyplot(ParameterizedFunction):

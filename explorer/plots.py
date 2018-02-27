@@ -233,10 +233,10 @@ class scattersky(ParameterizedFunction):
         
         if self.p.show_rawsky:
             raw_sky = datashade(sky_filterpoints(dset), cmap=Greys9[::-1][:5])
-            return (table + raw_scatter*scatter + raw_sky*sky).opts(plot={'merge_toolbars':False})
+            return (table + raw_scatter*scatter + raw_sky*sky)
 
         else:
-            return (table + raw_scatter*scatter + sky).opts(plot={'merge_toolbars':False})
+            return (table + raw_scatter*scatter + sky)
 
 class multi_scattersky(ParameterizedFunction):
     
@@ -256,7 +256,7 @@ class multi_scattersky(ParameterizedFunction):
         self.p = param.ParamOverrides(self, params)
         return hv.Layout([scattersky(dset, filter_stream=self.p.filter_stream,
                                   ydim=ydim, height=self.p.height, width=self.p.width) 
-                       for ydim in self._get_ydims(dset)]).cols(3).opts(plot={'merge_toolbars':False})
+                       for ydim in self._get_ydims(dset)]).cols(3).opts(plot={'merge_tools':False})
 
 
 def skyplot(ParameterizedFunction):

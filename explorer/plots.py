@@ -233,10 +233,10 @@ class scattersky(ParameterizedFunction):
         
         if self.p.show_rawsky:
             raw_sky = datashade(sky_filterpoints(dset), cmap=Greys9[::-1][:5])
-            return table + raw_scatter*scatter + raw_sky*sky
+            return (table + raw_scatter*scatter + raw_sky*sky).opts(plot={'merge_toolbars':False})
 
         else:
-            return table + raw_scatter*scatter + sky
+            return (table + raw_scatter*scatter + sky).opts(plot={'merge_toolbars':False})
 
 class multi_scattersky(ParameterizedFunction):
     

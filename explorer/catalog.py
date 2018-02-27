@@ -460,7 +460,7 @@ class ParquetCatalog(Catalog):
     def _read_data(self, columns, query=None, add_flags=True, client=None):
         if add_flags:
             columns = columns + self.flags
-        if client is not None and hasattr(client, 'persist'):
+        if client is not None:
             df = client.persist(dd.read_parquet(self.filenames, columns=columns))
         else:
             df = dd.read_parquet(self.filenames, columns=columns)

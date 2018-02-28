@@ -291,7 +291,7 @@ class skypoints(Operation):
         return hv.Points(dset, kdims=['ra', 'dec'], vdims=dset.vdims + ['label'])
 
 
-class skyplot(Operation):
+class skyplot(ParameterizedFunction):
     """Pass pts with ra,dec as kdims
     """
     cmap = param.String(default='coolwarm')
@@ -301,21 +301,23 @@ class skyplot(Operation):
     height = param.Number(default=None)
     decimate_size = param.Number(default=5)
 
-    filter_range = param.Dict(default={}, doc="""
-        Dictionary of filter bounds.""")
+    filter_stream = param.ClassSelector(default=FilterStream(), class_=FilterStream)
     flags = param.List(default=[], doc="""
         Flags to select.""")
     bad_flags = param.List(default=[], doc="""
         Flags to ignore""")
 
-
-    def _process(self, dset, key=None):
+    def __call__(self, dset, **params):
+        self.p = ParamOverrides(self, params)
+        
         if self.p.vdim is None:
             vdim = dset.vdims[0].name
         else:
             vdim = self.p.vdim
+
         
-        pts = skypoints(dset, key=key)
+        pts = hv.util.Dynamic(dset, operation=skypoints.instance(),
+                               streams=[self.p.filter_stream])
         
         if self.p.aggregator == 'mean':
             aggregator = ds.mean(vdim)
@@ -327,22 +329,22 @@ class skyplot(Operation):
         kwargs = dict(cmap=cc.palette[self.p.cmap],
                       aggregator=aggregator)
         if self.p.width is not None:
-            kwargs.update(width=self.p.width, height=self.p.height,
-                         streams=[hv.streams.RangeXY])
+            kwargs.update(width=self.p.width, height=self.p.height)
+#                          streams=[hv.streams.RangeXY])
             
         decimate_opts = dict(plot={'tools':['hover', 'box_select']}, 
                             style={'alpha':0, 'size':self.p.decimate_size, 
                                    'nonselection_alpha':0})
 
         decimated = decimate(pts).opts(**decimate_opts)
-
         sky_shaded = datashade(pts, **kwargs)
+    
         return dynspread(sky_shaded) * decimated
 
 class skyplot_layout(ParameterizedFunction):
     crosshair = param.Boolean(default=True)
 
-    def __call__(self, skyplots, cols=None, **params):
+    def __call__(self, skyplots, **params):
         self.p = param.ParamOverrides(self, params)
         
         pointer = hv.streams.PointerXY(x=0, y=0)

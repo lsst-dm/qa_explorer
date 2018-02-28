@@ -217,6 +217,16 @@ class VisitGingaCell(GingaCell):
     prefix = 'visit'
     displayInit = 'VisitDisplay(butler, filt, tract, dims=(500,500))'
     
+
+class SkyplotCell(Cell):
+    code = """\
+%%opts RGB [width=400, height=400]
+
+from explorer.plots import skyplot, skyplot_layout
+skyplots = [skyplot(data.ds.groupby('label'), vdim=d, filter_stream=filter_stream).relabel(d) for d in funcs]
+skyplot_layout(skyplots).cols(3)
+    """
+
 class CommentCell(Cell):
     def __init__(self, comment):
         self.comment = comment
@@ -260,7 +270,7 @@ class QANotebook(object):
 
     @property
     def plotting_cells(self):
-        return [MultiScatterskyCell(), FlagSetterCell()]
+        return [MultiScatterskyCell(), FlagSetterCell(), SkyplotCell()]
     
     @property
     def cells(self):
@@ -288,7 +298,7 @@ class Coadd_QANotebook(QANotebook):
     @property
     def plotting_cells(self):
         return [MultiScatterskyCell(), FlagSetterCell(),
-               CoaddExploreCell(self.functors[0][0]), CoaddGingaCell()]
+               CoaddExploreCell(self.functors[0][0]), CoaddGingaCell(), SkyplotCell()]
 
 class VisitMatch_QANotebook(QANotebook):
     def __init__(self, repo, tract, filt, functors=DEFAULT_MATCHED_FUNCTORS, **kwargs):

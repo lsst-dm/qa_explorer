@@ -316,7 +316,7 @@ class skyplot(ParameterizedFunction):
             vdim = self.p.vdim
 
         
-        pts = hv.util.Dynamic(dset, operation=skypoints.instance(),
+        pts = hv.util.Dynamic(dset, operation=skypoints,
                                streams=[self.p.filter_stream])
         
         if self.p.aggregator == 'mean':

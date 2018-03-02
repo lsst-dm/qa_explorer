@@ -580,7 +580,7 @@ class MultiMatchedCatalog(MatchedCatalog):
         self._coords = coords_func(self, how='all', calculate=True)
 
 class ParquetCatalog(Catalog):
-    """Out-of-memory interface to afwTable
+    """Out-of-memory column-store interface to afwTable using parquet
 
     This `Catalog` implementation uses dask and parquet to allow for
     out-of-memory catalog access, and selective retrieval of column data.  
@@ -589,7 +589,10 @@ class ParquetCatalog(Catalog):
     Parameters
     ----------
     filenames : str or list or tuple
-        Either a single parquet file path or a list (or tuple) of filenames.
+        Either a single parquet file path or a list (or tuple) of filenames
+        to be simultaneously loaded.  (If multiple filenames provided, the
+        catalogs should share all the same columns---though I don't 
+        believe this is explicitly checked).
         Note that this will be saved as a sorted list of absolute paths 
         (for hash consistency), regardless of what is passed.
 
@@ -703,6 +706,20 @@ class ParquetCatalog(Catalog):
 
 
 class IDMatchedCatalog(MultiMatchedCatalog):    
+    """A multi-matched-catalog that matches by ID rather than position
+
+    This is adapted from `MultiMatchedCatalog`, but cleaned of "coadd" and
+    "visit" references, which are no longer relevant in this context.  
+    Matching is by ID rather than position.
+
+    Parameters
+    ----------
+    cats : list
+        List of `Catalog` objects to match.
+
+    merge_method : 'intersection' or 'union'
+        Operation to determine final set of indices for matched catalog.
+    """
     def __init__(self, cats, merge_method='intersection'):
         self.cats = cats
         if merge_method not in ['union', 'intersection']:
@@ -720,6 +737,9 @@ class IDMatchedCatalog(MultiMatchedCatalog):
     @property
     def coords(self):
         """All coords should be the same, so just return coords of first
+
+        TODO: check that this is not a bug, as this is not matched in any way...
+        Maybe it should be `self.cats[0].coords.loc[self._index]`?
         """
         return self.cats[0].coords
         
@@ -738,6 +758,8 @@ class IDMatchedCatalog(MultiMatchedCatalog):
         return self._index
         
     def match(self, **kwargs):
+        """Match catalogs by creating a joint index (either union or intersection of all) 
+        """
         if self._index is None:
             if self.merge_method == 'union':
                 self._index = reduce(lambda i1,i2 : i1.union(i2), [c.index for c in self.cats])
@@ -746,9 +768,34 @@ class IDMatchedCatalog(MultiMatchedCatalog):
             self._matched = True
             
     def get_columns(self, *args, **kwargs):
+        """Return tuple of dataframes, one for each catalog
+        """
         return tuple([c.get_columns(*args, **kwargs) for c in self.cats])
     
     def _apply_func(self, func, query=None, how='all', client=None):
+        """Get the results of applying a functor
+
+        Returns row-matched computations on catalogs.
+
+        Parameters
+        ----------
+        func : explorer.functors.Functor
+            Functor to be calculated.
+
+        query : str
+            [Queries not currently completely or consistently implemented.]
+
+        how : str
+            Allowed values:
+            * 'all' (default): returns computed values for coadd and all visit cats
+            * 'stats': returns mean, std, and count of values computed from all catalogs
+            * 'mean': returns mean of values computed from all catalogs
+            * 'std': returns standard deviation of values computed from all catalogs. 
+
+        client : distributed.Client (optional)
+            If a client is provided, then the computations will be distributed
+            over the visit catalogs using `client.map`.        
+        """
         if client and not self._matched:
             self.match()
     
@@ -775,6 +822,27 @@ class IDMatchedCatalog(MultiMatchedCatalog):
 
 
 class MultiBandCatalog(IDMatchedCatalog):
+    """Catalog to organize coadd catalogs from multiple bands
+
+    Useful for doing color-color exploration.
+
+    Parameters
+    ----------
+    catalog_dict : dict
+        Dictionary of catalogs, keyed by filter name.
+
+    short_filters : str or list
+        Short filter names, in wavelength order, e.g., 'GRIZY'
+
+    reference_filt : str
+        Filter to use as the "reference" filter.  This becomes relevant
+        when using a `MultiBandCatalog` as the catalog for a `QADataset`, 
+        as the `.color_ds` attribute takes the values of `x` and the functor
+        calculations from reference band.  This is not really used for anything
+        yet, since the main reason to use a `MultiBandCatalog` is to investigate
+        colors, which don't need a reference filter.
+
+    """
     filter_order = {'HSC-G':0, 'HSC-R':1, 'HSC-I':2, 'HSC-Z':3, 'HSC-Y':4}
 
     def __init__(self, catalog_dict, short_filters=None, reference_filt='HSC-I', **kwargs):
@@ -782,43 +850,74 @@ class MultiBandCatalog(IDMatchedCatalog):
         self.short_filters = short_filters
         self.reference_filt = reference_filt
 
+        # Make sure filters are in sorted order
+        self.filters = list(self.catalog_dict.keys())
+        self.filters.sort(key=lambda f:self.filter_order[f])
+
         cats = []
         for filt in self.filters:
             self.catalog_dict[filt].name = filt
             cats.append(self.catalog_dict[filt])
 
         super(MultiBandCatalog, self).__init__(cats, **kwargs)
-    
-    @property
-    def filters(self):
-        """Ensures sorted order
-        """
-        filts = list(self.catalog_dict.keys())
-        orders = [self.filter_order[f] for f in filts]
-        inds = np.argsort(orders)
-        return list(np.array(filts)[inds])
-    
+        
     @property
     def n_filters(self):
         return len(self.filters)
 
     @property
     def colors(self):
+        """All "adjacent" colors for filter set
+
+        E.g., for `GRIZ`, this returns `['G_R', 'R_I', 'I_Z']`
+        """
         return ['{}_{}'.format(self.short_filters[i], self.short_filters[i+1])
                     for i in range(self.n_filters - 1)]
 
     @property
     def color_colors(self):
+        """All adjacent three-color groups for filter set
+
+        For `GRIZ`, this returns `['GRI', 'RIZ']`
+        """
         return ['{}{}{}'.format(c1[0],c1[-1],c2[-1]) 
                 for c1, c2 in zip(self.colors[0:-1], self.colors[1:])]
 
     @property
     def color_groups(self):
+        """Groups of adjacent colors for color-color plotting purposes
+
+        For `self.filters=['HSC-G', 'HSC-R', 'HSC-I', 'HSC-Z']`, this returns
+        `[('HSC-G', 'HSC-R'), ('HSC-R', 'HSC-I']), ('HSC-I', 'HSC-Z')]`
+        """
         return [(self.filters[i], self.filters[i+1]) 
                     for i in range(self.n_filters - 1)]
 
 
 class ButlerCatalog(ParquetCatalog):
+    """Base class for getting QA catalog from dataId(s)
+
+    This currently depends on the butler-filename-hacking done in 
+    `lsst.pipe.analysis` to retrieve filenames.  
+
+    Not to be implemented on its own; use subclasses for which 
+    `_dataset_name` and `_default_description` are defined, 
+    such as `CoaddCatalog`, `VisitCatalog`, or `ColorCatalog`.
+    
+    Parameters
+    ----------
+    butler : Butler object
+        Data repository from which to get table(s).  The dataset
+        requested
+
+    dataIdList : dict, or list of dicts
+        One or more dataIds for the requested catalogs.
+
+    description : str (optional)
+        Description for butler retrieval.  If not provided, `self._default_description`
+        will be used.
+    """
+
     _dataset_name = None # must define for subclasses
     _default_description = None
     def __init__(self, butler, dataIdList, description=None, **kwargs):
@@ -837,14 +936,20 @@ class ButlerCatalog(ParquetCatalog):
         super(ButlerCatalog, self).__init__(filenames, **kwargs)
 
 class CoaddCatalog(ButlerCatalog):
+    """Coadd QA table dataset retrieval given dataId(s)
+    """
     _dataset_name = 'qaTableCoadd'
     _default_description = 'forced'
     
 class VisitCatalog(ButlerCatalog):
+    """Visit QA table dataset retrieval given dataId(s)
+    """
     _dataset_name = 'qaTableVisit'
     _default_description = 'catalog'
     
 class ColorCatalog(ButlerCatalog):
+    """Color QA table dataset retrieval given dataId(s)
+    """
     _dataset_name = 'qaTableColor'
     _default_description = 'forced'
 

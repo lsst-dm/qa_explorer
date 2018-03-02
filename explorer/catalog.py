@@ -692,6 +692,10 @@ class ParquetCatalog(Catalog):
         client : distributed.Client, optional
             If client is provided, that will be what is used to read the parquet tables.
             To be honest, I'm not yet sure if/when this is ever an advantage.
+
+        Returns
+        -------
+        df : dask.DataFrame
         """
         # Drop unwanted columns
         cols_to_get = [c for c in columns if c in self.columns]

@@ -23,20 +23,26 @@ except ImportError:
     logging.warning('Pipe analysis not available.  ButlerCatalog will not work.')
 
 class Catalog(object):
+    """Base class for columnwise interface to afwTable
+
+    The idea behind this is to allow for access to only specified 
+    columns of one or more `lsst.afw.Table` objects, without necessarily
+    having to load the entire table(s) into memory.
+
+    Subclasses must implement at least `__init__`, `get_columns`,
+    and `_stringify`, and probably also `_initialize` and `_apply_func`.
+
+    """
     index_column = 'id'
 
-    def __init__(self, data, name=None):
-        self.data
-        self.columns = data.columns
-        self.name = name
-        self._initialize()
-
     def _initialize(self):
+        """Set lots of properties that will be lazily calculated 
+        """
         self._coords = None
         self._md5 = None
 
     def _stringify(self):
-        """Return string form of catalog, for md5 hashing
+        """Return string representing catalog, for md5 hashing
         """
         raise NotImplementedError
 
@@ -45,6 +51,10 @@ class Catalog(object):
 
     @property
     def md5(self):
+        """Hash of the catalog
+
+        Computed from an md5 hash of `._stringify`.
+        """
         if self._md5 is None:
             self._md5 = self._compute_md5().hexdigest()
         return self._md5
@@ -52,16 +62,15 @@ class Catalog(object):
     def __hash__(self):
         return hash(self.md5)
 
-    def _sanitize_columns(self, columns):
-        bad_cols = [c for c in columns if c not in self.columns]
-        if bad_cols:
-            logging.warning('Columns not available: {}'.format(bad_cols))
-        return list(set(columns) - set(bad_cols))
+    def get_columns(self, columns, **kwargs):
+        """Returns dataframe of desired columns
 
-    def get_columns(self, columns, check_columns=True, query=None, client=None):
-        if check_columns:
-            columns = self._sanitize_columns(columns)
-        return self.data[columns]
+        Parameters
+        ----------
+        columns : list
+            List of column names to be returned.
+        """
+        raise NotImplementedError('Must implement get_columns!')
 
     def _get_coords(self):
         df = self.get_columns(['coord_ra', 'coord_dec'], add_flags=False)
@@ -97,6 +106,21 @@ class Catalog(object):
         return self.coords.index
 
     def _apply_func(self, func, query=None, client=None):
+        """Defines how to compute the output of a functor
+
+        This method partially defines what happens when you call
+        a functor with a catalog; the full behavior is a combination
+        of this method and the `__call__` method of the functor.
+
+        Parameters
+        ----------
+        func : explorer.functors.Functor
+            Functor to be calculated.
+
+        See also
+        --------
+        explorer.functors.Functor
+        """
         df = self.get_columns(func.columns, query=query, client=client)
         if len(df.columns)==0:
             vals = pd.Series(np.nan, index=df.index)
@@ -105,12 +129,29 @@ class Catalog(object):
         return vals
 
 class MatchedCatalog(Catalog):
-    def __init__(self, cat1, cat2, match_radius=0.5, tags=None, 
+    """Interface to two afwTables at a time.
+
+    Matches sources from two catalogs with KDTree, 
+    within `match_radius`.  If you provide a `match_registry`
+    filename, then the match data will be persisted (keyed by 
+    the hash of the catalog), for fast loading in the future.  
+
+    Parameters
+    ----------
+    cat1, cat2 : `Catalog` objects
+        Catalogs to match.
+
+    match_radius : float
+        Maximum radius to match sources
+
+    match_registry : str
+        HDF file containing persisted match data.
+    """
+
+    def __init__(self, cat1, cat2, match_radius=0.5, 
                     match_registry=None):
         self.cat1 = cat1
         self.cat2 = cat2
-
-        self.tags = ['1', '2'] if tags is None else tags
 
         self.match_radius = match_radius
 
@@ -133,9 +174,19 @@ class MatchedCatalog(Catalog):
         self._coords = self.cat1.coords
 
     def match(self, **kwargs):
+        """Run the catalog matching.
+        """
         return self._match_cats(**kwargs)
 
     def _read_registry(self):
+        """Load persisted match data
+
+        Returns
+        -------
+        inds1, inds2, dist: pandas.Int64Index objects, pandas.Series
+            Matched indices and match_distance data.
+
+        """
         if self.match_registry is None:
             raise ValueError
         store = pd.HDFStore(self.match_registry)
@@ -149,12 +200,25 @@ class MatchedCatalog(Catalog):
         return inds1, inds2, dist   
 
     def _write_registry(self, match_df):
+        """Write match data to registry
+
+        No-op if `self.match_registry` is not set.
+
+        Parameters
+        ----------
+        match_df : pandas.DataFrame
+            Match data.  Index of DataFrame corrdesponds to index values
+            of `self.cat1`; `id2` column is index values of `self.cat2`;
+            `distance` column is the match distance.
+        """
         if self.match_registry is None:
             return
         else:
             match_df.to_hdf(self.match_registry, 'md5_{}'.format(self.md5))
 
     def _test_registry(self):
+        """Test to make sure match loaded from registry is same as fresh-calculated
+        """
         id1, id2, dist = self._read_registry()
 
         self.match(recalc=True)
@@ -163,6 +227,33 @@ class MatchedCatalog(Catalog):
         assert (dist==self._match_distance).all()
 
     def _match_cats(self, recalc=False):
+        """Determine which indices in cat2 correspond to the same objects in cat1
+
+        Computes match using `explorer.match.match_lists`, which uses a KDTree-based 
+        algorithm.  If `self.match_registry` is defined but the match hasn't been 
+        computed before, then the results are written to that file.  If the match has been
+        computed and persisted, then it is just loaded.
+
+        Match information is stored in the form of `pandas.Index` objects: `match_inds1` 
+        and `match_inds2`, which are *label* indices, not positional.  Note that 
+        the `get_columns` method for this object does not return row-matched columns; 
+        in order to get properly row-matched columns from the two catalogs, you need to index
+        the outputs with `match_inds1` and `match_inds2`, e.g.,
+
+            catalog = MatchedCatalog(cat1, cat2)
+            df1, df2 =  catalog.get_columns([cols])
+            df1 = df1.loc[catalog.match_inds1]
+            df2 = df2.loc[catalog.match_inds2]
+
+        Now, the rows of `df1` and `df2` can be compared as belonging to the "same" (matched)
+        objects.  This behavior is implemented in `_apply_func`.
+
+        Parameters
+        ----------
+        recalc : bool
+            If False, then this will attempt to read from the `match_registry` file.
+            If True, then even if `match_registry` is defined, the match will be recomputed
+        """
         try:
             if recalc:
                 raise ValueError
@@ -196,6 +287,8 @@ class MatchedCatalog(Catalog):
 
     @property
     def match_distance(self):
+        """Distance between objects identified as matches
+        """
         if self._match_distance is None:
             self._match_cats()
         return self._match_distance
@@ -217,7 +310,8 @@ class MatchedCatalog(Catalog):
         return self.match_inds1, self.match_inds2
 
     def get_columns(self, *args, **kwargs):
-
+        """Retrieve columns from both catalogs, without matching
+        """
         df1 = self.cat1.get_columns(*args, **kwargs)
         df2 = self.cat2.get_columns(*args, **kwargs)
         # df2.set_index(dd.Series(df1.index))
@@ -226,6 +320,23 @@ class MatchedCatalog(Catalog):
 
 
     def _apply_func(self, func, query=None, how='difference', client=None):
+        """Get the results of applying a functor
+
+        Parameters
+        ----------
+        func : explorer.functors.Functor
+            Functor to be calculated.
+
+        query : str
+            [Queries not currently completely or consistently implemented.]
+
+        how : str
+            * 'difference' (default): returns difference of matched computed values
+            * 'sum': returns sum of matched computed values
+            * 'first': returns computed values from `self.cat1`
+            * 'second': returns computed values from `self.cat2`
+            * 'all': returns computed values from both catalogs. 
+        """
         df1, df2 = self.get_columns(func.columns, query=query, client=client)
 
         # Check if either returned empty dataframe

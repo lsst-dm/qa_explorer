@@ -322,6 +322,8 @@ class MatchedCatalog(Catalog):
     def _apply_func(self, func, query=None, how='difference', client=None):
         """Get the results of applying a functor
 
+        Returns row-matched computation on a catalog.
+
         Parameters
         ----------
         func : explorer.functors.Functor
@@ -331,6 +333,7 @@ class MatchedCatalog(Catalog):
             [Queries not currently completely or consistently implemented.]
 
         how : str
+            Allowed values:
             * 'difference' (default): returns difference of matched computed values
             * 'sum': returns sum of matched computed values
             * 'first': returns computed values from `self.cat1`
@@ -389,6 +392,19 @@ class AlignWorker(object):
         return self.coadd_vals.align(vals)[1]
 
 class MultiMatchedCatalog(MatchedCatalog):
+    """Catalog to organize matching multiple visit catalogs to a coadd catalog
+
+    This is the object that can be used to compute quantities like photometric
+    or astrometric reproducibility.
+
+    Parameters
+    ----------
+    coadd_cat : Catalog 
+        Coadd `Catalog` object.
+
+    visit_cats : list
+        List of visit `Catalog` objects.
+    """
     def __init__(self, coadd_cat, visit_cats, **kwargs):
 
         self.coadd_cat = coadd_cat
@@ -403,11 +419,12 @@ class MultiMatchedCatalog(MatchedCatalog):
 
         self.visit_cats = good_visit_cats
         self.subcats = self._make_subcats(**kwargs)
-        self._matched = False
-        self._coords = None
+
         self._initialize()
 
     def _make_subcats(self, **kwargs):
+        """Create MatchedCatalog for each coadd-visit pair
+        """
         return [MatchedCatalog(self.coadd_cat, v, **kwargs)
                     for v in self.visit_cats]
 
@@ -430,6 +447,9 @@ class MultiMatchedCatalog(MatchedCatalog):
         [c._initialize() for c in self.subcats]
         self._match_distance = None
         self._md5 = None
+        self._matched = False
+        self._coords = None
+
 
     def _test_registry(self):
         [c._test_registry() for c in self.subcats]
@@ -443,6 +463,14 @@ class MultiMatchedCatalog(MatchedCatalog):
         return self.coadd_cat.columns
 
     def match(self, raise_exceptions=False, **kwargs):
+        """Match each of the visit-coadd MatchedCatalogs
+
+        Parameters
+        ----------
+        raise_exceptions : bool
+            If False, then just print warning message if any of the 
+            matching operations raises an exception, but keep going.
+        """
         for i,c in enumerate(self.subcats):
             try:
                 c.match(**kwargs)
@@ -454,11 +482,46 @@ class MultiMatchedCatalog(MatchedCatalog):
 
     def get_columns(self, *args, **kwargs):
         """Returns list of dataframes: df1, then N x other dfs
+
+        Note (as in `MatchedCatalog`) that the output of 
+        `.get_columns` is not row-matched. 
+    
+        Returns
+        -------
+        df1 : pandas.DataFrame
+            Columns from coadd catalog.
+
+        visit_cols : tuple
+            Tuple of DataFrames from each of the visit catalogs.
         """
         df1 = self.coadd_cat.get_columns(*args, **kwargs)
         return df1, tuple(c.get_columns(*args, **kwargs) for c in self.visit_cats)
 
     def _apply_func(self, func, query=None, how='all', client=None):
+        """Get the results of applying a functor
+
+        Returns row-matched computations on catalog(s).
+
+        Parameters
+        ----------
+        func : explorer.functors.Functor
+            Functor to be calculated.
+
+        query : str
+            [Queries not currently completely or consistently implemented.]
+
+        how : str
+            Allowed values:
+            * 'all' (default): returns computed values for coadd and all visit cats
+            * 'coadd': returns computed values only from coadd catalog
+            * 'stats': returns mean, std, and count of values computed from all catalogs
+            * 'mean': returns mean of values computed from all catalogs
+            * 'std': returns standard deviation of values computed from all catalogs. 
+
+        client : distributed.Client (optional)
+            If a client is provided, then the computations will be distributed
+            over the visit catalogs using `client.map`.
+        """
         if client and not self._matched:
             self.match()
 
@@ -496,7 +559,7 @@ class MultiMatchedCatalog(MatchedCatalog):
         coadd = pd.Series(index=self.coadd_cat.index)
         aligned_dists = [coadd.align(c.match_distance)[1] for c in self.subcats]
         df = pd.concat(aligned_dists, axis=1, 
-                                        keys=[('match_distance', n) for n in self.visit_names])
+                        keys=[('match_distance', n) for n in self.visit_names])
         df[('match_distance', 'coadd')] = 0.
         return df
 
@@ -508,7 +571,9 @@ class MultiMatchedCatalog(MatchedCatalog):
 
     @property
     def n_visits(self):
-        return self.match_distance.count(axis=1).rename('n_visits')
+        """Returns number of visit catalogs successfully matched to coadd
+        """
+        return self.match_distance.count(axis=1).rename('n_visits') - 1
 
     def _get_coords(self):
         coords_func = CompositeFunctor({'ra':RAColumn(), 'dec':DecColumn()})

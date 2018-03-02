@@ -14,11 +14,27 @@ import inspect
 from .utils import result
 
 class Functor(object):
-    """Performs computation on catalog(s), read from disk
+    """Base class for computations performed on catalogs
 
-    Catalog is a Catalog object
+    Subclasses must implement `_func`, which defines the calculation
+    to be performed.  The way the calculation actually happens is an 
+    interaction between the catalog's `_apply_func` method
+    (which uses the functor's `_func` method and defines the format
+    and content of the result and such) 
+    and the functor `__call__` method, which controls things like
+    whether nans are dropped.
 
-    Subclasses must define _columns attribute that is read from table
+    Subclasses must also define `_columns` attribute (or equivalently
+    a `columns` property) that defines which
+    columns are required to be read from the catalog to perform the calculation.
+
+    Results are returned as an in-memory `pandas.Series` or `pandas.DataFrame`.
+
+    Parameters
+    ----------
+    allow_difference : bool
+        Defines whether to allow operations like subtraction of this calculation
+        performed on two different catalogs (e.g., should be False for labels)
     """
     _allow_difference = True
 
@@ -31,6 +47,8 @@ class Functor(object):
 
     @property
     def columns(self):
+        """Columns required to perform calculation
+        """
         try:
             return self._columns
         except AttributeError:
@@ -79,6 +97,8 @@ class Functor(object):
             return result(vals)
 
     def test(self, catalog, dropna=True, dask=False):
+        """Time how long the calculation takes on a catalog.
+        """
         start = time.time()
         res = self(catalog, dropna=dropna, dask=dask)
         n = len(result(res))
@@ -109,6 +129,28 @@ class func_worker(object):
 #     return catalog.client.map(worker, composite_functor.funcDict.values())
 
 class CompositeFunctor(Functor):
+    """Perform multiple calculations at once on a catalog
+
+    Returns a dataframe with columns being the keys of `funcDict`.  If called
+    on a `MatchedCatalog` or `MultiMatchedCatalog` with `how='all'`, then 
+    the columns will be a multi-level index, indexed first by functor name
+    then by catalog name.
+    
+    Parameters
+    ----------
+    funcDict : dict
+        Dictionary of functors.  
+
+    dask : bool (default False)
+        Whether to return result as a dask DataFrame.  Not much used (or tested)
+
+    do_map : bool
+        If `client` is provided, whether to map with the client over the multiple 
+        functors.  
+
+    client : distributed.Client
+        If provided, then computation will map over functors if `do_map` is True.
+    """
     force_ndarray = False
 
     def __init__(self, funcDict, **kwargs):

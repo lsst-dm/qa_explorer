@@ -28,6 +28,31 @@ def find_closest(dmap, ra, dec):
     return obj
 
 class QADisplay(lsst.afw.display.Display):
+    """Base class for display object enabling image viewing at given coordinate
+
+    The main purpose of this is to be able to connect a `lsst.afw.display.Display` object
+    to a `holoviews.Tap` stream that has a source in a holoviews plot window, such 
+    that a new image can be loaded due to a mouse click on the plot. 
+
+    Not for direct use; use instead the `CoaddDisplay` or `VisitDisplay` 
+    subclasses.
+
+    Parameters
+    ----------
+    butler : Butler
+        Data repo from which images will be retrieved.
+
+    dmap : holoviews.DynamicMap, optional
+        If not provided, it will be set to be the source of the `Tap` stream
+        passed to `.connect_tap()`.  Having this attribute is necessary for
+        operations like "find the exact coordinates of the closest source
+        to the place where I clicked."
+
+    Additional keyword arguments passed to `lsst.afw.display.Display`, 
+    such as `dims=(500,500)`
+
+    """
+
     _datasetName = None
 
     def __init__(self, butler, dmap=None, **kwargs):
@@ -41,11 +66,28 @@ class QADisplay(lsst.afw.display.Display):
 
     @property
     def datasetName(self):
+        """Name of the image dataset to be retrieved from the butler
+        """
         if self._datasetName is None:
             raise NotImplementedError('Must define _datasetName property')
         return self._datasetName
 
     def getExp(self, ra, dec, **kwargs):
+        """Get the exposure and pixel position corresponding to sky position
+
+        Parameters
+        -----------
+        ra, dec : float
+            Coordinates in degrees
+
+        Returns
+        -------
+        exp : afw.Exposure
+        xy : afwCoord.PixelCoord
+            Pixel coordinates in `exp` corresponding to ra, dec
+
+        Additional keyword arguments passed to `_get_dataId`.
+        """
         dataId = self._get_dataId(ra, dec, **kwargs)
         exp = self._expFromId(dataId)
 
@@ -61,6 +103,8 @@ class QADisplay(lsst.afw.display.Display):
         return exp, xy
 
     def _WcsFromId(self, dataId):
+        """Get requested WCS
+        """
         exp = self._expFromId(dataId) # This is by default redundant
         return exp.getWcs()
 
@@ -70,6 +114,8 @@ class QADisplay(lsst.afw.display.Display):
         raise NotImplementedError
 
     def _expFromId(self, dataId):
+        """Get requested image data
+        """
         dataId = hashable_dict(dataId)
         if dataId in self._expCache:
             exp = self._expCache[dataId]
@@ -79,6 +125,15 @@ class QADisplay(lsst.afw.display.Display):
         return exp
 
     def update(self, ra, dec, **kwargs):
+        """Refresh the display with a new position
+
+        Parameters
+        ----------
+        ra, dec : float
+            Coordinates in degrees
+
+        Additional keyword arguments passed to `getExp`.
+        """
         exp, (x, y) = self.getExp(ra, dec, **kwargs)
 
         self.mtv(exp)
@@ -88,11 +143,28 @@ class QADisplay(lsst.afw.display.Display):
         return self
 
     def connect_tap(self, tap, **kwargs):
+        """Connect a tap stream to display
+
+        Parameters
+        ----------
+        tap : holoviews.Tap
+            Tap stream whose source is the sky map, where
+        """
         tap.add_subscriber(partial(self.update, **kwargs))
         self.tap_stream = tap
         self.dmap = tap.source
 
 class CoaddDisplay(QADisplay):
+    """Display object enabling coadd image viewing at desired location
+
+    Parameters
+    ----------
+    butler : Butler
+        Data repository from which images will be loaded.
+
+    filt : str
+        Filter of images to load.
+    """
     _datasetName = 'deepCoadd_calexp'
 
     def __init__(self, butler, filt, **kwargs):
@@ -118,6 +190,20 @@ class CoaddDisplay(QADisplay):
 
 
 class VisitDisplay(QADisplay):
+    """Display object enabling single-visit image viewing at desired location
+
+    Parameters
+    ----------
+    butler : Butler
+        Data repository from which images will be loaded.
+
+    filt : str
+        Filter of images to load.
+
+    tract : int
+        Tract from which images will load
+    """
+
     _datasetName = 'calexp'
 
     def __init__(self, butler, filt, tract, **kwargs):

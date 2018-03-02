@@ -580,6 +580,24 @@ class MultiMatchedCatalog(MatchedCatalog):
         self._coords = coords_func(self, how='all', calculate=True)
 
 class ParquetCatalog(Catalog):
+    """Out-of-memory interface to afwTable
+
+    This `Catalog` implementation uses dask and parquet to allow for
+    out-of-memory catalog access, and selective retrieval of column data.  
+    It expects to read parquet tables written by the `lsst.pipe.analysis` scripts.
+
+    Parameters
+    ----------
+    filenames : str or list or tuple
+        Either a single parquet file path or a list (or tuple) of filenames.
+        Note that this will be saved as a sorted list of absolute paths 
+        (for hash consistency), regardless of what is passed.
+
+    name : str or int, optional
+        Name of catalog.  If name is not provided, then a six-character name 
+        will be generated, using the catalog hash as a random seed, thus
+        ensuring consistency of the "default" name.
+    """
     def __init__(self, filenames, name=None):
         self.filenames = filenames if type(filenames) in [list, tuple] else [filenames]
 
@@ -624,6 +642,8 @@ class ParquetCatalog(Catalog):
 
     @property
     def flags(self):
+        """Names of all columns that have boolean type
+        """
         if self._flags is None:
             self._flags = list(dd.read_parquet(self.filenames[0]).select_dtypes(include=['bool']).columns)
         return self._flags
@@ -633,7 +653,9 @@ class ParquetCatalog(Catalog):
 
         return self.get_columns(flags)
 
-    def _read_data(self, columns, query=None, add_flags=True, client=None):
+    def _read_data(self, columns, query=None, add_flags=False, client=None):
+        """Reads parquet data into dask DataFrame
+        """
         if add_flags:
             columns = columns + self.flags
         if client is not None:
@@ -654,7 +676,23 @@ class ParquetCatalog(Catalog):
         return result(self._df)
 
     def get_columns(self, columns, query=None, add_flags=False, client=None):
-        
+        """Get desired columns as dask dataframe
+
+        Parameters
+        ----------
+        columns : list
+            List of names of desired columns.  Any names not in catalog will be ignored.
+
+        query : str
+            [Queries not really consistently implemented yet; do not use.]
+
+        add_flags : bool
+            If True, then include all flags as well as explictly requested columns
+
+        client : distributed.Client, optional
+            If client is provided, that will be what is used to read the parquet tables.
+            To be honest, I'm not yet sure if/when this is ever an advantage.
+        """
         # Drop unwanted columns
         cols_to_get = [c for c in columns if c in self.columns]
         return self._read_data(cols_to_get, query=query, add_flags=add_flags, client=client)

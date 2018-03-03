@@ -503,8 +503,21 @@ class QADataset(object):
 
     def visit_points(self, vdim, visit, x_max, label,
                      filter_range=None, flags=None, bad_flags=None):
+        """Companion function to visit_explore that returns Points object
 
-        # Hack to deal with integer visit values, if they are actually strings
+        Parameters
+        ----------
+        vdim : str
+            Name of dimension whose value gets colormapped.
+
+        visit, x_max, label : int, float, str
+            Parameters that become kdims in the holoviews.DynamicMap of 
+            `visit_explore`.
+
+        filter_range, flags, bad_flags : dict, list, list
+            Parameters controlled by the `filter_stream` parameter
+            of `visit_explore`.
+        """
 
         if self.is_multi_matched:
             try:
@@ -530,6 +543,26 @@ class QADataset(object):
 
     def visit_explore(self, vdim, x_range=np.arange(15,24.1,0.5), filter_stream=None,
                       range_override=None):
+        """Dynamic map of values of a particular dimension, scrollable through visits
+
+        Parameters
+        ----------
+        vdim : str
+            Name of dimension to explore.
+
+        x_range : array
+            Values of faint magnitude limit.  Only points up to this limit will be plotted.
+            Beware of scrolling to too faint a limit; it might give you too many points!
+
+        filter_stream : explorer.plots.FilterStream, optional
+            Stream of constraints that controls what data to display.  Useful to link
+            multiple plots together
+
+        range_override : (min, max), optional
+            By default the colormap will be scalled between the 0.005 to 0.995 quantiles
+            of the *entire* set of visits.  Sometimes this is not a useful range to view, 
+            so this parameter allows a custom colormap range to be set.
+        """
         if filter_stream is not None:
             streams = [filter_stream]
         else:
@@ -565,10 +598,32 @@ class QADataset(object):
         return dmap
 
     def coadd_points(self, vdim, x_max, label, **kwargs):
+        """Same as visit_points, but for coadd image.
+        """
         return self.visit_points(vdim, 'coadd', x_max, label, **kwargs)
 
     def coadd_explore(self, vdim, x_range=np.arange(15,24.1,0.5), filter_stream=None,
                         range_override=None):
+        """Dynamic map of coadd values
+
+        Parameters
+        ----------
+        vdim : str
+            Name of dimension to explore.
+
+        x_range : array
+            Values of faint magnitude limit.  Only points up to this limit will be plotted.
+            Beware of scrolling to too faint a limit; it might give you too many points!
+
+        filter_stream : explorer.plots.FilterStream, optional
+            Stream of constraints that controls what data to display.  Useful to link
+            multiple plots together
+
+        range_override : (min, max), optional
+            By default the colormap will be scalled between the 0.005 to 0.995 quantiles
+            of the *entire* set of visits.  Sometimes this is not a useful range to view, 
+            so this parameter allows a custom colormap range to be set.
+        """
         if filter_stream is not None:
             streams = [filter_stream]
         else:
@@ -605,6 +660,26 @@ class QADataset(object):
     def color_points(self, mag=None, xmax=21, label='star', 
                      filter_range=None, flags=None, bad_flags=None,
                     x_range=None, y_range=None):
+        """Datashaded layout of color-color plots 
+
+        Parameters
+        ----------
+        mag : str
+            Name of magnitude to get color info from (e.g., name of mag functor).
+
+        xmax : float
+            faint magnitude limit.
+
+        label : str
+            Desired label of points
+
+        filter_range, flags, bad_flags : dict, list, list
+            Parameters controlled by the `filter_stream` parameter
+            of `color_explore`.
+
+        x_range, y_range : 
+            Arguments required for datashaded map to be dynamic when passed to a DynamicMap        
+        """    
         if mag is None:
             mag = self.mag_names[0]
         colors = self.catalog.colors
@@ -620,6 +695,19 @@ class QADataset(object):
 
 
     def color_explore(self, xmax_range=np.arange(18,26.1,0.5), filter_stream=None):
+        """Dynamic map of color-color plots
+
+        Parameters
+        ----------
+        xmax_range : array
+            Array of max magnitude values for slider widget
+
+        filter_stream : explorer.plots.FilterStream
+            Stream of constraints that controls what data to display.  Useful to link
+            multiple plots together
+
+        """
+
         streams = [hv.streams.RangeXY()]
         if filter_stream is not None:
             streams += [filter_stream]
@@ -631,6 +719,40 @@ class QADataset(object):
     def color_points_fit(self, mag=None, colors='GRI', xmax=21, label='star', 
                      filter_range=None, flags=None, bad_flags=None,
                     x_range=None, y_range=None, bounds=None, order=3):
+        """Simple points + polynomial fit of selected range
+
+        This is more a simple proof-of-concept than anything particularly
+        useful at this point.  
+
+        Parameters
+        ----------
+        mag : str
+            Name of magnitude from which colors are desired.
+
+        colors : str
+            Color-color group desired (e.g., 'GRI', 'RIZ', 'IZY').
+
+        xmax : float
+            Maximum magnitude to allow
+
+        label : str
+            Desired label of points.
+
+        filter_range, flags, bad_flags : dict, list, list
+            Parameters controlled by the `filter_stream` parameter
+            of `color_fit_explore`.
+
+        x_range, y_range : 
+            Arguments required for datashaded map to be dynamic when passed to a DynamicMap        
+            (though right now this particular element does not get datashaded)
+
+        bounds : (l,b,r,t)
+            Bounds of selection box.
+
+        order : int
+            Order of polynomial fit
+        """
+
         if mag is None:
             mag = self.mag_names[0]
 
@@ -659,6 +781,18 @@ class QADataset(object):
     #     return dynspread(datashade(pts, dynamic=False, x_range=x_range, y_range=y_range)) * fit
 
     def color_fit_explore(self, xmax_range=np.arange(18,26.1,0.5), filter_stream=None):
+        """Dynamic map exploring polynomial fit to selected range of color-color plot
+
+        Parameters
+        ----------
+        xmax_range : array
+            Array of max magnitude values for slider widget
+
+        filter_stream : explorer.plots.FilterStream
+            Stream of constraints that controls what data to display.  Useful to link
+            multiple plots together
+        
+        """
         streams = [hv.streams.RangeXY(), hv.streams.BoundsXY()]
         if filter_stream is not None:
             streams += [filter_stream]

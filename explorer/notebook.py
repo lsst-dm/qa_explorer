@@ -1,3 +1,10 @@
+"""
+Enabling auto-generation and assemply of interactive QA notebooks
+
+Most of the stuff in here should be decently self-explanatory?  
+"""
+
+
 import nbformat as nbf
 import re
 
@@ -31,6 +38,15 @@ REFERENCE_FILTER = 'HSC-I'
 
 
 class Cell(object):
+    """Base class for generating code cells
+
+    Basic idea is to define `code` attribute or property
+    on subclasses, and then a call to this object returns
+    a `nbf` code cell node.  Pass keyword arguments
+    to cell as needed for subclass (define `params` to 
+    say what is required), these are variables to be 
+    interpolated into the `code` string.
+    """
     params = []
     code = ''
     def __call__(self, **kwargs):

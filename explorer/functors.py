@@ -28,7 +28,13 @@ class Functor(object):
     a `columns` property) that defines which
     columns are required to be read from the catalog to perform the calculation.
 
-    Results are returned as an in-memory `pandas.Series` or `pandas.DataFrame`.
+    Results are returned by default as in-memory `pandas.Series` or `pandas.DataFrame`, 
+    unless called with `dask=True`, in which case a dask DataFrame is returned.
+
+    Note that when implementing `_func`, use the dask versions of ufuncs for 
+    array math, instead of numpy; e.g. `da.sin`, `da.cos`, 
+    instead of `np.sin`, `np.cos`.
+
 
     Parameters
     ----------

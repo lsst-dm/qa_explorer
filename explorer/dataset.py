@@ -16,6 +16,88 @@ from .catalog import MatchedCatalog, MultiMatchedCatalog, IDMatchedCatalog, Mult
 from .plots import filter_dset
 
 class QADataset(object):
+    """Container to coordinate and visualize function calculations on catalogs
+
+    The fundamental thing that a `QADataset` does is compute a `pandas.DataFrame`
+    containing the results of evaluating the desired functors on the desired
+    `Catalog`: the `.df` attribute.  
+    In addition to containing a column for the result of each
+    `Functor` calculation, `.df` also always contains columns for coordinates
+    (`ra`, `dec`), object type label (`label`), x-coordinate of scatter plots 
+    (`x`, by default psfMag), an "id" column that will be either 
+    `ccdId` or `patchId`, depending on which is relevant,
+    and columns for any desired boolean flags.
+
+    In addition to the `.df` attribute, a `QADataset` also puts together a
+    `holoviews.Dataset` object that wraps this data, in the `.ds` attribute.
+    This is the object that can get passed to various plotting functions 
+    from `explorer.plots`.
+
+    A `QADataset` can take different kinds of `Catalog` objects, 
+    and the the computed 
+    `.df` and `.ds` attributes will look slightly different in each case:
+      
+    * With a normal single
+    `Catalog`, the dataframe will contain the functor computations in columns
+    keyed by the keys of the functor dictionary, and `.ds` will just
+    be a simple wrapper of this.  
+    * With a `MatchedCatalog`,
+    the columns will have the same names but will contain the *difference*
+    of the computations between the two catalogs (unless a
+    functor has `allow_difference=False`).  
+    * With a `MultiMatchedCatalog`,
+    the columns of `.df` will be multi-level indexed, containing the full
+    information of each quantity calculated on each catalog (this is 
+    where the memeory footprint can begin to climb).  In this case, `.ds`
+    contains the standard deviation of each measurement among all the catalogs;
+    also, a `_ds_dict` attribute is created, where a `holoviews.Dataset` 
+    object can be accessed for each individual catalog (keyed by visit name or 
+    'coadd').  
+    * Using a `MultiBandCatalog`, the `.df` attribute contains functor computations
+    for each band, in a multi-level column index, and in addition contains 
+    color columns for all magnitude functors provided.  In this case, a special
+    `.color_ds` attribute
+
+    This object is pickleable, and can be dumped to file using the `.save()`
+    method.  Especially when using `MultiMatchedCatalog` catalogs, the 
+    dataframe computations can take a long time, so this can be desirable.
+    Note that the `client` object cannot get saved though, so client must be
+    re-initialized on load, which you can do with the `.load()` classmethod.
+
+    Parameters
+    ----------
+    catalog : explorer.Catalog 
+        Catalog on which to perform calculations.  May be any type of catalog.
+
+    funcs : dict or list
+        Dictionary or list of functors.  If list, then the names of the `Functor`
+        columns will be `y0, y1, y2, ...`.
+
+    flags : list
+        List of flags to load from catalog
+
+    xFunc : explorer.Functor
+        Functor to treat as the abscissa for the scatter plots.
+        Default is `Mag('base_PsfFlux')`.
+
+    labeller : explorer.functors.Labeller
+        Functor to assign labels to sources.  Default is 
+        `explorer.functors.StarGalaxyLabeller()`.
+
+    query : str
+        [Not implemented fully or tested.  Do not use.]
+
+    client : distributed.Client
+        Dask cluster client to be passed to evaluation of functors.
+
+    cachedir : str
+        Directory to which to write dataframe if `self.oom` is True.
+
+    oom : bool
+        Whether to store computed dataframe out of memory.  Future
+        to-be-implemented feature; not really used yet.
+
+    """
     def __init__(self, catalog, funcs, flags=None, 
                  xFunc=Mag('base_PsfFlux', allow_difference=False), 
                  labeller=StarGalaxyLabeller(),
@@ -37,10 +119,29 @@ class QADataset(object):
         self.oom = oom
 
     def save(self, filename, protocol=4):
+        """Write to file
+
+        Parameters
+        ----------
+        filename : str
+            Filename to write pickle file to.  By convention,
+            should end with ".pkl"
+        """
         pickle.dump(self, open(filename, 'wb'), protocol=protocol)
 
     @classmethod
     def load(cls, filename, client=None):
+        """Restore from a saved file
+
+        Parameters
+        ----------
+        filename : str
+            Filename to load previously saved `QADataset` from.
+
+        client : distributed.Client
+            Client object, if desired.  Note that any client previously
+            set was not saved, so this must be re-initialized if desired.
+        """
         new = pickle.load(open(filename, 'rb'))
         new.client = client
         return new
@@ -59,10 +160,35 @@ class QADataset(object):
             os.remove(self.df_file)
 
     def _set_catalog(self, catalog):
+        """Change catalog
+
+        Sets catalog to be a new `Catalog`, and resets data structures.
+
+        Parameters
+        ----------
+        catalog : explorer.Catalog
+            New catalog.
+        """
         self.catalog = catalog
         self._reset()
 
     def _set_funcs(self, funcs, xFunc, labeller):
+        """Initialize functions
+
+        Parameters
+        ----------
+        funcs : dict or list
+            Dictionary or list of functors.  If list, then will be 
+            converted into dictionary keyed by `y0, y1, y2, ...`.
+
+
+        xFunc : explorer.functors.Functor
+            `Functor` to function as the x-coordinate of the scatter
+            plots.  
+
+        labeller : explorer.functors.Labeller
+            `Functor` to label points.
+        """
         if isinstance(funcs, list) or isinstance(funcs, tuple):
             self.funcs = {'y{}'.format(i):f for i,f in enumerate(funcs)}
         elif isinstance(funcs, Functor):
@@ -82,6 +208,10 @@ class QADataset(object):
         self._reset()
 
     def _reset(self):
+        """Sets state such that data structurs need to be recomputed
+
+        Necessary after changing catalog, or query, for example.
+        """
         self._df_computed = False
         self._ds = None
 
@@ -96,6 +226,12 @@ class QADataset(object):
 
     @property
     def allfuncs(self):
+        """Dictionary of all functors to be computed from catalog
+
+        In addition to the ones provided upon initialization of the
+        `QADataset`, this also contains `ra`, `dec`, `x`, `label`, 
+        `ccdId`/`patchId`, and all flags.
+        """
         allfuncs = self.funcs.copy()
 
         # Set coordinates and x value
@@ -114,6 +250,8 @@ class QADataset(object):
 
     @property
     def df(self):
+        """Dataframe containing results of computation
+        """
         if not self._df_computed:
             self._make_df()
         return self._df
@@ -141,6 +279,11 @@ class QADataset(object):
 
     @property
     def id_name(self):
+        """patchId or ccdId, as appropriate
+
+        Necessary in order to know which image to load to inspect
+        object.
+        """
         if self.is_idmatched:
             name = 'patchId'
         elif self.is_multi_matched:
@@ -165,15 +308,28 @@ class QADataset(object):
 
     @property
     def mag_names(self):
+        """Names of magnitude functors.
+
+        Used in order to calculate color information if catalog is a `MultiBandCatalog`.
+        """
         return [name for name, fn in self.funcs.items() if isinstance(fn, Mag)]
 
     @property
     def df_file(self):
+        """File to store out-of-memory df in 
+
+        [Not really used yet, but placeholder]
+        """
         if self._df_file is None:
             self._df_file = os.path.join(self._cachedir, next(tempfile._get_candidate_names()))
         return self._df_file
 
     def _make_df(self, **kwargs):
+        """Compute dataframe.
+
+        This is called if the `.df` attribute is accessed
+        but `._df_computed` is False. 
+        """
         f = CompositeFunctor(self.allfuncs)
         if self.is_multi_matched:
             kwargs.update(how='all')
@@ -209,21 +365,39 @@ class QADataset(object):
 
     @property
     def ds(self):
+        """Holoviews Dataset wrapper of the underlying dataframe
+        """
         if self._ds is None:
             self._make_ds()
         return self._ds
 
     def get_ds(self, key):
+        """Get holoviews dataset corresponding to specific catalog
+
+        This is relevant for `MultiMatchedCatalogs`, where multiple 
+        `holoviews.Dataset` objects are created and saved in the `_ds_dict`
+        attribute.
+        """
         if self._ds is None:
             self._make_ds()
         return self._ds_dict[key]
 
     def get_color_ds(self, key):
+        """Get holoviews "color" dataset corresponding to particular magnitude
+
+        This is relevant for `MultiBandCatalog`, where multiple 
+        `holoviews.Dataset` objects are created and saved in the `_color_ds_dict`
+        attribute, keyed by magnitude name.
+        """
         if self._ds is None:
             self._make_ds()
         return self._color_ds_dict[key]
 
     def _get_kdims(self):
+        """Get key dimensions, for generating holoviews Datasets
+
+        Key dimensions are ra, dec, x, label, ccdId/patchId, and all flags
+        """
         kdims = ['ra', 'dec', hv.Dimension('x', label=self.xFunc.name), 'label']
         if self.id_name is not None:
             kdims.append(self.id_name)
@@ -231,6 +405,8 @@ class QADataset(object):
         return kdims        
 
     def _make_ds(self, **kwargs):
+        """Create holoviews.Dataset objects needed to generate plots.
+        """
         kdims = self._get_kdims()
         vdims = []
         for k,v in self.allfuncs.items():
@@ -280,6 +456,15 @@ class QADataset(object):
         self._ds = ds        
 
     def color_ds(self, mag):
+        """Calculate holoviews.Dataset object containing colors for a given magnitude type
+
+        * Functor values and 'x' values come from catalog's reference filter.
+        * Flags are computed as the "or" of all bands.
+        * Labels are re-determined as follows: 
+            * If object is a star in all bands, it is called a "star"
+            * If it is a star in zero bands, it is called a "noStar"
+            * If it is called a star in some bands but not all, it is called a "maybe"
+        """
         if not self.is_multiband:
             return NotImplementedError('Can only get color_ds if catalog is a MultiBandCatalog')
         if not isinstance(self.allfuncs[mag], Mag):

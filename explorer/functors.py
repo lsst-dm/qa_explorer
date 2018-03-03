@@ -196,9 +196,18 @@ class TestFunctor(Functor):
         return x
 
 def mag_aware_eval(df, expr):
-    # pfile = fastparquet.ParquetFile(filename)
-    # cols = [c for c in pfile.columns if re.search(c, expr)]
-    # df = pfile.to_pandas(columns=cols)    
+    """Evaluate an expression on a DataFrame, knowing what the 'mag' function means
+
+    Builds on `pandas.DataFrame.eval`, which parses and executes math on dataframes.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Dataframe on which to evaluate expression.
+
+    expr : str
+        Expression.
+    """
     try:
         expr_new = re.sub('mag\((\w+)\)', '-2.5*log(\g<1>)/log(10)', expr)
         val = df.eval(expr_new, truediv=True)
@@ -208,6 +217,16 @@ def mag_aware_eval(df, expr):
     return val
 
 class CustomFunctor(Functor):
+    """Arbitrary computation on a catalog
+
+    Column names (and thus the columns to be loaded from catalog) are found
+    by finding all words and trying to ignore all "math-y" words.
+
+    Parameters
+    ----------
+    expr : str
+        Expression to evaluate, to be parsed and executed by `mag_aware_eval`.
+    """
     _ignore_words = ('mag', 'sin', 'cos', 'exp', 'log', 'sqrt')
 
     def __init__(self, expr, **kwargs):
@@ -237,6 +256,8 @@ class CustomFunctor(Functor):
         return mag_aware_eval(df, self.expr)
 
 class Column(Functor):
+    """Get column with specified name
+    """
     def __init__(self, col, **kwargs):
         self.col = col
         super(Column, self).__init__(**kwargs)
@@ -260,14 +281,20 @@ class FootprintNPix(Column):
     col = 'base_Footprint_nPix'
 
 class CoordColumn(Column):
+    """Base class for coordinate column
+    """
     _allow_difference = False
+    _radians = True
 
     def __init__(self, col, calculate=False, **kwargs):
         self.calculate = calculate
         super(CoordColumn, self).__init__(col, allow_difference=calculate, **kwargs)
 
     def _func(self, df):
-        return df[self.col] * 180 / np.pi
+        res = df[self.col]
+        if self._radians:
+            res *= 180 / np.pi
+        return res
 
 class RAColumn(CoordColumn):
     name = 'RA'
@@ -341,14 +368,6 @@ class Labeller(Functor):
 
     def __call__(self, catalog, dropna=False, **kwargs):
         return super(Labeller, self).__call__(catalog, dropna=False, **kwargs)
-
-        # Use below if we actually want to not label some things. Could be weird.
-        # vals = super(Labeller, self).__call__(catalog, dropna=False, **kwargs)
-        # if dropna:
-        #     return vals[vals != self._null_label]
-        # else:
-        #     return vals
-
 
 class StarGalaxyLabeller(Labeller):
     _columns = ["base_ClassificationExtendedness_value"]

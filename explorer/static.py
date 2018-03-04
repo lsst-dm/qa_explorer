@@ -1,3 +1,9 @@
+"""
+Utilties for loading static pipe_analysis PNGs into holoviews DynamicMaps
+
+
+See 'qa-image-browser.ipynb' demo notebook for examples of usage.  
+"""
 from __future__ import print_function, division
 import re, os, glob
 from itertools import product

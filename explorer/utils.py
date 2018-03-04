@@ -1,3 +1,7 @@
+"""
+Utility functions
+"""
+
 import sqlite3
 import os, glob, re
 
@@ -8,6 +12,8 @@ except ImportError:
 
 
 def get_visits_sql(field, tract, filt, sqlitedir='/scratch/hchiang2/parejko/'):
+    """Once was useful; now outdated.
+    """
     with sqlite3.connect(os.path.join(sqlitedir, 'db{}.sqlite3'.format(field))) as conn:
         cursor = conn.cursor()
         cmd = "select distinct visit from calexp where tract=:tract and filter=:filt"
@@ -27,9 +33,15 @@ def result(df):
         return df
 
 def get_tracts(butler):
-    """Reads tracts for which plots are available.
+    """Returns tracts for which plots are available.
 
-    Decently hack-y pseudo-butler activity here.
+    Decently hack-y pseudo-butler activity here, thanks to `lsst.pipe.analysis`
+    Returns list of tracts that have *either* PNGs or parquet files in them.
+
+    Parameters
+    ----------
+    butler : lsst.daf.persistance.Butler
+        Data repository
     """     
     dataId = {'tract':0, 'filter':'HSC-I'}
     filenamer = Filenamer(butler, 'plotCoadd', dataId)

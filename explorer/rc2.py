@@ -1,3 +1,7 @@
+"""
+Visit list and convenience functions for HSC RC2 dataset
+"""
+
 import re
 
 from .catalog import CoaddCatalog, VisitCatalog, ColorCatalog, MultiMatchedCatalog

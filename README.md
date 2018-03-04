@@ -36,3 +36,7 @@ and
 $ jupyter notebook --no-browser --port xxxx  # on lsst-dev
 ```
 Then browse to `localhost:xxxx` on your local machine.
+
+## Overview
+
+For a more verbose overview and discussion of the building blocks of this package, please check out the [overview notebook](notebooks/overview.ipynb).

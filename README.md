@@ -33,6 +33,6 @@ $ ssh -NfL localhost:xxxx:localhost:xxxx lsst-dev  # on your local machine
 ```
 and
 ```
-jupyter notebook --no-browser --port xxxx  # on lsst-dev
+$ jupyter notebook --no-browser --port xxxx  # on lsst-dev
 ```
 Then browse to `localhost:xxxx` on your local machine.

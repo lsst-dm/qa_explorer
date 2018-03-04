@@ -23,16 +23,38 @@ from bokeh.palettes import Greys9
 class FilterStream(Stream):
     """
     Stream to apply arbitrary filtering on a Dataset.
+
+    Many of the plotting functions accept a `FilterStream` object;
+    the utility of this is that you can define a single `FilterStream`, 
+    and if you connect the same one to all your plots, then all of the 
+    selections/flag selections/etc. can be linked.
+
+    See the demo notebooks for an example of usage.
     """
 
-    filter_range = param.Dict(default={})
+    filter_range = param.Dict(default={}, doc="""
+        Ranges of parameters to select.""")
     flags = param.List(default=[], doc="""
         Flags to select.""")
     bad_flags = param.List(default=[], doc="""
         Flags to ignore""")
 
 class FlagSetter(Stream):
-    flags = param.ListSelector(default=[], objects=[])
+    """Stream for setting flags
+
+    Most useful in context of a parambokeh widget, e.g.:
+
+        from explorer.plots import FlagSetter
+        import parambokeh
+
+        flag_setter = FlagSetter(filter_stream=filter_stream, flags=data.flags, bad_flags=data.flags)
+        parambokeh.Widgets(flag_setter, callback=flag_setter.event, push=False, on_init=True)
+
+    Where `filter_stream` has been previously defined and connected to other plots
+    for which you want to see points with certain flags shown/hidden/etc.
+    """
+    flags = param.ListSelector(default=[], objects=[], doc="""
+        Flags to select""")
     bad_flags = param.ListSelector(default=[], doc="""
         Flags to ignore""")
 
@@ -44,6 +66,8 @@ class FlagSetter(Stream):
         self.filter_stream.event(**kwargs)
         
 class SkyFlags(Stream):
+    """Experimental; not currently used for anything
+    """
     flags = param.ListSelector(default=[], objects=[])
     bad_flags = param.ListSelector(default=[], doc="""
         Flags to ignore""")
@@ -68,6 +92,11 @@ class SkyFlags(Stream):
             self.filter_stream.event(**kwargs)
             # super(SkyFlags, self).event(**kwargs)
 
+#######################################################################################
+# All this enables bokeh "reset" button to also reset a stream (such as FilterStream) #
+# Not sure if some of this should be updated for newer version of HV, as this was put #
+# together circa v1.9.0, I think
+
 class ResetCallback(Callback):
     models = ['plot']
     on_events = ['reset']
@@ -78,7 +107,15 @@ class Reset(LinkedStream):
 
 Stream._callbacks['bokeh'][Reset] = ResetCallback
 
+#######################################################################################
+
+
 class filter_dset(Operation):
+    """Process a dataset based on FilterStream state (filter_range, flags, bad_flags)
+
+    This is used in many applications to define dynamically selected `holoviews.Dataset`
+    objects.
+    """
     filter_range = param.Dict(default={}, doc="""
         Dictionary of filter bounds.""")
     flags = param.List(default=[], doc="""
@@ -96,6 +133,11 @@ class filter_dset(Operation):
 
 # Define Operation that filters based on FilterStream state (which provides the filter_range)
 class filterpoints(Operation):
+    """Process a dataset based on FilterStream state (filter_range, flags, bad_flags)
+
+    This is used in many applications to define dynamically selected `holoviews.Points`
+    objects.
+    """
 
     filter_range = param.Dict(default={}, doc="""
         Dictionary of filter bounds.""")
@@ -103,8 +145,8 @@ class filterpoints(Operation):
         Flags to select.""")
     bad_flags = param.List(default=[], doc="""
         Flags to ignore""")
-    xdim = param.String(default='x')
-    ydim = param.String(default='y')
+    xdim = param.String(default='x', "Name of x-dimension")
+    ydim = param.String(default='y', "Name of y-dimension")
     set_title = param.Boolean(default=False)
 
     def _process(self, dset, key=None):
@@ -158,23 +200,33 @@ def notify_stream(bounds, filter_stream, xdim, ydim):
     filter_stream.event(filter_range=filter_range)
 
 def reset_stream(filter_stream):
-    filter_stream.event(filter_range={})
+    filter_stream.event(filter_range={}, flags=[], bad_flags=[])
 
 class scattersky(ParameterizedFunction):
     """
     Creates two datashaded views from a Dataset.
+
+    First plot is an x-y scatter plot, with colormap according to density 
+    of points; second plot is a sky plot where the colormap corresponds
+    to the average y values of the first plot in each datashaded pixel.
     """
 
-    xdim = param.String(default='x')
-    ydim = param.String(default='y0')
-    scatter_cmap = param.String(default='fire')
-    sky_cmap = param.String(default='coolwarm')
-    height = param.Number(default=300)
-    width = param.Number(default=900)
-    filter_stream = param.ClassSelector(default=FilterStream(), class_=FilterStream)
-    show_rawsky = param.Boolean(default=False)
-    sky_pointer = param.ClassSelector(default=hv.streams.PointerXY(x=0, y=0), 
-                                      class_=hv.streams.PointerXY)
+    xdim = param.String(default='x', doc="""
+        Dimension of the dataset to use as x-coordinate""")
+    ydim = param.String(default='y0', doc="""
+        Dimension of the dataset to use as y-coordinate""")
+    scatter_cmap = param.String(default='fire', doc="""
+        Colormap to use for the scatter plot""")
+    sky_cmap = param.String(default='coolwarm', doc="""
+        Colormap to use for the sky plot""")
+    height = param.Number(default=300, doc="""
+        Height in pixels of the combined layout""")
+    width = param.Number(default=900, doc="""
+        Width in pixels of the combined layout""")
+    filter_stream = param.ClassSelector(default=FilterStream(), class_=FilterStream, 
+        doc="Stream to which selection ranges get added.")
+    show_rawsky = param.Boolean(default=False, doc="""
+        Whether to show the "unselected" sky points in greyscale when there is a selection.""")
 
     def __call__(self, dset, **params):
         self.p = ParamOverrides(self, params)
@@ -203,12 +255,6 @@ class scattersky(ParameterizedFunction):
                                width=self.p.width)
         sky = dynspread(sky_shaded).opts(**sky_opts)
         
-        # # Alternate sky plot
-        # sky_dset = hv.util.Dynamic(dset, operation=filter_dset, 
-        #                             streams=[self.p.filter_stream])
-        # sky = skyplot(sky_dset)
-
-
         # Set up summary table
         table = hv.util.Dynamic(dset, operation=summary_table.instance(ydim=self.p.ydim),
                                 streams=[self.p.filter_stream])
@@ -239,6 +285,8 @@ class scattersky(ParameterizedFunction):
             return (table + raw_scatter*scatter + sky)
 
 class multi_scattersky(ParameterizedFunction):
+    """Layout of multiple scattersky plots, one for each vdim in dset
+    """
     
     filter_stream = param.ClassSelector(default=FilterStream(), class_=FilterStream)
 
@@ -259,24 +307,9 @@ class multi_scattersky(ParameterizedFunction):
                        for ydim in self._get_ydims(dset)]).cols(3).opts(plot={'merge_tools':False})
 
 
-def skyplot(ParameterizedFunction):
-    filter_range = param.Dict(default={}, doc="""
-        Dictionary of filter bounds.""")
-    flags = param.List(default=[], doc="""
-        Flags to select.""")
-    bad_flags = param.List(default=[], doc="""
-        Flags to ignore""")
-
-    def __call__(self, dset, vdims, **params):
-        self.p = param.ParamOverrides(self, params)
-
-        dset = filter_dset(dset, filter_range=self.p.filter_range,
-                            flags=self.p.flags, bad_flags=self.p.bad_flags)
-
-        # pts = 
-
-
 class skypoints(Operation):
+    """Creates Points with ra, dec as kdims, and interesting stuff as vdims
+    """
     filter_range = param.Dict(default={}, doc="""
         Dictionary of filter bounds.""")
     flags = param.List(default=[], doc="""
@@ -292,14 +325,18 @@ class skypoints(Operation):
 
 
 class skyplot(ParameterizedFunction):
-    """Pass pts with ra,dec as kdims
+    """Datashaded + decimated RA/dec plot, with colormap of third dimension
     """
-    cmap = param.String(default='coolwarm')
-    aggregator = param.ObjectSelector(default='mean', objects=['mean', 'std', 'count'])
-    vdim = param.String(default=None)
+    cmap = param.String(default='coolwarm', doc="""
+        Colormap to use.""")
+    aggregator = param.ObjectSelector(default='mean', objects=['mean', 'std', 'count'], doc="""
+        Aggregator for datashading.""")
+    vdim = param.String(default=None, doc="""
+        Dimension to use for colormap.""")
     width = param.Number(default=None)
     height = param.Number(default=None)
-    decimate_size = param.Number(default=5)
+    decimate_size = param.Number(default=5, doc="""
+        Size of (invisible) decimated points.""")
 
     filter_stream = param.ClassSelector(default=FilterStream(), class_=FilterStream)
     flags = param.List(default=[], doc="""
@@ -342,6 +379,8 @@ class skyplot(ParameterizedFunction):
         return dynspread(sky_shaded) * decimated
 
 class skyplot_layout(ParameterizedFunction):
+    """Layout of skyplots with linked crosshair
+    """
     crosshair = param.Boolean(default=True)
 
     def __call__(self, skyplots, **params):
@@ -363,6 +402,8 @@ class skyplot_layout(ParameterizedFunction):
         return hv.Layout(plots)
 
 class skyshade(Operation):
+    """Experimental
+    """
     cmap = param.String(default='coolwarm')
     aggregator = param.ObjectSelector(default='mean', objects=['mean', 'std', 'count'])
     width = param.Number(default=None)

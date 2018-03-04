@@ -27,3 +27,12 @@ $ ls QA-notebooks
   coadd_9813_HSC-Z.ipynb  color_9813.ipynb  visitMatch_9813_HSC-Z.ipynb
 ```
 These notebooks are templates containing examples of some of the `qa_explorer` functionality, that can easily be customized for a particular investigation.  (Note that the `visitMatch*` notebook may take ~10 minutes to compute, so try the coadd or color ones first.)
+To run the notebooks on `lsst-dev` but access them in a local browser, open a tunnel to your favorite port on `lsst-dev`, and start the jupyter notebook with that port, e.g., 
+```
+$ ssh -NfL localhost:xxxx:localhost:xxxx lsst-dev  # on your local machine
+```
+and
+```
+jupyter notebook --no-browser --port xxxx  # on lsst-dev
+```
+Then browse to `localhost:xxxx` on your local machine.

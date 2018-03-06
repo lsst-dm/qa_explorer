@@ -145,8 +145,8 @@ class filterpoints(Operation):
         Flags to select.""")
     bad_flags = param.List(default=[], doc="""
         Flags to ignore""")
-    xdim = param.String(default='x', "Name of x-dimension")
-    ydim = param.String(default='y', "Name of y-dimension")
+    xdim = param.String(default='x', doc="Name of x-dimension")
+    ydim = param.String(default='y', doc="Name of y-dimension")
     set_title = param.Boolean(default=False)
 
     def _process(self, dset, key=None):

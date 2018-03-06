@@ -20,7 +20,7 @@ $ setup -r /path/to/display_ginga
 $ jupyter nbextension enable --py widgetsnbextension
 $ jupyter nbextension enable --py ipyevents
 ```
-As a test to make sure everything is working, you can use the notebook generator script, and try to run the notebooks that get produced (`generateQANotebook.py` should be in `~/.local/bin`, which will need to be in your `$PATH`:
+As a test to make sure everything is working, you can use the notebook generator script, and try to run the notebooks that get produced (`generateQANotebook.py` should be in `~/.local/bin`, which will need to be in your `$PATH`):
 ```
 $ generateQANotebook.py /datasets/hsc/repo/rerun/RC/w_2018_06/DM-13435/ --tract 9813 --filt HSC-Z
 $ ls QA-notebooks

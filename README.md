@@ -20,7 +20,7 @@ $ setup -r /path/to/display_ginga
 $ jupyter nbextension enable --py widgetsnbextension
 $ jupyter nbextension enable --py ipyevents
 ```
-As a test to make sure everything is working, you can use the notebook generator script, and try to run the notebooks that get produced, e.g.:
+As a test to make sure everything is working, you can use the notebook generator script, and try to run the notebooks that get produced (`generateQANotebook.py` should be in `~/.local/bin`, which will need to be in your `$PATH`):
 ```
 $ generateQANotebook.py /datasets/hsc/repo/rerun/RC/w_2018_06/DM-13435/ --tract 9813 --filt HSC-Z
 $ ls QA-notebooks
@@ -29,11 +29,11 @@ $ ls QA-notebooks
 These notebooks are templates containing examples of some of the `qa_explorer` functionality, that can easily be customized for a particular investigation.  (Note that the `visitMatch*` notebook may take ~10 minutes to compute, so try the coadd or color ones first.)
 To run the notebooks on `lsst-dev` but access them in a local browser, open a tunnel to your favorite port on `lsst-dev`, and start the jupyter notebook with that port, e.g., 
 ```
-$ ssh -NfL localhost:xxxx:localhost:xxxx lsst-dev  # on your local machine
+$ ssh -NfL localhost:xxxx:localhost:xxxx lsst-dev01.ncsa.illinois.edu  # on your local machine
 ```
 and
 ```
-$ jupyter notebook --no-browser --port xxxx  # on lsst-dev
+$ jupyter notebook --NotebookApp.iopub_data_rate_limit=10000000000 --no-browser --port xxxx  # on lsst-dev
 ```
 Then browse to `localhost:xxxx` on your local machine.
 

@@ -241,7 +241,7 @@ class QADataset(object):
             allfuncs.update({self.id_name : Column(self.id_name, allow_difference=False)})
 
         # Include flags
-        allfuncs.update({f:Column(f) for f in self.flags})
+        allfuncs.update({f:Column(f, allow_difference=False) for f in self.flags})
 
         if self.labeller is not None:
             allfuncs.update({'label':self.labeller})

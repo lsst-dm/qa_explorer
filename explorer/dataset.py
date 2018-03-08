@@ -238,7 +238,7 @@ class QADataset(object):
         allfuncs.update({'ra':RAColumn(), 'dec': DecColumn(), 
                          'x':self.xFunc})
         if self.id_name is not None:
-            allfuncs.update({self.id_name : Column(self.id_name)})
+            allfuncs.update({self.id_name : Column(self.id_name, allow_difference=False)})
 
         # Include flags
         allfuncs.update({f:Column(f) for f in self.flags})
@@ -791,7 +791,7 @@ class QADataset(object):
         filter_stream : explorer.plots.FilterStream
             Stream of constraints that controls what data to display.  Useful to link
             multiple plots together
-        
+
         """
         streams = [hv.streams.RangeXY(), hv.streams.BoundsXY()]
         if filter_stream is not None:

@@ -84,8 +84,8 @@ class DaskClientCell(Cell):
 class DefineCoaddCatalogCell(Cell):
     params = ('tract', 'filt')
     code = """\
-from explorer.catalog import CoaddCatalog, VisitCatalog, MultiMatchedCatalog
-from explorer.utils import get_visits
+from lsst.qa.explorer.catalog import CoaddCatalog, VisitCatalog, MultiMatchedCatalog
+from lsst.qa.explorer.utils import get_visits
 
 tract = {tract}
 filt = "{filt}"
@@ -95,8 +95,8 @@ catalog = CoaddCatalog(butler, dataId)"""
 class DefineMatchedCatalogCell(Cell):
     params = ('tract', 'filt')
     code = """\
-from explorer.catalog import CoaddCatalog, VisitCatalog, MultiMatchedCatalog
-from explorer.utils import get_visits
+from lsst.qa.explorer.catalog import CoaddCatalog, VisitCatalog, MultiMatchedCatalog
+from lsst.qa.explorer.utils import get_visits
 
 tract = {tract}
 filt = "{filt}"
@@ -108,7 +108,7 @@ catalog = MultiMatchedCatalog(coaddCat, visitCats, match_registry='QAmatchRegist
 class DefineColorCatalogCell(Cell):
     params = ('tract', 'filters', 'short_filters', 'reference_filter')
     code = """\
-from explorer.catalog import CoaddCatalog, MultiBandCatalog
+from lsst.qa.explorer.catalog import CoaddCatalog, MultiBandCatalog
 
 tract = 9615
 filts = {filters}
@@ -130,7 +130,7 @@ class DefineFunctorsCell(Cell):
         for k, v in self.functors:
             m = re.search('(\w+)\(', v)
             to_import.add(m.group(1))
-        return 'from explorer.functors import ' + ','.join(to_import) + '\n'
+        return 'from lsst.qa.explorer.functors import ' + ','.join(to_import) + '\n'
     
     @property
     def code(self):
@@ -153,7 +153,7 @@ class DefineDatasetCell(Cell):
     
     @property
     def code(self):
-        code = "from explorer.dataset import QADataset\n"
+        code = "from lsst.qa.explorer.dataset import QADataset\n"
         code += "flags = [" + ',\n'.join(["'{}'".format(f) for f in self.flags]) + ']\n\n'
         if self.client:
             code += "data = QADataset(catalog, funcs, flags=flags, client=client)"
@@ -168,13 +168,13 @@ class CalculateDFCell(Cell):
     
 class MultiScatterskyCell(Cell):
     code = """\
-from explorer.plots import FilterStream, multi_scattersky
+from lsst.qa.explorer.plots import FilterStream, multi_scattersky
 filter_stream = FilterStream()
 multi_scattersky(data.ds, filter_stream=filter_stream, width=900, height=300)"""
     
 class FlagSetterCell(Cell):
     code ="""\
-from explorer.plots import FlagSetter
+from lsst.qa.explorer.plots import FlagSetter
 import parambokeh
 
 flag_setter = FlagSetter(filter_stream=filter_stream, flags=data.flags, bad_flags=data.flags)
@@ -219,7 +219,7 @@ class GingaCell(Cell):
 import lsst.afw.display
 lsst.afw.display.setDefaultBackend("ginga")
 
-from explorer.display import {1}Display
+from lsst.qa.explorer.display import {1}Display
 {0}_display = {2}
 {0}_display.connect_tap(tap)
 {0}_display.embed()""".format(self.prefix, self.prefix.capitalize(), self.displayInit)
@@ -238,7 +238,7 @@ class SkyplotCell(Cell):
     code = """\
 %%opts RGB [width=400, height=400]
 
-from explorer.plots import skyplot, skyplot_layout
+from lsst.qa.explorer.plots import skyplot, skyplot_layout
 skyplots = [skyplot(data.ds.groupby('label'), vdim=d, filter_stream=filter_stream).relabel(d) for d in funcs]
 skyplot_layout(skyplots).cols(3)
     """

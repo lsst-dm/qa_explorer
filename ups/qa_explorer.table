@@ -1,0 +1,12 @@
+setupRequired(pipe_analysis)
+
+setupRequired(afw)
+setupRequired(daf_persistence)
+setupRequired(meas_mosaic)
+setupRequired(pex_config)
+setupRequired(pipe_base)
+setupRequired(pipe_tasks)
+setupRequired(sconsUtils)
+
+envPrepend(PYTHONPATH, ${PRODUCT_DIR}/python)
+envPrepend(PATH, ${PRODUCT_DIR}/bin)

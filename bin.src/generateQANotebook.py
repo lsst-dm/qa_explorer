@@ -11,7 +11,7 @@ parser.add_argument('--output', '-o', default='QA-notebooks', help='output folde
 
 args = parser.parse_args()
 
-from explorer.notebook import Coadd_QANotebook, VisitMatch_QANotebook, ColorColor_QANotebook
+from lsst.qa.explorer.notebook import Coadd_QANotebook, VisitMatch_QANotebook, ColorColor_QANotebook
 
 if not os.path.exists(args.output):
     os.makedirs(args.output)

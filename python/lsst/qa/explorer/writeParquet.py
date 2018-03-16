@@ -20,7 +20,7 @@ class WriteObjectTableTask(MergeSourcesTask):
     """
     _DefaultName = "writeObjectTable"
     ConfigClass = WriteObjectTableConfig
-    RunnerClass = 
+    RunnerClass = WriteObjectTableRunner
 
     inputDataset = 'forced_src'
     outputDataset = 'obj'

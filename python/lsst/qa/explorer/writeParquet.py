@@ -15,10 +15,6 @@ class WriteObjectTableConfig(Config):
     pass
 
 
-class WriteObjectTableRunner(TaskRunner):
-    pass
-
-
 def filter_tag(filt):
     return re.sub('[^a-zA-Z0-9_]+', '', filt).lower()
 
@@ -27,7 +23,6 @@ class WriteObjectTableTask(MergeSourcesTask):
     """
     _DefaultName = "writeObjectTable"
     ConfigClass = WriteObjectTableConfig
-    RunnerClass = WriteObjectTableRunner
 
     inputDataset = 'forced_src'
     outputDataset = 'obj'

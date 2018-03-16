@@ -3,7 +3,7 @@ from lsst.pex.config import (Config, Field, ConfigField, ListField, DictField, C
                              ConfigurableField)
 from lsst.pipe.base import Task, CmdLineTask, ArgumentParser, TaskRunner, TaskError
 from lsst.coadd.utils import TractDataIdContainer
-from lsst.pipe.tasks.multiBand import MergeSourcesTask
+from lsst.pipe.tasks.multiBand import MergeSourcesTask, MergeSourcesConfig
 from lsst.pipe.tasks.multiBand import _makeGetSchemaCatalogs
 
 import functools
@@ -14,6 +14,10 @@ from .table import ParquetTable
 
 def filter_tag(filt):
     return re.sub('[^a-zA-Z0-9_]+', '', filt).lower()
+
+class WriteObjectTableConfig(MergeSourcesConfig):
+    priorityList = ListField(dtype=str, default=['HSC-G', 'HSC-R', 'HSC-I', 'HSC-Z', 'HSC-Y'],
+                             doc="Priority-ordered list of bands for the merge.")    
 
 class WriteObjectTableTask(MergeSourcesTask):
     """Convert all source tables to parquet format

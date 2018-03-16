@@ -11,9 +11,6 @@ import re
 
 from .table import ParquetTable
 
-class WriteObjectTableConfig(Config):
-    pass
-
 
 def filter_tag(filt):
     return re.sub('[^a-zA-Z0-9_]+', '', filt).lower()
@@ -22,7 +19,6 @@ class WriteObjectTableTask(MergeSourcesTask):
     """Convert all source tables to parquet format
     """
     _DefaultName = "writeObjectTable"
-    ConfigClass = WriteObjectTableConfig
 
     inputDataset = 'forced_src'
     outputDataset = 'obj'

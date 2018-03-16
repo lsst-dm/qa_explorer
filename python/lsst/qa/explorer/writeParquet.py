@@ -31,7 +31,7 @@ class WriteObjectTableTask(MergeSourcesTask):
 
     inputDataset = 'forced_src'
     outputDataset = 'obj'
-    getSchemaCatalogs = _makeGetSchemaCatalogs("obj")
+    getSchemaCatalogs = lambda x : {}
 
     def mergeCatalogs(self, catalogs, patchRef):
         """Merge multiple catalogs.

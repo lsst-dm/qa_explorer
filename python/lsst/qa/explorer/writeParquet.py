@@ -4,6 +4,7 @@ from lsst.pex.config import (Config, Field, ConfigField, ListField, DictField, C
 from lsst.pipe.base import Task, CmdLineTask, ArgumentParser, TaskRunner, TaskError
 from lsst.coadd.utils import TractDataIdContainer
 from lsst.pipe.tasks.multiBand import MergeSourcesTask
+from lsst.pipe.tasks.multiBand import _makeGetSchemaCatalogs
 
 import functools
 import re
@@ -30,6 +31,7 @@ class WriteObjectTableTask(MergeSourcesTask):
 
     inputDataset = 'forced_src'
     outputDataset = 'obj'
+    getSchemaCatalogs = _makeGetSchemaCatalogs("obj")
 
     def mergeCatalogs(self, catalogs, patchRef):
         """Merge multiple catalogs.

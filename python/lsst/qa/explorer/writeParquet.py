@@ -23,6 +23,7 @@ class WriteObjectTableTask(MergeSourcesTask):
     """Convert all source tables to parquet format
     """
     _DefaultName = "writeObjectTable"
+    ConfigClass = WriteObjectTableConfig
 
     inputDataset = 'forced_src'
     outputDataset = 'obj'

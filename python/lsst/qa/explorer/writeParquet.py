@@ -20,14 +20,40 @@ class WriteObjectTableConfig(MergeSourcesConfig):
                              doc="Priority-ordered list of bands for the merge.")    
 
 class WriteObjectTableTask(MergeSourcesTask):
-    """Convert all source tables to parquet format
+    """Write filter-merged source tables to parquet
     """
     _DefaultName = "writeObjectTable"
     ConfigClass = WriteObjectTableConfig
 
-    inputDataset = 'forced_src'
+    inputDatasets = ('forced_src', 'meas', 'ref')
     outputDataset = 'obj'
+
+    # Hack, since we're not using this...
     getSchemaCatalogs = lambda x : {}
+
+    def readCatalog(self, patchRef):
+        """Read input catalogs
+
+        Read all the input datasets provided by the 'inputDatasets'
+        class variable.
+
+        Parameters
+        ----------
+        patchRef : 
+            Data reference for patch
+
+        Returns
+        -------
+        Tuple consisting of filter name and a dict of catalogs, keyed by dataset
+        name
+        """
+        filterName = patchRef.dataId["filter"]
+        d = {}
+        for dataset in self.inputDatasets:
+            catalog = patchRef.get(self.config.coaddName + "Coadd_" + self.inputDataset, immediate=True)
+            self.log.info("Read %d sources from %s for filter %s: %s" % (len(catalog), dataset, filterName, patchRef.dataId))
+            d[dataset] = catalog
+        return filterName, d
 
     def mergeCatalogs(self, catalogs, patchRef):
         """Merge multiple catalogs.
@@ -35,7 +61,7 @@ class WriteObjectTableTask(MergeSourcesTask):
         Parameters
         ----------
         catalogs : dict
-            Mapping from filter names to catalogs.
+            Mapping from filter names to dict of catalogs.
 
         Returns
         -------
@@ -45,15 +71,17 @@ class WriteObjectTableTask(MergeSourcesTask):
         """
 
         dfs = []
-        for filt, table in catalogs.items():
+        for filt, tableDict in catalogs.items():
+            for dataset, table in tableDict.items():
+                # Convert afwTable to pandas DataFrame
+                df = table.asAstropy().to_pandas().set_index('id', drop=True)
 
-            # Convert afwTable to pandas DataFrame
-            df = table.asAstropy().to_pandas().set_index('id', drop=True)
-
-            # Add filter tag name to every column
-            tag = filter_tag(filt)
-            df = df.rename(columns={c : tag + '_' + c for c in df.columns})
-            dfs.append(df)
+                # Add filter tag name to every column
+                tag = filter_tag(filt) + '_' + dataset
+                df = df.rename(columns={c : tag + '_' + c for c in df.columns})
+                dfs.append(df)
 
         catalog = functools.reduce(lambda d1,d2 : d1.join(d2), dfs)
         return ParquetTable(catalog)
+
+class Write

@@ -45,7 +45,7 @@ class WriteObjectTableTask(MergeSourcesTask):
         self.inputDataset (which parent class does.)
         """
         parser = ArgumentParser(name=cls._DefaultName)
-        parser.add_id_argument("--id", cls.config.coaddName + "Coadd_" + cls.inputDatasets[0],
+        parser.add_id_argument("--id", "deepCoadd_" + cls.inputDatasets[0],
                                ContainerClass=ExistingCoaddDataIdContainer,
                                help="data ID, e.g. --id tract=12345 patch=1,2 filter=g^r^i")
         return parser

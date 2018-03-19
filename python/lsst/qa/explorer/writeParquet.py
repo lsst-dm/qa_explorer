@@ -5,6 +5,8 @@ from lsst.pipe.base import Task, CmdLineTask, ArgumentParser, TaskRunner, TaskEr
 from lsst.coadd.utils import TractDataIdContainer
 from lsst.pipe.tasks.multiBand import MergeSourcesTask, MergeSourcesConfig
 from lsst.pipe.tasks.multiBand import _makeGetSchemaCatalogs
+from lsst.coadd.utils.coaddDataIdContainer import ExistingCoaddDataIdContainer
+
 
 import functools
 import re
@@ -31,6 +33,12 @@ class WriteObjectTableTask(MergeSourcesTask):
     # Hack, since we're not using this...
     getSchemaCatalogs = lambda x : {}
 
+    @property
+    def inputDataset(self):
+        """For compatibility with superclass's _makeArgumentParser
+        """
+        return self.inputDatasets[0]
+
     def readCatalog(self, patchRef):
         """Read input catalogs
 
@@ -50,7 +58,7 @@ class WriteObjectTableTask(MergeSourcesTask):
         filterName = patchRef.dataId["filter"]
         d = {}
         for dataset in self.inputDatasets:
-            catalog = patchRef.get(self.config.coaddName + "Coadd_" + self.inputDataset, immediate=True)
+            catalog = patchRef.get(self.config.coaddName + "Coadd_" + dataset, immediate=True)
             self.log.info("Read %d sources from %s for filter %s: %s" % (len(catalog), dataset, filterName, patchRef.dataId))
             d[dataset] = catalog
         return filterName, d

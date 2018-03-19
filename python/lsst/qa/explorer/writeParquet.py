@@ -33,11 +33,23 @@ class WriteObjectTableTask(MergeSourcesTask):
     # Hack, since we're not using this...
     getSchemaCatalogs = lambda x : {}
 
-    @property
-    def inputDataset(self):
-        """For compatibility with superclass's _makeArgumentParser
+    @classmethod
+    def _makeArgumentParser(cls):
+        """Create a suitable ArgumentParser.
+
+        We will use the ArgumentParser to get a provide a list of data
+        references for patches; the RunnerClass will sort them into lists
+        of data references for the same patch. 
+
+        References first of self.inputDatasets, rather than
+        self.inputDataset (which parent class does.)
         """
-        return self.inputDatasets[0]
+        parser = ArgumentParser(name=cls._DefaultName)
+        parser.add_id_argument("--id", self.inputDatasets[0],
+                               ContainerClass=ExistingCoaddDataIdContainer,
+                               help="data ID, e.g. --id tract=12345 patch=1,2 filter=g^r^i")
+        return parser
+
 
     def readCatalog(self, patchRef):
         """Read input catalogs

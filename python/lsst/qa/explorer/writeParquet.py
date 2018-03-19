@@ -83,5 +83,3 @@ class WriteObjectTableTask(MergeSourcesTask):
 
         catalog = functools.reduce(lambda d1,d2 : d1.join(d2), dfs)
         return ParquetTable(catalog)
-
-class Write

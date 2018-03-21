@@ -21,7 +21,7 @@ def filter_tag(filt):
 class WriteObjectTableConfig(MergeSourcesConfig):
     priorityList = ListField(dtype=str, default=['HSC-G', 'HSC-R', 'HSC-I', 'HSC-Z', 'HSC-Y'],
                              doc="Priority-ordered list of bands for the merge.")    
-    engine = Field(dtype=str, default="fastparquet", doc="Parquet engine for writing.")
+    engine = Field(dtype=str, default="pyarrow", doc="Parquet engine for writing.")
     # Add a config for parquet engine
 
 class WriteObjectTableTask(MergeSourcesTask):

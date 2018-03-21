@@ -96,9 +96,9 @@ class WriteObjectTableTask(MergeSourcesTask):
                 # Convert afwTable to pandas DataFrame
                 df = table.asAstropy().to_pandas().set_index('id', drop=True)
 
-                # Add filter tag name to every column
-                tag = filter_tag(filt) + '_' + dataset
-                df = df.rename(columns={c : tag + '_' + c for c in df.columns})
+                # Make columns a 3-level MultiIndex
+                df.columns = pd.MultiIndex.from_tuples([(dataset, filt, c) for c in df.columns], 
+                                                       names=('dataset', 'filter', 'column'))
                 dfs.append(df)
 
         catalog = functools.reduce(lambda d1,d2 : d1.join(d2), dfs)

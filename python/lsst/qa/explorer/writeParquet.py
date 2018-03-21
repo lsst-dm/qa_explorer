@@ -10,6 +10,7 @@ from lsst.coadd.utils.coaddDataIdContainer import ExistingCoaddDataIdContainer
 
 import functools
 import re
+import pandas as pd
 
 from .table import ParquetTable
 

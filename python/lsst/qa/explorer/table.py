@@ -20,7 +20,7 @@ class ParquetTable(object):
         """Write dataframe to parquet (not FITS).
         """
         table = pa.Table.from_pandas(self.df)
-        pq.write_table(table, filename)
+        pq.write_table(table, filename, compression='none')
 
     @classmethod
     def readFits(cls, filename):

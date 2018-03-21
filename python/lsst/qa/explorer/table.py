@@ -1,6 +1,7 @@
 
 import pandas as pd
-import fastparquet
+import pyarrow as pa
+import pyarrow.parquet as pq
 from astropy.table import Table
 
 class ParquetTable(object):
@@ -18,10 +19,11 @@ class ParquetTable(object):
     def writeFits(self, filename):
         """Write dataframe to parquet (not FITS).
         """
-        fastparquet.write(filename, self.df)
+        table = pa.Table.from_pandas(self.df)
+        pq.write_table(table, filename)
 
     @classmethod
     def readFits(cls, filename):
         """Read parquet file (not FITS) into pandas DataFrame.
         """
-        return pd.read_parquet(filename)
+        return pd.read_parquet(filename, engine='pyarrow')

@@ -24,7 +24,7 @@ class ParquetTable(object):
         if self.engine=='pyarrow':
             table = pa.Table.from_pandas(self.df)
             pq.write_table(table, filename, compression='none')
-        elif self.engine=='fastparquet'
+        elif self.engine=='fastparquet':
             fastparquet.write(filename, self.df)
 
     @classmethod

@@ -99,8 +99,11 @@ class WriteObjectTableTask(MergeSourcesTask):
                 # Convert afwTable to pandas DataFrame
                 df = table.asAstropy().to_pandas().set_index('id', drop=True)
 
+                # Sort columns by name, to ensure matching schema
+                df = df.reindex_axis(sorted(df.columns), axis=1)
+                
                 # Make columns a 3-level MultiIndex
-                df.columns = pd.MultiIndex.from_tuples([(dataset, filt, c) for c in df.columns.sort_values()], 
+                df.columns = pd.MultiIndex.from_tuples([(dataset, filt, c) for c in df.columns], 
                                                        names=('dataset', 'filter', 'column'))
                 dfs.append(df)
 

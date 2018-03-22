@@ -26,7 +26,8 @@ class ParquetTable(object):
         elif self.engine=='fastparquet':
             fastparquet.write(filename, self.df)
 
-    def readFits(self, filename):
+    @classmethod
+    def readFits(cls, filename):
         """Read parquet file (not FITS) into pandas DataFrame.
         """
-        return pd.read_parquet(filename, engine=self.engine)
+        return pd.read_parquet(filename, engine='pyarrow')

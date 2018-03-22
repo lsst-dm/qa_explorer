@@ -15,13 +15,10 @@ import pandas as pd
 from .table import ParquetTable
 
 
-def filter_tag(filt):
-    return re.sub('[^a-zA-Z0-9_]+', '', filt).lower()
-
 class WriteObjectTableConfig(MergeSourcesConfig):
     priorityList = ListField(dtype=str, default=['HSC-G', 'HSC-R', 'HSC-I', 'HSC-Z', 'HSC-Y'],
                              doc="Priority-ordered list of bands for the merge.")    
-    engine = Field(dtype=str, default="pyarrow", doc="Parquet engine for writing.")
+    engine = Field(dtype=str, default="pyarrow", doc="Parquet engine for writing (pyarrow or fastparquet)")
     # Add a config for parquet engine
 
 class WriteObjectTableTask(MergeSourcesTask):
@@ -99,7 +96,7 @@ class WriteObjectTableTask(MergeSourcesTask):
                 # Convert afwTable to pandas DataFrame
                 df = table.asAstropy().to_pandas().set_index('id', drop=True)
 
-                # Sort columns by name, to ensure matching schema
+                # Sort columns by name, to ensure matching schema among patches
                 df = df.reindex(sorted(df.columns), axis=1)
 
                 # Make columns a 3-level MultiIndex

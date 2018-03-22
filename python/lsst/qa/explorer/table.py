@@ -13,7 +13,6 @@ class ParquetTable(object):
     df : pandas.DataFrame
 
     """
-    index_col = 'id'
     def __init__(self, df, engine='pyarrow'):
         self.df = df
         self.engine = engine
@@ -31,4 +30,4 @@ class ParquetTable(object):
     def readFits(cls, filename):
         """Read parquet file (not FITS) into pandas DataFrame.
         """
-        return pd.read_parquet(filename, engine='pyarrow')
+        return pd.read_parquet(filename, engine=self.engine)

@@ -100,7 +100,7 @@ class WriteObjectTableTask(MergeSourcesTask):
                 df = table.asAstropy().to_pandas().set_index('id', drop=True)
 
                 # Make columns a 3-level MultiIndex
-                df.columns = pd.MultiIndex.from_tuples([(dataset, filt, c) for c in df.columns], 
+                df.columns = pd.MultiIndex.from_tuples([(dataset, filt, c) for c in df.columns.sort_values()], 
                                                        names=('dataset', 'filter', 'column'))
                 dfs.append(df)
 

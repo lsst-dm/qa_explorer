@@ -17,17 +17,17 @@ class ParquetTable(object):
         self.df = df
         self.engine = engine
 
-    def writeParquet(self, filename):
-        """Write dataframe to parquet (not FITS).
-        """
-        if self.engine=='pyarrow':
-            table = pa.Table.from_pandas(self.df)
-            pq.write_table(table, filename, compression='none')
-        elif self.engine=='fastparquet':
-            fastparquet.write(filename, self.df)
+    # def writeParquet(self, filename):
+    #     """Write dataframe to parquet (not FITS).
+    #     """
+    #     if self.engine=='pyarrow':
+    #         table = pa.Table.from_pandas(self.df)
+    #         pq.write_table(table, filename, compression='none')
+    #     elif self.engine=='fastparquet':
+    #         fastparquet.write(filename, self.df)
 
-    @classmethod
-    def readParquet(cls, filename):
-        """Read parquet file (not FITS) into pandas DataFrame.
-        """
-        return pd.read_parquet(filename, engine='pyarrow')
+    # @classmethod
+    # def readParquet(cls, filename):
+    #     """Read parquet file (not FITS) into pandas DataFrame.
+    #     """
+    #     return pd.read_parquet(filename, engine='pyarrow')

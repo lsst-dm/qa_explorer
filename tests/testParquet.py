@@ -39,14 +39,14 @@ class ParquetTableTestCase(unittest.TestCase):
     def setUp(self):
         self.df = pq.read_table(os.path.join(ROOT, self.testFilename)).to_pandas()
         self.tempDir = tempfile.gettempdir()
-        filename = os.path.join(self.tempDir, self.testFilename)
-        ParquetTable.writeParquet(self.df, filename)
+        self.filename = os.path.join(self.tempDir, self.testFilename)
+        ParquetTable.writeParquet(self.df, self.filename)
         self.parq = ParquetTable(filename)
 
     def tearDown(self):
         del self.df
         del self.parq
-        shutil.rmtree(self.tempDir)
+        os.remove(self.filename)
 
     def testRoundTrip(self):    
         assert_frame_equal(self.parq.to_df(), self.df)
@@ -75,7 +75,8 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
         assert(len(self.parq.columns)==len(self.df.columns))
 
     def testColumns(self):
-
+        df = self.df
+        
         # Case A, each level has multiple values
         datasets_A = self.datasets
         filters_A = self.filters

@@ -19,6 +19,8 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from pandas.util.testing import assert_frame_equal
+
 import lsst.utils.tests
 import lsst.afw.geom as afwGeom
 

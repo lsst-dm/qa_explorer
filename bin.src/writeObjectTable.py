@@ -1,4 +1,4 @@
 #!/usr/bin/env python
-from lsst.qa.explorer.writeParquet import WriteObjectTableTask
+from lsst.qa.explorer.writeObjectTable import WriteObjectTableTask
 WriteObjectTableTask.parseAndRun()
 

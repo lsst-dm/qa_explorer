@@ -81,6 +81,7 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
 
     def testColumns(self):
         df = self.df
+        parq = self.parq
 
         # Case A, each level has multiple values
         datasets_A = self.datasets

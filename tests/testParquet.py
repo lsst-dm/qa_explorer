@@ -41,7 +41,7 @@ class ParquetTableTestCase(unittest.TestCase):
         self.tempDir = tempfile.gettempdir()
         self.filename = os.path.join(self.tempDir, self.testFilename)
         ParquetTable.writeParquet(self.df, self.filename)
-        self.parq = ParquetTable(filename)
+        self.parq = ParquetTable(self.filename)
 
     def tearDown(self):
         del self.df
@@ -76,7 +76,7 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
 
     def testColumns(self):
         df = self.df
-        
+
         # Case A, each level has multiple values
         datasets_A = self.datasets
         filters_A = self.filters

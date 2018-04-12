@@ -35,14 +35,17 @@ class ParquetTableTestCase(unittest.TestCase):
     """Test case for ParquetTable
     """
     testFilename = 'simple_test.parq'
-    testType = ParquetTable
+    testType = 'simple'
 
     def setUp(self):
         self.df = pq.read_table(os.path.join(ROOT, self.testFilename)).to_pandas()
         self.tempDir = tempfile.gettempdir()
         self.filename = os.path.join(self.tempDir, self.testFilename)
         ParquetTable.writeParquet(self.df, self.filename)
-        self.parq = self.testType(self.filename)
+        if self.testType=='simple':
+            self.parq = ParquetTable(self.filename)
+        elif self.testType=='multilevel':
+            self.parq = MultilevelParquetTable(self.filename)
 
     def tearDown(self):
         del self.df
@@ -63,7 +66,7 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
     """Test case for MultilevelParquetTable
     """
     testFilename = 'multilevel_test.parq'
-    testType = MultilevelParquetTable
+    testType = 'multilevel'
 
     def setUp(self):
         super(MultilevelParquetTableTestCase, self).setUp()

@@ -34,9 +34,10 @@ def setup_module(module):
 class ParquetTableTestCase(unittest.TestCase):
     """Test case for ParquetTable
     """
-    test_filename = 'simple_test.parq'
+    testFilename = 'simple_test.parq'
+
     def setUp(self):
-        self.df = pq.read_table(os.path.join(ROOT, testFilename)).to_pandas()
+        self.df = pq.read_table(os.path.join(ROOT, self.testFilename)).to_pandas()
         self.tempDir = tempfile.TemporaryDirectory()
         filename = os.path.join(self.tempDir, self.testFilename)
         self.parq = ParquetTable(filename)
@@ -59,6 +60,7 @@ class ParquetTableTestCase(unittest.TestCase):
 class MultilevelParquetTableTestCase(ParquetTableTestCase):
     """Test case for MultilevelParquetTable
     """
+    testFilename = 'multilevel_test.parq'
 
     def setUp(self):
         super(MultilevelParquetTableTestCase, self).setUp()

@@ -99,7 +99,7 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
         colTuples_B = [(self.datasets[0], self.filters[0], self.columns[0]), 
                        (self.datasets[0], self.filters[0], self.columns[1]), 
                        (self.datasets[0], self.filters[1], self.columns[0]), 
-                       (self.datasets[0], self.filters[1], self.columns[1]), 
+                       (self.datasets[0], self.filters[1], self.columns[1])]
         df_B = df[colTuples_B]
         df_B.columns = df_B.columns.droplevel('dataset')
         assert_frame_equal(parq.to_df(columns=columnDict_B), df_B) 

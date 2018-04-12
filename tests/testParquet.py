@@ -57,10 +57,10 @@ class ParquetTableTestCase(unittest.TestCase):
 
     def testColumns(self):
         columns = ['coord_ra', 'coord_dec']
-        assert_frame_equal(parq.to_df(columns=columns), 
-                           df[columns])
-        assert_frame_equal(parq.to_df(columns=columns+['hello']),
-                           df[columns])
+        assert_frame_equal(self.parq.to_df(columns=columns), 
+                           self.df[columns])
+        assert_frame_equal(self.parq.to_df(columns=columns+['hello']),
+                           self.df[columns])
 
 class MultilevelParquetTableTestCase(ParquetTableTestCase):
     """Test case for MultilevelParquetTable

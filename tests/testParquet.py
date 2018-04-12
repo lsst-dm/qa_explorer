@@ -57,6 +57,8 @@ class ParquetTableTestCase(unittest.TestCase):
         columns = ['coord_ra', 'coord_dec']
         assert_frame_equal(self.parq.to_df(columns=columns), 
                            self.df[columns])
+
+        # Quietly ignore nonsense columns
         assert_frame_equal(self.parq.to_df(columns=columns+['hello']),
                            self.df[columns])
 

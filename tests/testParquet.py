@@ -22,7 +22,6 @@ import pyarrow.parquet as pq
 from pandas.util.testing import assert_frame_equal
 
 import lsst.utils.tests
-import lsst.afw.geom as afwGeom
 
 from lsst.qa.explorer.parquetTable import ParquetTable, MultilevelParquetTable
 
@@ -35,22 +34,21 @@ class ParquetTableTestCase(unittest.TestCase):
     """Test case for ParquetTable
     """
     testFilename = 'simple_test.parq'
-    testType = 'simple'
 
     def setUp(self):
         self.df = pq.read_table(os.path.join(ROOT, self.testFilename)).to_pandas()
         self.tempDir = tempfile.gettempdir()
         self.filename = os.path.join(self.tempDir, self.testFilename)
         ParquetTable.writeParquet(self.df, self.filename)
-        if self.testType=='simple':
-            self.parq = ParquetTable(self.filename)
-        elif self.testType=='multilevel':
-            self.parq = MultilevelParquetTable(self.filename)
+        self.parq = self.initParq()
 
     def tearDown(self):
         del self.df
         del self.parq
         os.remove(self.filename)
+
+    def initParq(self):
+        return ParquetTable(self.filename)
 
     def testRoundTrip(self):    
         assert_frame_equal(self.parq.to_df(), self.df)
@@ -66,7 +64,6 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
     """Test case for MultilevelParquetTable
     """
     testFilename = 'multilevel_test.parq'
-    testType = 'multilevel'
 
     def setUp(self):
         super(MultilevelParquetTableTestCase, self).setUp()
@@ -74,6 +71,9 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
         self.datasets = ['meas', 'ref']
         self.filters = ['HSC-G', 'HSC-R']
         self.columns = ['coord_ra', 'coord_dec']
+
+    def initParq(self):
+        return MultilevelParquetTable(self.filename)
 
     def testProperties(self):
         assert(all([x==y for x,y in zip(self.parq.columnLevels, self.df.columns.names)]))

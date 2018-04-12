@@ -40,14 +40,14 @@ class ParquetTableTestCase(unittest.TestCase):
         self.tempDir = tempfile.gettempdir()
         self.filename = os.path.join(self.tempDir, self.testFilename)
         ParquetTable.writeParquet(self.df, self.filename)
-        self.parq = self.initParq()
+        self.parq = self.getParq()
 
     def tearDown(self):
         del self.df
         del self.parq
         os.remove(self.filename)
 
-    def initParq(self):
+    def getParq(self):
         return ParquetTable(self.filename)
 
     def testRoundTrip(self):    
@@ -72,7 +72,7 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
         self.filters = ['HSC-G', 'HSC-R']
         self.columns = ['coord_ra', 'coord_dec']
 
-    def initParq(self):
+    def getParq(self):
         return MultilevelParquetTable(self.filename)
 
     def testProperties(self):

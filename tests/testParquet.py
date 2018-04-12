@@ -61,7 +61,7 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
     """
 
     def setUp(self):
-        super(MultilevelParquetTableTestCase, self).__init__()
+        super(MultilevelParquetTableTestCase, self).setUp()
 
         self.datasets = ['meas', 'ref']
         self.filters = ['HSC-G', 'HSC-R']

@@ -38,7 +38,7 @@ class ParquetTableTestCase(unittest.TestCase):
 
     def setUp(self):
         self.df = pq.read_table(os.path.join(ROOT, self.testFilename)).to_pandas()
-        self.tempDir = tempfile.TemporaryDirectory()
+        self.tempDir = tempfile.gettempdir()
         filename = os.path.join(self.tempDir, self.testFilename)
         self.parq = ParquetTable(filename)
 

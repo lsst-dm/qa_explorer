@@ -12,7 +12,7 @@ import functools
 import re
 import pandas as pd
 
-from .table import ParquetTable
+from .parquetTable import ParquetTable
 
 
 class WriteObjectTableConfig(MergeSourcesConfig):

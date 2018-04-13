@@ -98,7 +98,7 @@ class ParquetTable(object):
             return self.pf.metadata.schema.names
     
     def _sanitizeColumns(self, columns):
-        return [c for c in columns in c in self.columnIndex]
+        return [c for c in columns if c in self.columnIndex]
 
     def to_df(self, columns=None):
         """Get table (or specified columns) as a pandas DataFrame

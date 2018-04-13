@@ -50,7 +50,7 @@ class ParquetTableTestCase(unittest.TestCase):
         os.remove(self.filename)
 
     def getParq(self):
-        return ParquetTable(self.filename), ParquetTable(self.df)
+        return ParquetTable(self.filename), ParquetTable(dataFrame=self.df)
 
     def testRoundTrip(self):    
         assert_frame_equal(self.parq.to_df(), self.df)
@@ -82,7 +82,7 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
         self.columns = ['coord_ra', 'coord_dec']
 
     def getParq(self):
-        return MultilevelParquetTable(self.filename), MultilevelParquetTable(self.df)
+        return MultilevelParquetTable(self.filename), MultilevelParquetTable(dataFrame=self.df)
 
     def testProperties(self):
         assert(all([x==y for x,y in zip(self.parq.columnLevels, self.df.columns.names)]))

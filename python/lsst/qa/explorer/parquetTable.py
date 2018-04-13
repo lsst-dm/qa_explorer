@@ -34,19 +34,21 @@ class ParquetTable(object):
         else:
             raise ValueError('Either filename or dataFrame must be passed.')
 
-    def df_only(self, func):
-        def decorated(*args, **kwargs):
+    class df_only(object):
+        def __init__(self, func):
+            self.func = func
+        def __call__(self, *args, **kwargs)
             if self.df is None:
-                raise ValueError('{0} requires df to be defined.'.format(func.__name__))
-            return func(*args, **kwargs)
-        return decorated
+                raise ValueError('{0} requires .df to be defined.'.format(self.func.__name__))
+            return self.func(*args, **kwargs)
 
-    def pf_only(self, func):
-        def decorated(*args, **kwargs):
+    class pf_only(object):
+        def __init__(self, func):
+            self.func = func
+        def __call__(self, *args, **kwargs)
             if self.pf is None:
-                raise ValueError('{0} requires pf to be defined.'.format(func.__name__))
-            return func(*args, **kwargs)
-        return decorated
+                raise ValueError('{0} requires .pf to be defined.'.format(self.func.__name__))
+            return self.func(*args, **kwargs)
 
     @property
     def df(self):

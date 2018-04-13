@@ -241,14 +241,17 @@ class MultilevelParquetTable(ParquetTable):
         if isinstance(columns, dict):
             columns = self._colsFromDict(columns)
                         
-        if self.df is not None:
-            df = self.df[columns]
-        else:
-            pfColumns = self._stringify(columns)
-            try:
+        pfColumns = self._stringify(columns)
+        try:
+            if self.df is not None:
+                df = self.df[columns]
+            else:
                 df = self.pf.read(columns=pfColumns, use_pandas_metadata=True).to_pandas()
-            except AttributeError:
-                columns = [c for c in columns in c in self.columnIndex]
+        except (AttributeError, KeyError):
+            columns = [c for c in columns in c in self.columnIndex]
+            if self.df is not None:
+                df = self.df[columns]
+            else:
                 pfColumns = self._stringify(columns)
                 df = self.pf.read(columns=pfColumns, use_pandas_metadata=True).to_pandas()
         

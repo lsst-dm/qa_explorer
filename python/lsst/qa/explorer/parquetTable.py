@@ -109,24 +109,17 @@ class ParquetTable(object):
             Desired columns.  If `None`, then all columns will be
             returned.  
         """
+        if self.pf is None:
+            raise ValueError('Only call this function if .pf is defined.')
+
         if columns is None:
-            if self.df is not None:
-                return self.df
-            else:
-                return self.pf.read().to_pandas()
+            return self.pf.read().to_pandas()
         
-        if self.pf is not None:
-            try:
-                df = self.pf.read(columns=columns, use_pandas_metadata=True).to_pandas()
-            except AttributeError:
-                columns = self._sanitizeColumns(columns)
-                df = self.pf.read(columns=columns, use_pandas_metadata=True).to_pandas()
-        else:
-            try:
-                df = self.df[columns]
-            except KeyError:
-                columns = self._sanitizeColumns(columns)
-                df = self.df[columns]                
+        try:
+            df = self.pf.read(columns=columns, use_pandas_metadata=True).to_pandas()
+        except AttributeError:
+            columns = self._sanitizeColumns(columns)
+            df = self.pf.read(columns=columns, use_pandas_metadata=True).to_pandas()
 
         return df
 
@@ -231,29 +224,22 @@ class MultilevelParquetTable(ParquetTable):
             must be passed; if any level is left out, then all entries
             in that level will be implicitly included.
         """
+        if self.pf is None:
+            raise ValueError('Only call this function if .pf is defined.')
 
         if columns is None:
-            if self.df is not None:
-                return self.df
-            else:
-                return self.pf.read().to_pandas()
+            return self.pf.read().to_pandas()
         
         if isinstance(columns, dict):
             columns = self._colsFromDict(columns)
                         
         pfColumns = self._stringify(columns)
         try:
-            if self.df is not None:
-                df = self.df[columns]
-            else:
-                df = self.pf.read(columns=pfColumns, use_pandas_metadata=True).to_pandas()
+            df = self.pf.read(columns=pfColumns, use_pandas_metadata=True).to_pandas()
         except (AttributeError, KeyError):
             columns = [c for c in columns in c in self.columnIndex]
-            if self.df is not None:
-                df = self.df[columns]
-            else:
-                pfColumns = self._stringify(columns)
-                df = self.pf.read(columns=pfColumns, use_pandas_metadata=True).to_pandas()
+            pfColumns = self._stringify(columns)
+            df = self.pf.read(columns=pfColumns, use_pandas_metadata=True).to_pandas()
         
         # Drop levels of column index that have just one entry
         levelsToDrop = [n for l,n in zip(df.columns.levels, df.columns.names) 

@@ -26,13 +26,14 @@ class ParquetTable(object):
             self._pf = pq.ParquetFile(filename)
             self._df = None
             self._pandas_md = None
-            self._columns = None
-            self._columnIndex = None  
         elif dataFrame is not None:
             self._df = dataFrame
             self._pf = None
         else:
             raise ValueError('Either filename or dataFrame must be passed.')
+
+        self._columns = None
+        self._columnIndex = None  
 
     @property
     def df(self):

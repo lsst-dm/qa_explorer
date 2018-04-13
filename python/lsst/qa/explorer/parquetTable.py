@@ -9,6 +9,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+
 class ParquetTable(object):
     """Thin wrapper to pyarrow's ParquetFile object
 

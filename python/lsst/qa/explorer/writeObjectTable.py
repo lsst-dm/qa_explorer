@@ -104,4 +104,4 @@ class WriteObjectTableTask(MergeSourcesTask):
                 dfs.append(df)
 
         catalog = functools.reduce(lambda d1,d2 : d1.join(d2), dfs)
-        return catalog
+        return ParquetTable(dataFrame=catalog)

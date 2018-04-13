@@ -95,7 +95,6 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
     def testColumns(self):
         df = self.df
         parq = self.parq
-        dfParq = self.dfParq
 
         # Case A, each level has multiple values
         datasets_A = self.datasets
@@ -114,7 +113,6 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
                        (self.datasets[1], self.filters[1], self.columns[1])]
         df_A = df[colTuples_A]
         assert_frame_equal(parq.to_df(columns=columnDict_A), df_A)    
-        assert_frame_equal(dfParq.to_df(columns=columnDict_A), df_A)    
 
         # Case B: One level has only a single value
         datasets_B = self.datasets[0]
@@ -131,8 +129,6 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
         df_B.columns = df_B.columns.droplevel('dataset')
         assert_frame_equal(parq.to_df(columns=columnDict_B), df_B) 
         assert_frame_equal(df_B, parq.to_df(columns=colTuples_B))
-        assert_frame_equal(dfParq.to_df(columns=columnDict_B), df_B) 
-        assert_frame_equal(df_B, dfParq.to_df(columns=colTuples_B))
         
         # Case C: Two levels have a single value; third is not provided
         datasets_C = self.datasets[0]
@@ -141,14 +137,12 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
                        'filter':filters_C}
         df_C = df[datasets_C][filters_C]
         assert_frame_equal(parq.to_df(columns=columnDict_C), df_C) 
-        assert_frame_equal(dfParq.to_df(columns=columnDict_C), df_C) 
 
         # Case D: Only one level (first level) is provided
         dataset_D = self.datasets[0]
         columnDict_D = {'dataset':dataset_D}
         df_D = df[dataset_D]
         assert_frame_equal(parq.to_df(columns=columnDict_D), df_D) 
-        assert_frame_equal(dfParq.to_df(columns=columnDict_D), df_D) 
 
         # Case E: Only one level (second level) is provided
         filters_E = self.filters[1]
@@ -156,6 +150,5 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
         # get second level of multi-index column using .xs()
         df_E = df.xs(filters_E, level=1, axis=1) 
         assert_frame_equal(parq.to_df(columns=columnDict_E), df_E) 
-        assert_frame_equal(dfParq.to_df(columns=columnDict_E), df_E) 
 
 

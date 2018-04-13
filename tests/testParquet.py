@@ -54,19 +54,14 @@ class ParquetTableTestCase(unittest.TestCase):
 
     def testRoundTrip(self):    
         assert_frame_equal(self.parq.to_df(), self.df)
-        assert_frame_equal(self.dfParq.to_df(), self.df)
 
     def testColumns(self):
         columns = ['coord_ra', 'coord_dec']
         assert_frame_equal(self.parq.to_df(columns=columns), 
                            self.df[columns])
-        assert_frame_equal(self.dfParq.to_df(columns=columns), 
-                           self.df[columns])
 
         # Quietly ignore nonsense columns
         assert_frame_equal(self.parq.to_df(columns=columns+['hello']),
-                           self.df[columns])
-        assert_frame_equal(self.dfParq.to_df(columns=columns+['hello']),
                            self.df[columns])
 
 class MultilevelParquetTableTestCase(ParquetTableTestCase):

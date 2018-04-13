@@ -34,22 +34,6 @@ class ParquetTable(object):
         else:
             raise ValueError('Either filename or dataFrame must be passed.')
 
-    class df_only(object):
-        def __init__(self, func):
-            self.func = func
-        def __call__(self, *args, **kwargs):
-            if self.df is None:
-                raise ValueError('{0} requires .df to be defined.'.format(self.func.__name__))
-            return self.func(*args, **kwargs)
-
-    class pf_only(object):
-        def __init__(self, func):
-            self.func = func
-        def __call__(self, *args, **kwargs):
-            if self.pf is None:
-                raise ValueError('{0} requires .pf to be defined.'.format(self.func.__name__))
-            return self.func(*args, **kwargs)
-
     @property
     def df(self):
         return self._df
@@ -58,7 +42,6 @@ class ParquetTable(object):
     def pf(self):
         return self._pf
 
-    @ParquetTable.df_only
     def write(self, filename):
         """Write pandas dataframe to parquet
 
@@ -70,14 +53,17 @@ class ParquetTable(object):
         filename : str
             Path to which to write.
         """
+        if self.df is None:
+            raise ValueError('df property must be defined to write.')
         table = pa.Table.from_pandas(self.df)
         pq.write_table(table, filename, compression='none')
 
-    @ParquetTable.pf_only
     @property
     def pandas_md(self):
         """Pandas metadata as a dictionary.
         """
+        if self.pf is None:
+            raise ValueError('pf property must be defined to access this attribute.')
         if self._pandas_md is None:
             self._pandas_md = json.loads(self.pf.metadata.metadata[b'pandas'])
         return self._pandas_md

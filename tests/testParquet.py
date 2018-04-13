@@ -41,7 +41,7 @@ class ParquetTableTestCase(unittest.TestCase):
         self.filename = os.path.join(self.tempDir, self.testFilename)
 
         table = pa.Table.from_pandas(self.df)
-        pq.write_table(table, filename, compression='none')
+        pq.write_table(table, self.filename, compression='none')
         self.parq = self.getParq()
 
     def tearDown(self):

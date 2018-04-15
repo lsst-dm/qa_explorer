@@ -17,7 +17,7 @@ import functools
 import re
 import pandas as pd
 
-from .table import ParquetTable
+from .parquetTable import ParquetTable
 
 
 class WriteObjectTableConfig(MergeSourcesConfig):
@@ -122,4 +122,4 @@ class WriteObjectTableTask(MergeSourcesTask):
                 dfs.append(df)
 
         catalog = functools.reduce(lambda d1,d2 : d1.join(d2), dfs)
-        return ParquetTable(catalog, engine=self.config.engine)
+        return ParquetTable(dataFrame=catalog)

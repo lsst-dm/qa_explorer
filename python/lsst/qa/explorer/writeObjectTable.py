@@ -37,7 +37,7 @@ class WriteObjectTableTask(MergeSourcesTask):
     # Tag of output dataset written by `MergeSourcesTask.write`
     outputDataset = 'obj'
 
-    def getSchemaCatalogs(self, x):
+    def getSchemaCatalogs(self, *args, **kwargs):
         """Not using this function, but it must return a dictionary.
         """
         return {}

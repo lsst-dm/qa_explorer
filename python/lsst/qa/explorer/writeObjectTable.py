@@ -31,19 +31,11 @@ class WriteObjectTableTask(MergeSourcesTask):
     _DefaultName = "writeObjectTable"
     ConfigClass = WriteObjectTableConfig
 
-    @property
-    def outputDataset(self):
-        """Tag to define dataset written by `MergeSourcesTask.write`
+    # Names of table datasets to be merged
+    inputDatasets = ('forced_src', 'meas', 'ref')
 
-        That is: `self.config.coaddName + "Coadd_" + self.outputDataset`
-        """
-        return 'obj'
-
-    @property
-    def inputDatasets(self):
-        """Names of table datasets to be merged
-        """
-        return ('forced_src', 'meas', 'ref')
+    # Tag of output dataset written by `MergeSourcesTask.write`
+    outputDataset = 'obj'
 
     def getSchemaCatalogs(self, x):
         """Not using this function, but it must return a dictionary.

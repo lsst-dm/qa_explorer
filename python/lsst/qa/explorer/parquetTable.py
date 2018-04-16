@@ -245,7 +245,9 @@ class MultilevelParquetTable(ParquetTable):
         # Drop levels of column index that have just one entry
         levelsToDrop = [n for l,n in zip(df.columns.levels, df.columns.names) 
                         if len(l)==1]
-        df.columns = df.columns.droplevel(levelsToDrop)
+        if levelsToDrop:
+            df.columns = df.columns.droplevel(levelsToDrop)
+
         return df
         
     def _colsFromDict(self, colDict):

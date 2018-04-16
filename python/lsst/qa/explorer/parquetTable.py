@@ -246,6 +246,7 @@ class MultilevelParquetTable(ParquetTable):
         levelsToDrop = [n for l,n in zip(df.columns.levels, df.columns.names) 
                         if len(l)==1]
         if len(levelsToDrop) > 0:
+            print(levelsToDrop)
             df.columns = df.columns.droplevel(levelsToDrop)
 
         return df

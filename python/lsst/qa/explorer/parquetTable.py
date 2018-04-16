@@ -235,16 +235,13 @@ class MultilevelParquetTable(ParquetTable):
             columns = self._colsFromDict(columns)
                         
         pfColumns = self._stringify(columns)
+        print('requesting {} columns...'.format(len(pfColumns)))
         try:
             df = self.pf.read(columns=pfColumns, use_pandas_metadata=True).to_pandas()
         except (AttributeError, KeyError):
             columns = [c for c in columns if c in self.columnIndex]
             pfColumns = self._stringify(columns)
-            try:
-                df = self.pf.read(columns=pfColumns, use_pandas_metadata=True).to_pandas()
-            except AttributeError:
-                # pyarrow still throws error
-                raise ValueError('Error getting columns: {}'.format(pfColumns))
+            df = self.pf.read(columns=pfColumns, use_pandas_metadata=True).to_pandas()
 
         # Drop levels of column index that have just one entry
         levelsToDrop = [n for l,n in zip(df.columns.levels, df.columns.names) 

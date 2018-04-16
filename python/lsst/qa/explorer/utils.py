@@ -5,10 +5,10 @@ Utility functions
 import sqlite3
 import os, glob, re
 
-try:
-    from lsst.pipe.analysis.utils import Filenamer
-except ImportError:
-    logging.warning('Pipe analysis not available.')
+# try:
+#     from lsst.pipe.analysis.utils import Filenamer
+# except ImportError:
+#     logging.warning('Pipe analysis not available.')
 
 
 def get_visits_sql(field, tract, filt, sqlitedir='/scratch/hchiang2/parejko/'):

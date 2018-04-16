@@ -238,7 +238,7 @@ class MultilevelParquetTable(ParquetTable):
         try:
             df = self.pf.read(columns=pfColumns, use_pandas_metadata=True).to_pandas()
         except (AttributeError, KeyError):
-            columns = [c for c in columns in c in self.columnIndex]
+            columns = [c for c in columns if c in self.columnIndex]
             pfColumns = self._stringify(columns)
             df = self.pf.read(columns=pfColumns, use_pandas_metadata=True).to_pandas()
         

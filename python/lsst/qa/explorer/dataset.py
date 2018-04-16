@@ -7,6 +7,7 @@ import tempfile
 import os, shutil
 import fastparquet
 import dask.dataframe as dd
+import logging
 
 from holoviews.operation.datashader import dynspread, datashade
 

@@ -17,10 +17,10 @@ from .match import match_lists
 from .functors import Labeller, CompositeFunctor, RAColumn, DecColumn
 from .utils import result
 
-try:
-    from lsst.pipe.analysis.utils import Filenamer
-except ImportError:
-    logging.warning('Pipe analysis not available.  ButlerCatalog will not work.')
+# try:
+#     from lsst.pipe.analysis.utils import Filenamer
+# except ImportError:
+#     logging.warning('Pipe analysis not available.  ButlerCatalog will not work.')
 
 class Catalog(object):
     """Base class for columnwise interface to afwTable

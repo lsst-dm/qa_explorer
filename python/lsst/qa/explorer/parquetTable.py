@@ -5,6 +5,7 @@ import re
 import json
 from itertools import product
 
+import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq

@@ -182,8 +182,8 @@ class MultilevelParquetTable(ParquetTable):
     @property
     def columnLevelNames(self):
         if self._columnLevelNames is None:
-            self._columnLevelNames = [list(np.unique(np.array(self.columns)[:,i])) 
-                                        for i in range(len(self.columnLevels))]
+            self._columnLevelNames = {level : list(np.unique(np.array(self.columns)[:,i])) 
+                                      for i,level in enumerate(self.columnLevels)}
 
     @property
     def columnLevels(self):

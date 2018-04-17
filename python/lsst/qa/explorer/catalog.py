@@ -64,7 +64,7 @@ class Catalog(object):
 
     def get_columns(self, columns, **kwargs):
         """Returns dataframe of desired columns
-
+`
         Parameters
         ----------
         columns : list
@@ -953,3 +953,37 @@ class ColorCatalog(ButlerCatalog):
     _dataset_name = 'qaTableColor'
     _default_description = 'forced'
 
+class MultilevelParquetCatalog(Catalog):
+    def __init__(self, parq, name=None, dataset=None, filt=None):
+        self.subcat = {}
+        if dataset is not None:
+            self.subcat['dataset'] = dataset
+        if filt is not None:
+            self.subcat['filter'] = filt
+        
+        self.parq = parq
+        self._name = name
+        self._initialize()
+        
+    def _get_coords(self):
+        df = self.get_columns(['coord_ra', 'coord_dec'])
+        df = df.iloc[:, [0,1]]
+        
+        if isinstance(df.columns, pd.MultiIndex):
+            levelsToDrop = ['dataset', 'filter']
+            for level in self.subcat:
+                levelsToDrop.remove(level)
+            df.columns = df.columns.droplevel(levelsToDrop)
+        
+        self._coords = (df*180 / np.pi).rename(columns={'coord_ra':'ra',
+                                                        'coord_dec':'dec'})
+        
+    @property
+    def columns(self):
+        return self.parq.columns
+    
+    def get_columns(self, columns, **kwargs):
+        columnDict = self.subcat.copy()
+        columnDict.update(kwargs)
+        columnDict['column'] = columns
+        return self.parq.to_df(columns=columnDict)

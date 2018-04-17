@@ -24,7 +24,7 @@ from .functors import CompositeFunctor
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
 class WriteQATableConfig(Config):
-    pass
+    coaddName = Field(dtype=str, default="deep", doc="Name of coadd")
 
 class WriteQATableTask(CmdLineTask):
     """Write filter-merged source tables to parquet

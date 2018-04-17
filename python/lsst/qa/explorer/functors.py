@@ -38,9 +38,6 @@ class Functor(object):
 
     Parameters
     ----------
-    allow_difference : bool
-        Defines whether to allow operations like subtraction of this calculation
-        performed on two different catalogs (e.g., should be False for labels)
     """
     _default_dataset = 'forced_src'
     
@@ -219,7 +216,7 @@ class CoordColumn(Column):
 
     def __init__(self, col, calculate=False, **kwargs):
         self.calculate = calculate
-        super(CoordColumn, self).__init__(col, allow_difference=calculate, **kwargs)
+        super(CoordColumn, self).__init__(col, **kwargs)
 
     def _func(self, df):
         res = df[self.col]
@@ -344,6 +341,7 @@ class DeconvolvedMoments(Functor):
                 # "ext_shapeHSM_HsmSourceMoments",
                 "ext_shapeHSM_HsmPsfMoments_xx",
                 "ext_shapeHSM_HsmPsfMoments_yy")
+    _default_dataset = 'ref'
 
     def _func(self, df):
         """Calculate deconvolved moments"""
@@ -377,6 +375,7 @@ class PsfSdssTraceSizeDiff(Functor):
     name = "PSF - SDSS Trace Size"
     _columns = ("base_SdssShape_xx", "base_SdssShape_yy",
                 "base_SdssShape_psf_xx", "base_SdssShape_psf_yy")
+    _default_dataset = 'ref'
 
     def _func(self, df):
         srcSize = da.sqrt(0.5*(df["base_SdssShape_xx"] + df["base_SdssShape_yy"]))
@@ -390,6 +389,8 @@ class HsmTraceSize(Functor):
     name = 'HSM Trace Size'
     _columns = ("ext_shapeHSM_HsmSourceMoments_xx",
                 "ext_shapeHSM_HsmSourceMoments_yy")
+    _default_dataset = 'ref'
+
     def _func(self, df):
         srcSize = da.sqrt(0.5*(df["ext_shapeHSM_HsmSourceMoments_xx"] +
                                df["ext_shapeHSM_HsmSourceMoments_yy"]))
@@ -403,6 +404,7 @@ class PsfHsmTraceSizeDiff(Functor):
                 "ext_shapeHSM_HsmSourceMoments_yy",
                 "ext_shapeHSM_HsmPsfMoments_xx",
                 "ext_shapeHSM_HsmPsfMoments_yy")
+    _default_dataset = 'ref'
 
     def _func(self, df):
         srcSize = da.sqrt(0.5*(df["ext_shapeHSM_HsmSourceMoments_xx"] +
@@ -415,7 +417,7 @@ class PsfHsmTraceSizeDiff(Functor):
 class Seeing(Functor):
     name = 'seeing'
     _columns = ('ext_shapeHSM_HsmPsfMoments_xx', 'ext_shapeHSM_HsmPsfMoments_yy')
-    _default_dataset = 'meas'
+    _default_dataset = 'ref'
 
     def _func(self, df):
         return 0.168*2.35*da.sqrt(0.5*(df['ext_shapeHSM_HsmPsfMoments_xx']**2 +

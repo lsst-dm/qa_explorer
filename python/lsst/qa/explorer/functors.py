@@ -10,8 +10,9 @@ import dask.array as da
 import dask
 import time
 import inspect
+import yaml
 
-from .utils import result
+from .utils import result, init_fromDict
 
 class Functor(object):
     """Base class for computations performed on catalogs
@@ -67,6 +68,7 @@ class Functor(object):
         if self.dataset is not None:
             if 'dataset' not in kwargs:
                 kwargs['dataset'] = self.dataset
+
         return catalog.get_columns(columns=self.columns, **kwargs)
         
     def __call__(self, catalog, **kwargs):
@@ -106,6 +108,25 @@ class CompositeFunctor(Functor):
 
     def __getitem__(self, item):
         return self.funcDict[item]
+
+    @classmethod
+    def from_yaml(cls, filename):
+        conf = yaml.load(open(filename).read())
+        funcs = {}
+        funcs['x'] = init_fromDict(conf['x'])
+        funcs['label'] = init_fromDict(conf['label'])
+        for func,val in conf['funcs'].items():
+            funcs[func] = init_fromDict(val)
+        
+        for dataset,flags in conf['flags'].items():
+            if flags is None:
+                continue
+            if isinstance(flags, str):
+                flags = [flags]
+            for flag in flags:
+                funcs[flag] = Column(flag, dataset=dataset)
+
+        return cls(funcs)
 
 class TestFunctor(Functor):
     name = 'test'

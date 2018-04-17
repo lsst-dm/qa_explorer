@@ -34,7 +34,7 @@ class ParquetTable(object):
             raise ValueError('Either filename or dataFrame must be passed.')
 
         self._columns = None
-        self._columnIndex = None  
+        self._columnIndex = None
 
     @property
     def df(self):
@@ -173,6 +173,18 @@ class MultilevelParquetTable(ParquetTable):
         Path to Parquet file.
 
     """
+
+    def __init__(self, *args, **kwargs):
+        super(MultilevelParquetTable, self).__init__(*args, **kwargs)
+
+        self._columnLevelNames = None
+
+    @property
+    def columnLevelNames(self):
+        if self._columnLevelNames is None:
+            self._columnLevelNames = [list(np.unique(np.array(self.columns)[:,i])) 
+                                        for i in range(len(self.columnLevels))]
+
     @property
     def columnLevels(self):
         """Names of levels in column index

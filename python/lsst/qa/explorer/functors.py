@@ -10,6 +10,7 @@ import dask.array as da
 import dask
 import time
 import inspect
+import yaml
 
 from .utils import result, init_fromDict
 

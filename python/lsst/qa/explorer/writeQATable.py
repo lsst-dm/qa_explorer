@@ -55,7 +55,7 @@ class WriteQATableTask(CmdLineTask):
 
     def run(self, dataRef):
         parq = dataRef.get()
-        funcs = CompositeFunctor(os.path.join(ROOT, 'functors.yaml'))
+        funcs = CompositeFunctor.from_yaml(os.path.join(ROOT, 'functors.yaml'))
         dfDict = {}
         for filt in parq.columnLevelNames['filter']:
             catalog = MultilevelParquetCatalog(parq, filt=filt)

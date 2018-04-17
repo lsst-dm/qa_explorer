@@ -4,11 +4,26 @@ Utility functions
 
 import sqlite3
 import os, glob, re
+from lsst.daf.persistence import doImport
 
 # try:
 #     from lsst.pipe.analysis.utils import Filenamer
 # except ImportError:
 #     logging.warning('Pipe analysis not available.')
+
+
+def init_fromDict(initDict, basePath='lsst.qa.explorer.functors',
+                 typeKey='functor'):
+    pythonType = doImport('{0}.{1}'.format(basePath, initDict[typeKey]))
+    args = []
+    if 'args' in initDict:
+        args = initDict['args']
+        if isinstance(args, str):
+            args = [args]
+    kwargs = {}
+    if 'kwargs' in initDict:
+        kwargs.update(initDict['kwargs'])
+    return pythonType(*args, **kwargs)
 
 
 def get_visits_sql(field, tract, filt, sqlitedir='/scratch/hchiang2/parejko/'):

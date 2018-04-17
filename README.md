@@ -8,9 +8,10 @@ Set up the shared stack on `lsst-dev`:
 ```
 $ source /ssd/lsstsw/stack3/loadLSST.bash
 ```
-Do a local user-install of the current master of [parambokeh](https://ioam.github.io/parambokeh/) (this will hopefully soon become unnecessary):
+Do a local user-install of the current master of [parambokeh](https://ioam.github.io/parambokeh/) as well as pyarrow (these will hopefully soon become unnecessary):
 ```
 $ pip install git+ssh://git@github.com/ioam/parambokeh.git --user
+$ pip install pyarrow --user
 ```
 Clone and setup this package, as well as [pipe_analysis](https://github.com/lsst-dm/pipe_analysis) and [display_ginga](https://github.com/lsst/display_ginga), and enable the jupyter extensions display_ginga requires:
 ```

@@ -26,6 +26,7 @@ import re
 import json
 from itertools import product
 
+import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -192,6 +193,19 @@ class MultilevelParquetTable(ParquetTable):
         Path to Parquet file.
 
     """
+
+    def __init__(self, *args, **kwargs):
+        super(MultilevelParquetTable, self).__init__(*args, **kwargs)
+
+        self._columnLevelNames = None
+
+    @property
+    def columnLevelNames(self):
+        if self._columnLevelNames is None:
+            self._columnLevelNames = {level : list(np.unique(np.array(self.columns)[:,i]))
+                                      for i,level in enumerate(self.columnLevels)}
+        return self._columnLevelNames
+
     @property
     def columnLevels(self):
         """Names of levels in column index

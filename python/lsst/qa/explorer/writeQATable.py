@@ -67,4 +67,8 @@ class WriteQATableTask(CmdLineTask):
         dataRef.put(ParquetTable(dataFrame=df), self.outputDataset)
 
 
-
+    def writeMetadata(self, dataRefList):
+        """!
+        \brief No metadata to write, and not sure how to write it for a list of dataRefs.
+        """
+        pass

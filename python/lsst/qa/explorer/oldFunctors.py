@@ -42,18 +42,15 @@ class Functor(object):
         Defines whether to allow operations like subtraction of this calculation
         performed on two different catalogs (e.g., should be False for labels)
     """
-    _default_dataset = 'forced_src'
-    
-    def __init__(self, dataset=None):
-        self._dataset = dataset
-        
-    @property
-    def dataset(self):
-        if self._dataset is not None:
-            return self._dataset
+    _allow_difference = True
+
+
+    def __init__(self, allow_difference=None):
+        if allow_difference is not None:
+            self.allow_difference = allow_difference
         else:
-            return self._default_dataset
-    
+            self.allow_difference = self._allow_difference
+
     @property
     def columns(self):
         """Columns required to perform calculation
@@ -62,22 +59,80 @@ class Functor(object):
             return self._columns
         except AttributeError:
             raise NotImplementedError('Must define columns property or _columns attribute')
-    
+
     def _func(self, df, dropna=True):
         raise NotImplementedError('Must define calculation on dataframe')
 
-    def _get_cols(self, catalog, **kwargs):
-        if self.dataset is not None:
-            if 'dataset' not in kwargs:
-                kwargs['dataset'] = self.dataset
-        return catalog.get_columns(columns=self.columns, **kwargs)
+    def __call__(self, catalog, client=None, query=None, dropna=True, dask=False, 
+                flags=None, **kwargs):
+
+        if isinstance(catalog, dd.DataFrame):
+            vals = self._func(catalog)
+        else:
+            vals = catalog._apply_func(self, query=query, client=client, **kwargs)
+
+        # dropna=True can be buggy; e.g. for boolean or string types perhaps?
+        if dropna:
+            try:
+                if client is not None:
+                    vals = client.compute(vals[da.isfinite(vals)])
+                else:
+                    vals = vals[da.isfinite(vals)]
+            except (TypeError, ValueError):
+                if client is not None:
+                    vals = client.compute(vals.dropna())
+                else:
+                    vals = vals.dropna()
+
+            # try:
+            #     if catalog.client:
+            #         vals = catalog.client.compute(vals[da.isfinite(vals)]).result()
+            #     else:
+            #         vals = vals[da.isfinite(vals)]
+            # except TypeError:
+            #     if catalog.client:
+            #         vals = catalog.client.compute(vals[da.notnull(vals)]).result()
+            #     else:
+            #         vals = vals[da.notnull(vals)]
+            # except AttributeError:
+            #     vals = vals[da.notnull(vals)]
+
+        if dask:
+            return vals
+        else:
+            return result(vals)
+
+    def test(self, catalog, dropna=True, dask=False):
+        """Time how long the calculation takes on a catalog.
+        """
+        start = time.time()
+        res = self(catalog, dropna=dropna, dask=dask)
+        n = len(result(res))
+        end = time.time()
         
-    def __call__(self, catalog, **kwargs):
-        df = self._get_cols(catalog, **kwargs)
-        vals = self._func(df)
-        return vals
+        runtime = end - start
+        print('Test results for {}:'.format(self.name))
+        print('  Took {:.2f}s, length={}.  Type={}'.format(runtime, n, type(res)))    
+        return runtime
 
+class ParquetReadWorker(object):
+    def __init__(self, cols):
+        self.cols = cols
 
+    def __call__(self, filename):
+        pfile = fastparquet.ParquetFile(filename)
+        return pfile.to_pandas(columns=self.cols)
+
+class func_worker(object):
+    def __init__(self, catalog):
+        self.catalog = catalog
+
+    def __call__(self, func):
+        return func(self.catalog)
+
+# def get_cols(catalog, composite_functor):
+#     worker = func_worker(catalog)
+#     return catalog.client.map(worker, composite_functor.funcDict.values())
 
 class CompositeFunctor(Functor):
     """Perform multiple calculations at once on a catalog
@@ -92,7 +147,17 @@ class CompositeFunctor(Functor):
     funcDict : dict
         Dictionary of functors.  
 
+    dask : bool (default False)
+        Whether to return result as a dask DataFrame.  Not much used (or tested)
+
+    do_map : bool
+        If `client` is provided, whether to map with the client over the multiple 
+        functors.  
+
+    client : distributed.Client
+        If provided, then computation will map over functors if `do_map` is True.
     """
+    force_ndarray = False
 
     def __init__(self, funcDict, **kwargs):
         self.funcDict = funcDict
@@ -100,12 +165,22 @@ class CompositeFunctor(Functor):
 
     @property 
     def columns(self):
-        return list(set([x for y in [f.columns for f in self.funcDict.values()] for x in y]))
-    
-    def __call__(self, catalog, **kwargs):
-        df = pd.concat({k : f(catalog, **kwargs) 
-                        for k,f in self.funcDict.items()}, axis=1)
-        return df
+        return [x for y in [f.columns for f in self.funcDict.values()] for x in y]
+
+    def __call__(self, catalog, dask=False, do_map=False, client=None, **kwargs):
+        if client is not None and do_map:
+            worker = func_worker(catalog)
+            cols = client.map(worker, self.funcDict.values())
+            # cols = get_cols(catalog, self)
+            df = pd.concat({k:result(c) for k,c in zip(self.funcDict.keys(), cols)}, axis=1)
+        else:
+            df = pd.concat({k : f(catalog, dask=dask, client=client, **kwargs) 
+                            for k,f in self.funcDict.items()}, axis=1)
+
+        if dask:
+            return dd.from_pandas(df, chunksize=1000000)
+        else:
+            return df
 
     def __getitem__(self, item):
         return self.funcDict[item]
@@ -415,7 +490,6 @@ class PsfHsmTraceSizeDiff(Functor):
 class Seeing(Functor):
     name = 'seeing'
     _columns = ('ext_shapeHSM_HsmPsfMoments_xx', 'ext_shapeHSM_HsmPsfMoments_yy')
-    _default_dataset = 'meas'
 
     def _func(self, df):
         return 0.168*2.35*da.sqrt(0.5*(df['ext_shapeHSM_HsmPsfMoments_xx']**2 +

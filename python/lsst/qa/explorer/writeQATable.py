@@ -64,11 +64,12 @@ class WriteQATableTask(CmdLineTask):
         dfDict = {}
         for filt in parq.columnLevelNames['filter']:
             catalog = MultilevelParquetCatalog(parq, filt=filt)
-            dfDict[filt] = funcs(catalog)
+            df = funcs(catalog)
+            df['patchId'] = dataRef.dataId['patch']
+            dfDict[filt] = df
 
         # This makes a multilevel column index, with filter as first level
         df = pd.concat(dfDict, axis=1)
-
         dataRef.put(ParquetTable(dataFrame=df), self.outputDataset)
 
 

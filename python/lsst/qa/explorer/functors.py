@@ -42,7 +42,7 @@ class Functor(object):
     """
     _default_dataset = 'forced_src'
     
-    def __init__(self, dataset=None):
+    def __init__(self, dataset=None, **kwargs):
         self._dataset = dataset
         
     @property

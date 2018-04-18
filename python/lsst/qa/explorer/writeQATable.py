@@ -69,7 +69,7 @@ class WriteQATableTask(CmdLineTask):
             dfDict[filt] = df
 
         # This makes a multilevel column index, with filter as first level
-        df = pd.concat(dfDict, axis=1)
+        df = pd.concat(dfDict, axis=1, names=['filter', 'column'])
         dataRef.put(ParquetTable(dataFrame=df), self.outputDataset)
 
 

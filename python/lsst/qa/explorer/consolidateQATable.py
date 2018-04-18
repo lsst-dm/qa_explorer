@@ -43,7 +43,7 @@ class ConsolidateQATableTask(CmdLineTask):
 
         parser.add_id_argument("--id", cls.inputDataset,
                                help="data ID, e.g. --id tract=12345",
-                               ContainerClass=TractDataIdContainer)
+                               ContainerClass=TractQADataIdContainer)
         return parser
 
     def run(self, patchRefList):

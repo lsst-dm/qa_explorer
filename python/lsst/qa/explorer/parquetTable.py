@@ -70,6 +70,11 @@ class ParquetTable(object):
     @property
     def columns(self):
         """List of column names (or column index if df is set)
+
+        This may either be a list of column names, or a
+        pandas.Index object describing the column index, depending
+        on whether the ParquetTable object is wrapping a ParquetFile
+        or a DataFrame.
         """
         if self._columns is None:
             self._columns = self._get_columns()

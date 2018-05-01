@@ -172,14 +172,14 @@ class MultilevelParquetTable(ParquetTable):
         
     def _get_columnIndex(self):
         if self._df is not None:
-            return super(MultilevelParquetTable, self)._get_columnIndex()
+            return super()._get_columnIndex()
         else:
             levelNames = [f['name'] for f in self._pandas_md['column_indexes']]
             return pd.MultiIndex.from_tuples(self.columns, names=levelNames)
         
     def _get_columns(self):
         if self._df is not None:
-            return super(MultilevelParquetTable, self)._get_columns()
+            return super()._get_columns()
         else:
             columns = self._pf.metadata.schema.names
             pattern = "'(.*)', '(.*)', '(.*)'"

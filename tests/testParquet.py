@@ -175,4 +175,6 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
         df_E = df.xs(filters_E, level=1, axis=1) 
         assert_frame_equal(parq.toDataFrame(columns=columnDict_E), df_E) 
 
-
+if __name__ == "__main__":
+    lsst.utils.tests.init()
+    unittest.main()

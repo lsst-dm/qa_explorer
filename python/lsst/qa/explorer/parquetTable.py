@@ -34,7 +34,7 @@ import pyarrow.parquet as pq
 class ParquetTable(object):
     """Thin wrapper to pyarrow's ParquetFile object
 
-    Call `to_df` method to get a `pandas.DataFrame` object,
+    Call `toDataFrame` method to get a `pandas.DataFrame` object,
     optionally passing specific columns.
 
     Parameters
@@ -47,7 +47,7 @@ class ParquetTable(object):
         if filename is not None:
             self._pf = pq.ParquetFile(filename)
             self._df = None
-            self._pandas_md = None
+            self._pandasMd = None
         elif dataFrame is not None:
             self._df = dataFrame
             self._pf = None
@@ -74,22 +74,22 @@ class ParquetTable(object):
         pq.write_table(table, filename, compression='none')
 
     @property
-    def pandas_md(self):
+    def pandasMd(self):
         if self._pf is None:
             raise AttributeError("This property is only accessible if ._pf is set.")
-        if self._pandas_md is None:
-            self._pandas_md = json.loads(self._pf.metadata.metadata[b'pandas'])
-        return self._pandas_md
+        if self._pandasMd is None:
+            self._pandasMd = json.loads(self._pf.metadata.metadata[b'pandas'])
+        return self._pandasMd
 
     @property
     def columnIndex(self):
         """Columns as a pandas Index
         """
         if self._columnIndex is None:
-            self._columnIndex = self._get_columnIndex()
+            self._columnIndex = self._getColumnIndex()
         return self._columnIndex
     
-    def _get_columnIndex(self):
+    def _getColumnIndex(self):
         if self._df is not None:
             return self._df.columns
         else:
@@ -105,10 +105,10 @@ class ParquetTable(object):
         or a DataFrame.
         """
         if self._columns is None:
-            self._columns = self._get_columns()
+            self._columns = self._getColumns()
         return self._columns
     
-    def _get_columns(self):
+    def _getColumns(self):
         if self._df is not None:
             return self._df.columns
         else:
@@ -117,7 +117,7 @@ class ParquetTable(object):
     def _sanitizeColumns(self, columns):
         return [c for c in columns if c in self.columnIndex]
 
-    def to_df(self, columns=None):
+    def toDataFrame(self, columns=None):
         """Get table (or specified columns) as a pandas DataFrame
 
         Parameters
@@ -171,7 +171,7 @@ class MultilevelParquetTable(ParquetTable):
         columnDict = {'dataset':'meas',
                       'filter':'HSC-G',
                       'column':['coord_ra', 'coord_dec']}
-        df = parq.to_df(columns=columnDict)
+        df = parq.toDataFrame(columns=columnDict)
 
     will return just the coordinate columns; the equivalent of calling
     `df['meas']['HSC-G'][['coord_ra', 'coord_dec']]` on the total dataframe,
@@ -181,7 +181,7 @@ class MultilevelParquetTable(ParquetTable):
         parq = MultilevelParquetTable(filename)
         columnDict = {'dataset':'meas',
                       'filter':'HSC-G'}
-        df = parq.to_df(columns=columnDict)
+        df = parq.toDataFrame(columns=columnDict)
 
     and this will be the equivalent of `df['meas']['HSC-G']` on the total dataframe.
     
@@ -198,24 +198,24 @@ class MultilevelParquetTable(ParquetTable):
         """
         return self.columnIndex.names
         
-    def _get_columnIndex(self):
+    def _getColumnIndex(self):
         if self._df is not None:
-            return super()._get_columnIndex()
+            return super()._getColumnIndex()
         else:
-            levelNames = [f['name'] for f in self.pandas_md['column_indexes']]
+            levelNames = [f['name'] for f in self.pandasMd['column_indexes']]
             return pd.MultiIndex.from_tuples(self.columns, names=levelNames)
         
-    def _get_columns(self):
+    def _getColumns(self):
         if self._df is not None:
-            return super()._get_columns()
+            return super()._getColumns()
         else:
             columns = self._pf.metadata.schema.names
-            n = len(self.pandas_md['column_indexes'])
+            n = len(self.pandasMd['column_indexes'])
             pattern = re.compile(', '.join(["'(.*)'"] * n))
             matches = [re.search(pattern, c) for c in columns]
             return [m.groups() for m in matches if m is not None]
     
-    def to_df(self, columns=None):
+    def toDataFrame(self, columns=None):
         """Get table (or specified columns) as a pandas DataFrame
 
         To get specific columns in specified sub-levels:
@@ -224,14 +224,14 @@ class MultilevelParquetTable(ParquetTable):
             columnDict = {'dataset':'meas',
                       'filter':'HSC-G',
                       'column':['coord_ra', 'coord_dec']}
-            df = parq.to_df(columns=columnDict)
+            df = parq.toDataFrame(columns=columnDict)
 
         Or, to get an entire subtable, leave out one level name:
 
             parq = MultilevelParquetTable(filename)
             columnDict = {'dataset':'meas',
                           'filter':'HSC-G'}
-            df = parq.to_df(columns=columnDict)
+            df = parq.toDataFrame(columns=columnDict)
 
         Parameters
         ----------

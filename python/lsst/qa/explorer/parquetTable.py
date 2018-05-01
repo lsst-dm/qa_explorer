@@ -26,23 +26,16 @@ class ParquetTable(object):
         if filename is not None:
             self._pf = pq.ParquetFile(filename)
             self._df = None
-            self._pandas_md = None
+            self._pandas_md = json.loads(self._pf.metadata.metadata[b'pandas'])
         elif dataFrame is not None:
             self._df = dataFrame
             self._pf = None
+            self._pandas_md = None
         else:
             raise ValueError('Either filename or dataFrame must be passed.')
 
         self._columns = None
         self._columnIndex = None  
-
-    @property
-    def df(self):
-        return self._df
-
-    @property
-    def pf(self):
-        return self._pf
 
     def write(self, filename):
         """Write pandas dataframe to parquet
@@ -55,20 +48,10 @@ class ParquetTable(object):
         filename : str
             Path to which to write.
         """
-        if self.df is None:
+        if self._df is None:
             raise ValueError('df property must be defined to write.')
-        table = pa.Table.from_pandas(self.df)
+        table = pa.Table.from_pandas(self._df)
         pq.write_table(table, filename, compression='none')
-
-    @property
-    def pandas_md(self):
-        """Pandas metadata as a dictionary.
-        """
-        if self.pf is None:
-            raise ValueError('pf property must be defined to access this attribute.')
-        if self._pandas_md is None:
-            self._pandas_md = json.loads(self.pf.metadata.metadata[b'pandas'])
-        return self._pandas_md
 
     @property
     def columnIndex(self):
@@ -79,8 +62,8 @@ class ParquetTable(object):
         return self._columnIndex
     
     def _get_columnIndex(self):
-        if self.df is not None:
-            return self.df.columns
+        if self._df is not None:
+            return self._df.columns
         else:
             return pd.Index(self.columns)
     
@@ -93,10 +76,10 @@ class ParquetTable(object):
         return self._columns
     
     def _get_columns(self):
-        if self.df is not None:
-            return self.df.columns
+        if self._df is not None:
+            return self._df.columns
         else:
-            return self.pf.metadata.schema.names
+            return self._pf.metadata.schema.names
     
     def _sanitizeColumns(self, columns):
         return [c for c in columns if c in self.columnIndex]
@@ -110,17 +93,17 @@ class ParquetTable(object):
             Desired columns.  If `None`, then all columns will be
             returned.  
         """
-        if self.pf is None:
+        if self._pf is None:
             raise ValueError('Only call this function if .pf is defined.')
 
         if columns is None:
-            return self.pf.read().to_pandas()
+            return self._pf.read().to_pandas()
         
         try:
-            df = self.pf.read(columns=columns, use_pandas_metadata=True).to_pandas()
+            df = self._pf.read(columns=columns, use_pandas_metadata=True).to_pandas()
         except AttributeError:
             columns = self._sanitizeColumns(columns)
-            df = self.pf.read(columns=columns, use_pandas_metadata=True).to_pandas()
+            df = self._pf.read(columns=columns, use_pandas_metadata=True).to_pandas()
 
         return df
 
@@ -180,17 +163,17 @@ class MultilevelParquetTable(ParquetTable):
         return self.columnIndex.names
         
     def _get_columnIndex(self):
-        if self.df is not None:
+        if self._df is not None:
             return super(MultilevelParquetTable, self)._get_columnIndex()
         else:
-            levelNames = [f['name'] for f in self.pandas_md['column_indexes']]
+            levelNames = [f['name'] for f in self._pandas_md['column_indexes']]
             return pd.MultiIndex.from_tuples(self.columns, names=levelNames)
         
     def _get_columns(self):
-        if self.df is not None:
+        if self._df is not None:
             return super(MultilevelParquetTable, self)._get_columns()
         else:
-            columns = self.pf.metadata.schema.names
+            columns = self._pf.metadata.schema.names
             pattern = "'(.*)', '(.*)', '(.*)'"
             matches = [re.search(pattern, c) for c in columns]
             return [m.groups() for m in matches if m is not None]
@@ -225,22 +208,22 @@ class MultilevelParquetTable(ParquetTable):
             must be passed; if any level is left out, then all entries
             in that level will be implicitly included.
         """
-        if self.pf is None:
+        if self._pf is None:
             raise ValueError('Only call this function if .pf is defined.')
 
         if columns is None:
-            return self.pf.read().to_pandas()
+            return self._pf.read().to_pandas()
         
         if isinstance(columns, dict):
             columns = self._colsFromDict(columns)
                         
         pfColumns = self._stringify(columns)
         try:
-            df = self.pf.read(columns=pfColumns, use_pandas_metadata=True).to_pandas()
+            df = self._pf.read(columns=pfColumns, use_pandas_metadata=True).to_pandas()
         except (AttributeError, KeyError):
             columns = [c for c in columns in c in self.columnIndex]
             pfColumns = self._stringify(columns)
-            df = self.pf.read(columns=pfColumns, use_pandas_metadata=True).to_pandas()
+            df = self._pf.read(columns=pfColumns, use_pandas_metadata=True).to_pandas()
         
         # Drop levels of column index that have just one entry
         levelsToDrop = [n for l,n in zip(df.columns.levels, df.columns.names) 

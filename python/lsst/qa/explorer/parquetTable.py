@@ -136,7 +136,7 @@ class MultilevelParquetTable(ParquetTable):
     I don't know if this is a bug or intentional, and it may be addressed in the future.
 
     As multilevel-indexed dataframes can be very useful to store data like multiple filters'
-    worth of data in the same table, this case deserves a wrapper to enale easier access;
+    worth of data in the same table, this case deserves a wrapper to enable easier access;
     that's what this object is for.  For example,
 
         parq = MultilevelParquetTable(filename)

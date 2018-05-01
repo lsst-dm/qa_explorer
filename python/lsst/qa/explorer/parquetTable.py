@@ -99,7 +99,10 @@ class ParquetTable(object):
             returned.  
         """
         if self._pf is None:
-            raise ValueError('Only call this function if .pf is defined.')
+            if columns is None:
+                return self._df
+            else:
+                return self._df[columns]
 
         if columns is None:
             return self._pf.read().to_pandas()
@@ -214,7 +217,10 @@ class MultilevelParquetTable(ParquetTable):
             in that level will be implicitly included.
         """
         if self._pf is None:
-            raise ValueError('Only call this function if .pf is defined.')
+            if columns is None:
+                return self._df
+            else:
+                return self._df[columns]
 
         if columns is None:
             return self._pf.read().to_pandas()

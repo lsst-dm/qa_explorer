@@ -109,6 +109,24 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
         df_A = df[colTuples_A]
         assert_frame_equal(parq.to_df(columns=columnDict_A), df_A)    
 
+        # Case A1, add a bogus column and test that it gets ignored
+        datasets_A1 = self.datasets
+        filters_A1 = self.filters
+        columns_A1 = self.columns + ['garbage']
+        columnDict_A1 = {'dataset':datasets_A1,
+                       'filter':filters_A1,
+                       'column':columns_A1}
+        colTuples_A1 = [(self.datasets[0], self.filters[0], self.columns[0]), 
+                       (self.datasets[0], self.filters[0], self.columns[1]), 
+                       (self.datasets[0], self.filters[1], self.columns[0]), 
+                       (self.datasets[0], self.filters[1], self.columns[1]), 
+                       (self.datasets[1], self.filters[0], self.columns[0]), 
+                       (self.datasets[1], self.filters[0], self.columns[1]), 
+                       (self.datasets[1], self.filters[1], self.columns[0]), 
+                       (self.datasets[1], self.filters[1], self.columns[1])]
+        df_A1 = df[colTuples_A1]
+        assert_frame_equal(parq.toDataFrame(columns=columnDict_A1), df_A1)    
+
         # Case B: One level has only a single value
         datasets_B = self.datasets[0]
         filters_B = self.filters

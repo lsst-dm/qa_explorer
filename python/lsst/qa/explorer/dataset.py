@@ -803,3 +803,4 @@ class QADataset(object):
                                  label=['star', 'maybe', 'noStar'],
                                 colors=self.catalog.color_colors)
         return dmap
+

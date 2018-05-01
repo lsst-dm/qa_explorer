@@ -182,7 +182,8 @@ class MultilevelParquetTable(ParquetTable):
             return super()._get_columns()
         else:
             columns = self._pf.metadata.schema.names
-            pattern = "'(.*)', '(.*)', '(.*)'"
+            n = len(self._pandas_md['column_indexes'])
+            pattern = re.compile(', '.join(["'(.*)'"] * n))
             matches = [re.search(pattern, c) for c in columns]
             return [m.groups() for m in matches if m is not None]
     

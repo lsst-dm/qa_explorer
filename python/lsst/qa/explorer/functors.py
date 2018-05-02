@@ -10,8 +10,9 @@ import dask.array as da
 import dask
 import time
 import inspect
+import yaml
 
-from .utils import result
+from .utils import result, init_fromDict
 
 class Functor(object):
     """Base class for computations performed on catalogs
@@ -38,19 +39,19 @@ class Functor(object):
 
     Parameters
     ----------
-    allow_difference : bool
-        Defines whether to allow operations like subtraction of this calculation
-        performed on two different catalogs (e.g., should be False for labels)
     """
-    _allow_difference = True
-
-
-    def __init__(self, allow_difference=None):
-        if allow_difference is not None:
-            self.allow_difference = allow_difference
+    _default_dataset = 'forced_src'
+    
+    def __init__(self, dataset=None, **kwargs):
+        self._dataset = dataset
+        
+    @property
+    def dataset(self):
+        if self._dataset is not None:
+            return self._dataset
         else:
-            self.allow_difference = self._allow_difference
-
+            return self._default_dataset
+    
     @property
     def columns(self):
         """Columns required to perform calculation
@@ -59,80 +60,23 @@ class Functor(object):
             return self._columns
         except AttributeError:
             raise NotImplementedError('Must define columns property or _columns attribute')
-
+    
     def _func(self, df, dropna=True):
         raise NotImplementedError('Must define calculation on dataframe')
 
-    def __call__(self, catalog, client=None, query=None, dropna=True, dask=False, 
-                flags=None, **kwargs):
+    def _get_cols(self, catalog, **kwargs):
+        if self.dataset is not None:
+            if 'dataset' not in kwargs:
+                kwargs['dataset'] = self.dataset
 
-        if isinstance(catalog, dd.DataFrame):
-            vals = self._func(catalog)
-        else:
-            vals = catalog._apply_func(self, query=query, client=client, **kwargs)
-
-        # dropna=True can be buggy; e.g. for boolean or string types perhaps?
-        if dropna:
-            try:
-                if client is not None:
-                    vals = client.compute(vals[da.isfinite(vals)])
-                else:
-                    vals = vals[da.isfinite(vals)]
-            except (TypeError, ValueError):
-                if client is not None:
-                    vals = client.compute(vals.dropna())
-                else:
-                    vals = vals.dropna()
-
-            # try:
-            #     if catalog.client:
-            #         vals = catalog.client.compute(vals[da.isfinite(vals)]).result()
-            #     else:
-            #         vals = vals[da.isfinite(vals)]
-            # except TypeError:
-            #     if catalog.client:
-            #         vals = catalog.client.compute(vals[da.notnull(vals)]).result()
-            #     else:
-            #         vals = vals[da.notnull(vals)]
-            # except AttributeError:
-            #     vals = vals[da.notnull(vals)]
-
-        if dask:
-            return vals
-        else:
-            return result(vals)
-
-    def test(self, catalog, dropna=True, dask=False):
-        """Time how long the calculation takes on a catalog.
-        """
-        start = time.time()
-        res = self(catalog, dropna=dropna, dask=dask)
-        n = len(result(res))
-        end = time.time()
+        return catalog.get_columns(columns=self.columns, **kwargs)
         
-        runtime = end - start
-        print('Test results for {}:'.format(self.name))
-        print('  Took {:.2f}s, length={}.  Type={}'.format(runtime, n, type(res)))    
-        return runtime
+    def __call__(self, catalog, **kwargs):
+        df = self._get_cols(catalog, **kwargs)
+        vals = self._func(df)
+        return vals
 
-class ParquetReadWorker(object):
-    def __init__(self, cols):
-        self.cols = cols
 
-    def __call__(self, filename):
-        pfile = fastparquet.ParquetFile(filename)
-        return pfile.to_pandas(columns=self.cols)
-
-class func_worker(object):
-    def __init__(self, catalog):
-        self.catalog = catalog
-
-    def __call__(self, func):
-        return func(self.catalog)
-
-# def get_cols(catalog, composite_functor):
-#     worker = func_worker(catalog)
-#     return catalog.client.map(worker, composite_functor.funcDict.values())
 
 class CompositeFunctor(Functor):
     """Perform multiple calculations at once on a catalog
@@ -147,17 +91,7 @@ class CompositeFunctor(Functor):
     funcDict : dict
         Dictionary of functors.  
 
-    dask : bool (default False)
-        Whether to return result as a dask DataFrame.  Not much used (or tested)
-
-    do_map : bool
-        If `client` is provided, whether to map with the client over the multiple 
-        functors.  
-
-    client : distributed.Client
-        If provided, then computation will map over functors if `do_map` is True.
     """
-    force_ndarray = False
 
     def __init__(self, funcDict, **kwargs):
         self.funcDict = funcDict
@@ -165,25 +99,34 @@ class CompositeFunctor(Functor):
 
     @property 
     def columns(self):
-        return [x for y in [f.columns for f in self.funcDict.values()] for x in y]
-
-    def __call__(self, catalog, dask=False, do_map=False, client=None, **kwargs):
-        if client is not None and do_map:
-            worker = func_worker(catalog)
-            cols = client.map(worker, self.funcDict.values())
-            # cols = get_cols(catalog, self)
-            df = pd.concat({k:result(c) for k,c in zip(self.funcDict.keys(), cols)}, axis=1)
-        else:
-            df = pd.concat({k : f(catalog, dask=dask, client=client, **kwargs) 
-                            for k,f in self.funcDict.items()}, axis=1)
-
-        if dask:
-            return dd.from_pandas(df, chunksize=1000000)
-        else:
-            return df
+        return list(set([x for y in [f.columns for f in self.funcDict.values()] for x in y]))
+    
+    def __call__(self, catalog, **kwargs):
+        df = pd.concat({k : f(catalog, **kwargs) 
+                        for k,f in self.funcDict.items()}, axis=1)
+        return df
 
     def __getitem__(self, item):
         return self.funcDict[item]
+
+    @classmethod
+    def from_yaml(cls, filename):
+        conf = yaml.load(open(filename).read())
+        funcs = {}
+        funcs['x'] = init_fromDict(conf['x'])
+        funcs['label'] = init_fromDict(conf['label'])
+        for func,val in conf['funcs'].items():
+            funcs[func] = init_fromDict(val)
+        
+        for dataset,flags in conf['flags'].items():
+            if flags is None:
+                continue
+            if isinstance(flags, str):
+                flags = [flags]
+            for flag in flags:
+                funcs[flag] = Column(flag, dataset=dataset)
+
+        return cls(funcs)
 
 class TestFunctor(Functor):
     name = 'test'
@@ -294,7 +237,7 @@ class CoordColumn(Column):
 
     def __init__(self, col, calculate=False, **kwargs):
         self.calculate = calculate
-        super(CoordColumn, self).__init__(col, allow_difference=calculate, **kwargs)
+        super(CoordColumn, self).__init__(col, **kwargs)
 
     def _func(self, df):
         res = df[self.col]
@@ -308,10 +251,7 @@ class RAColumn(CoordColumn):
         super(RAColumn, self).__init__('coord_ra', **kwargs)
 
     def __call__(self, catalog, **kwargs):
-        if kwargs.pop('calculate', False) or self.calculate:
-            return super(RAColumn, self).__call__(catalog, **kwargs)
-        else:
-            return catalog.ra
+        return super(RAColumn, self).__call__(catalog, **kwargs)
 
 class DecColumn(CoordColumn):
     name = 'Dec'
@@ -319,10 +259,7 @@ class DecColumn(CoordColumn):
         super(DecColumn, self).__init__('coord_dec', **kwargs)
 
     def __call__(self, catalog, **kwargs):
-        if kwargs.pop('calculate', False) or self.calculate:
-            return super(DecColumn, self).__call__(catalog, **kwargs)
-        else:
-            return catalog.dec
+        return super(DecColumn, self).__call__(catalog, **kwargs)
 
 
 def fluxName(col):
@@ -419,6 +356,7 @@ class DeconvolvedMoments(Functor):
                 # "ext_shapeHSM_HsmSourceMoments",
                 "ext_shapeHSM_HsmPsfMoments_xx",
                 "ext_shapeHSM_HsmPsfMoments_yy")
+    _default_dataset = 'ref'
 
     def _func(self, df):
         """Calculate deconvolved moments"""
@@ -452,6 +390,7 @@ class PsfSdssTraceSizeDiff(Functor):
     name = "PSF - SDSS Trace Size"
     _columns = ("base_SdssShape_xx", "base_SdssShape_yy",
                 "base_SdssShape_psf_xx", "base_SdssShape_psf_yy")
+    _default_dataset = 'ref'
 
     def _func(self, df):
         srcSize = da.sqrt(0.5*(df["base_SdssShape_xx"] + df["base_SdssShape_yy"]))
@@ -465,6 +404,8 @@ class HsmTraceSize(Functor):
     name = 'HSM Trace Size'
     _columns = ("ext_shapeHSM_HsmSourceMoments_xx",
                 "ext_shapeHSM_HsmSourceMoments_yy")
+    _default_dataset = 'ref'
+
     def _func(self, df):
         srcSize = da.sqrt(0.5*(df["ext_shapeHSM_HsmSourceMoments_xx"] +
                                df["ext_shapeHSM_HsmSourceMoments_yy"]))
@@ -478,6 +419,7 @@ class PsfHsmTraceSizeDiff(Functor):
                 "ext_shapeHSM_HsmSourceMoments_yy",
                 "ext_shapeHSM_HsmPsfMoments_xx",
                 "ext_shapeHSM_HsmPsfMoments_yy")
+    _default_dataset = 'ref'
 
     def _func(self, df):
         srcSize = da.sqrt(0.5*(df["ext_shapeHSM_HsmSourceMoments_xx"] +
@@ -490,6 +432,7 @@ class PsfHsmTraceSizeDiff(Functor):
 class Seeing(Functor):
     name = 'seeing'
     _columns = ('ext_shapeHSM_HsmPsfMoments_xx', 'ext_shapeHSM_HsmPsfMoments_yy')
+    _default_dataset = 'ref'
 
     def _func(self, df):
         return 0.168*2.35*da.sqrt(0.5*(df['ext_shapeHSM_HsmPsfMoments_xx']**2 +

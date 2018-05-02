@@ -9,6 +9,33 @@ from lsst.daf.persistence import doImport
 
 def init_fromDict(initDict, basePath='lsst.qa.explorer.functors',
                  typeKey='functor'):
+    """Initializes an object defined in a dictionary
+
+    The object needs to be importable as
+
+        '{0}.{1}'.format(basePath, initDict[typeKey])
+
+    The positional and keyword arguments (if any) are contained in
+    "args" and "kwargs" entries in the dictionary, respectively.
+
+    This is used in `functors.CompositeFunctor.from_yaml` to initialize
+    a composite functor from a specification in a YAML file.
+
+    Parameters
+    ----------
+    initDict : dictionary
+        Dictionary describing object's initialization.  Must contain
+        an entry keyed by `typeKey` that is the name of the object,
+        relative to `basePath`.
+
+    basePath : str
+        Path relative to which `initDict[typeKey]` is defined.
+
+    typeKey : str
+        Key of `initDicit` that is the name of the object
+        (relative to `basePath`).
+
+    """
     pythonType = doImport('{0}.{1}'.format(basePath, initDict[typeKey]))
     args = []
     if 'args' in initDict:
@@ -52,7 +79,7 @@ def get_tracts(butler):
     ----------
     butler : lsst.daf.persistance.Butler
         Data repository
-    """     
+    """
     dataId = {'tract':0, 'filter':'HSC-I'}
     filenamer = Filenamer(butler, 'plotCoadd', dataId)
 
@@ -64,8 +91,8 @@ def get_tracts(butler):
     for f in filters:
         dirs = os.listdir(os.path.join(plot_rootdir, f))
         for d in dirs:
-            files = glob.glob('{}/{}/{}/*.png'.format(plot_rootdir,f,d)) 
-            files += glob.glob('{}/{}/{}/*.parq'.format(plot_rootdir,f,d)) 
+            files = glob.glob('{}/{}/{}/*.png'.format(plot_rootdir,f,d))
+            files += glob.glob('{}/{}/{}/*.parq'.format(plot_rootdir,f,d))
             if len(files) > 0:
                 tracts.append(d)
     tracts = list(set([int(t.replace('tract-', '')) for t in tracts]))

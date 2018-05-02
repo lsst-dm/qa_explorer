@@ -29,9 +29,11 @@ class TractQADataIdContainer(CoaddDataIdContainer):
 
     def makeDataRefList(self, namespace):
         """Make self.refList from self.idList
-        It's difficult to make a data reference that merely points to an entire
-        tract: there is no data product solely at the tract level.  Instead, we
-        generate a list of data references for patches within the tract.
+
+        Generates a list of data references given tract and/or patch.
+        This is a copy of `TractDataIdContainer`, except that it doesn't 
+        require "filter", since the QA data products it is designed to serve
+        are merged over filters.
         """
         datasetType = namespace.config.coaddName + "Coadd_qa"
         validKeys = set(["tract", "patch", ])

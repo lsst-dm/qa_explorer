@@ -45,11 +45,13 @@ class PostprocessCatalogTask(CmdLineTask):
     def run(self, patchRef):
         """Do calculations; write result
         """
-        df = self.doCalculations(patchRef)
+        parq = patchRef.get()
+        dataId = patchRef.dataId
+        df = self.doCalculations(parq, dataId)
         self.write(df, patchRef)
         return df
 
-    def doCalculations(self, dataRef):
+    def doCalculations(self, parq, dataId):
         """Do postprocessing calculations
 
         Takes a dataRef pointing to deepCoadd_obj;
@@ -90,15 +92,14 @@ class WriteQATableTask(PostprocessCatalogTask):
     inputDataset = 'deepCoadd_obj'
     outputDataset = 'deepCoadd_qa'
 
-    def doCalculations(self, parqRef):
-        parq = parqRef.get()
+    def doCalculations(self, parq, dataId):
         funcs = CompositeFunctor.from_yaml(os.path.join(ROOT, 'functors.yaml'))
         funcs.funcDict.update({'ra':RAColumn(), 'dec':DecColumn()})
         dfDict = {}
         for filt in parq.columnLevelNames['filter']:
             catalog = MultilevelParquetCatalog(parq, filt=filt)
             df = funcs(catalog)
-            df['patchId'] = parqRef.dataId['patch']
+            df['patchId'] = dataId['patch']
             dfDict[filt] = df
 
         # This makes a multilevel column index, with filter as first level

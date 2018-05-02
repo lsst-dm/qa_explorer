@@ -38,6 +38,11 @@ class ParquetTable(object):
     Call `toDataFrame` method to get a `pandas.DataFrame` object,
     optionally passing specific columns.
 
+    The main purpose of having this wrapper rather than directly
+    using `pyarrow.ParquetFile` is to make it nicer to load 
+    selected subsets of columns, especially from dataframes with multi-level
+    column indices.
+
     Parameters
     ----------
     filename : str

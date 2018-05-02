@@ -39,7 +39,7 @@ class ParquetTable(object):
     optionally passing specific columns.
 
     The main purpose of having this wrapper rather than directly
-    using `pyarrow.ParquetFile` is to make it nicer to load 
+    using `pyarrow.ParquetFile` is to make it nicer to load
     selected subsets of columns, especially from dataframes with multi-level
     column indices.
 
@@ -315,4 +315,3 @@ class MultilevelParquetTable(ParquetTable):
 
     def _stringify(self, cols):
         return [str(c) for c in cols]
-

@@ -21,7 +21,7 @@ from .utils import result
 class Catalog(object):
     """Base class for columnwise interface to afwTable
 
-    The idea behind this is to allow for access to only specified 
+    The idea behind this is to allow for access to only specified
     columns of one or more `lsst.afw.Table` objects, without necessarily
     having to load the entire table(s) into memory.
 
@@ -32,7 +32,7 @@ class Catalog(object):
     index_column = 'id'
 
     def _initialize(self):
-        """Set lots of properties that will be lazily calculated 
+        """Set lots of properties that will be lazily calculated
         """
         self._coords = None
         self._md5 = None
@@ -71,7 +71,7 @@ class Catalog(object):
     def _get_coords(self):
         df = self.get_columns(['coord_ra', 'coord_dec'], add_flags=False)
 
-        # Hack to avoid phantom 'dir0' column 
+        # Hack to avoid phantom 'dir0' column
         df = result(df)
         if 'dir0' in df.columns:
             df = df.drop('dir0', axis=1)
@@ -127,10 +127,10 @@ class Catalog(object):
 class MatchedCatalog(Catalog):
     """Interface to two afwTables at a time.
 
-    Matches sources from two catalogs with KDTree, 
+    Matches sources from two catalogs with KDTree,
     within `match_radius`.  If you provide a `match_registry`
-    filename, then the match data will be persisted (keyed by 
-    the hash of the catalog), for fast loading in the future.  
+    filename, then the match data will be persisted (keyed by
+    the hash of the catalog), for fast loading in the future.
 
     Parameters
     ----------
@@ -144,7 +144,7 @@ class MatchedCatalog(Catalog):
         HDF file containing persisted match data.
     """
 
-    def __init__(self, cat1, cat2, match_radius=0.5, 
+    def __init__(self, cat1, cat2, match_radius=0.5,
                     match_registry=None):
         self.cat1 = cat1
         self.cat2 = cat2
@@ -193,7 +193,7 @@ class MatchedCatalog(Catalog):
         dist = df['distance'].rename('match_distance')
 
 
-        return inds1, inds2, dist   
+        return inds1, inds2, dist
 
     def _write_registry(self, match_df):
         """Write match data to registry
@@ -225,14 +225,14 @@ class MatchedCatalog(Catalog):
     def _match_cats(self, recalc=False):
         """Determine which indices in cat2 correspond to the same objects in cat1
 
-        Computes match using `explorer.match.match_lists`, which uses a KDTree-based 
-        algorithm.  If `self.match_registry` is defined but the match hasn't been 
+        Computes match using `explorer.match.match_lists`, which uses a KDTree-based
+        algorithm.  If `self.match_registry` is defined but the match hasn't been
         computed before, then the results are written to that file.  If the match has been
         computed and persisted, then it is just loaded.
 
-        Match information is stored in the form of `pandas.Index` objects: `match_inds1` 
-        and `match_inds2`, which are *label* indices, not positional.  Note that 
-        the `get_columns` method for this object does not return row-matched columns; 
+        Match information is stored in the form of `pandas.Index` objects: `match_inds1`
+        and `match_inds2`, which are *label* indices, not positional.  Note that
+        the `get_columns` method for this object does not return row-matched columns;
         in order to get properly row-matched columns from the two catalogs, you need to index
         the outputs with `match_inds1` and `match_inds2`, e.g.,
 
@@ -334,7 +334,7 @@ class MatchedCatalog(Catalog):
             * 'sum': returns sum of matched computed values
             * 'first': returns computed values from `self.cat1`
             * 'second': returns computed values from `self.cat2`
-            * 'all': returns computed values from both catalogs. 
+            * 'all': returns computed values from both catalogs.
         """
         df1, df2 = self.get_columns(func.columns, query=query, client=client)
 
@@ -348,7 +348,7 @@ class MatchedCatalog(Catalog):
                 v1 = pd.Series(np.nan, index=id1)
             else:
                 v1 = result(func._func(df1)).loc[id1].values
-    
+
             if df2_empty:
                 v2 = pd.Series(np.nan, index=id1)
             else:
@@ -363,7 +363,7 @@ class MatchedCatalog(Catalog):
             elif how=='first':
                 vals = pd.Series(v1, index=id1)
             elif how=='all':
-                vals = pd.concat([pd.Series(v1, name=self.cat1.name, index=id1), 
+                vals = pd.concat([pd.Series(v1, name=self.cat1.name, index=id1),
                                   pd.Series(v2, name=self.cat2.name, index=id1)], axis=1)
                 # raise NotImplementedError
         else:
@@ -395,7 +395,7 @@ class MultiMatchedCatalog(MatchedCatalog):
 
     Parameters
     ----------
-    coadd_cat : Catalog 
+    coadd_cat : Catalog
         Coadd `Catalog` object.
 
     visit_cats : list
@@ -464,7 +464,7 @@ class MultiMatchedCatalog(MatchedCatalog):
         Parameters
         ----------
         raise_exceptions : bool
-            If False, then just print warning message if any of the 
+            If False, then just print warning message if any of the
             matching operations raises an exception, but keep going.
         """
         for i,c in enumerate(self.subcats):
@@ -479,9 +479,9 @@ class MultiMatchedCatalog(MatchedCatalog):
     def get_columns(self, *args, **kwargs):
         """Returns list of dataframes: df1, then N x other dfs
 
-        Note (as in `MatchedCatalog`) that the output of 
-        `.get_columns` is not row-matched. 
-    
+        Note (as in `MatchedCatalog`) that the output of
+        `.get_columns` is not row-matched.
+
         Returns
         -------
         df1 : pandas.DataFrame
@@ -512,7 +512,7 @@ class MultiMatchedCatalog(MatchedCatalog):
             * 'coadd': returns computed values only from coadd catalog
             * 'stats': returns mean, std, and count of values computed from all catalogs
             * 'mean': returns mean of values computed from all catalogs
-            * 'std': returns standard deviation of values computed from all catalogs. 
+            * 'std': returns standard deviation of values computed from all catalogs.
 
         client : distributed.Client (optional)
             If a client is provided, then the computations will be distributed
@@ -522,7 +522,7 @@ class MultiMatchedCatalog(MatchedCatalog):
             self.match()
 
         coadd_vals = func(self.coadd_cat, query=query, client=client)
-        if ((isinstance(func, Labeller) or not func.allow_difference) 
+        if ((isinstance(func, Labeller) or not func.allow_difference)
             and how != 'all'):
             how = 'coadd'
 
@@ -554,7 +554,7 @@ class MultiMatchedCatalog(MatchedCatalog):
     def _compute_match_distance(self):
         coadd = pd.Series(index=self.coadd_cat.index)
         aligned_dists = [coadd.align(c.match_distance)[1] for c in self.subcats]
-        df = pd.concat(aligned_dists, axis=1, 
+        df = pd.concat(aligned_dists, axis=1,
                         keys=[('match_distance', n) for n in self.visit_names])
         df[('match_distance', 'coadd')] = 0.
         return df
@@ -579,7 +579,7 @@ class ParquetCatalog(Catalog):
     """Out-of-memory column-store interface to afwTable using parquet
 
     This `Catalog` implementation uses dask and parquet to allow for
-    out-of-memory catalog access, and selective retrieval of column data.  
+    out-of-memory catalog access, and selective retrieval of column data.
     It expects to read parquet tables written by the `lsst.pipe.analysis` scripts.
 
     Parameters
@@ -587,13 +587,13 @@ class ParquetCatalog(Catalog):
     filenames : str or list or tuple
         Either a single parquet file path or a list (or tuple) of filenames
         to be simultaneously loaded.  (If multiple filenames provided, the
-        catalogs should share all the same columns---though I don't 
+        catalogs should share all the same columns---though I don't
         believe this is explicitly checked).
-        Note that this will be saved as a sorted list of absolute paths 
+        Note that this will be saved as a sorted list of absolute paths
         (for hash consistency), regardless of what is passed.
 
     name : str or int, optional
-        Name of catalog.  If name is not provided, then a six-character name 
+        Name of catalog.  If name is not provided, then a six-character name
         will be generated, using the catalog hash as a random seed, thus
         ensuring consistency of the "default" name.
     """
@@ -605,7 +605,7 @@ class ParquetCatalog(Catalog):
             self.filenames = list(set([os.path.abspath(f) for f in filenames]))
             self.filenames.sort()
 
-        self._name = name 
+        self._name = name
         self._initialize()
 
     def _initialize(self):
@@ -618,11 +618,11 @@ class ParquetCatalog(Catalog):
     def _stringify(self):
         # To be really careful, you could read the whole file, e.g.:
         # return reduce(add, [open(f, 'rb').read() for f in self.filenames])
-        
+
         # Or, to be fast/sloppy, just read the filenames
         return reduce(add, [bytes(os.path.abspath(f), encoding='utf8') for f in self.filenames])
 
-    @property 
+    @property
     def name(self):
         if self._name is None:
             random.seed(self.md5)
@@ -701,11 +701,11 @@ class ParquetCatalog(Catalog):
         return self._read_data(cols_to_get, query=query, add_flags=add_flags, client=client)
 
 
-class IDMatchedCatalog(MultiMatchedCatalog):    
+class IDMatchedCatalog(MultiMatchedCatalog):
     """A multi-matched-catalog that matches by ID rather than position
 
     This is adapted from `MultiMatchedCatalog`, but cleaned of "coadd" and
-    "visit" references, which are no longer relevant in this context.  
+    "visit" references, which are no longer relevant in this context.
     Matching is by ID rather than position.
 
     Parameters
@@ -728,7 +728,7 @@ class IDMatchedCatalog(MultiMatchedCatalog):
         [c._initialize() for c in self.cats]
         self._index = None
         self._matched = False
-        
+
 
     @property
     def coords(self):
@@ -738,23 +738,23 @@ class IDMatchedCatalog(MultiMatchedCatalog):
         Maybe it should be `self.cats[0].coords.loc[self._index]`?
         """
         return self.cats[0].coords
-        
+
     @property
     def coadd_cat(self):
         return self.cats[0]
-        
+
     @property
     def names(self):
         return [c.name for c in self.cats]
-        
+
     @property
     def index(self):
         if self._index is None:
             self.match()
         return self._index
-        
+
     def match(self, **kwargs):
-        """Match catalogs by creating a joint index (either union or intersection of all) 
+        """Match catalogs by creating a joint index (either union or intersection of all)
         """
         if self._index is None:
             if self.merge_method == 'union':
@@ -762,12 +762,12 @@ class IDMatchedCatalog(MultiMatchedCatalog):
             elif self.merge_method == 'intersection':
                 self._index = reduce(lambda i1,i2 : i1.intersection(i2), [c.index for c in self.cats])
             self._matched = True
-            
+
     def get_columns(self, *args, **kwargs):
         """Return tuple of dataframes, one for each catalog
         """
         return tuple([c.get_columns(*args, **kwargs) for c in self.cats])
-    
+
     def _apply_func(self, func, query=None, how='all', client=None):
         """Get the results of applying a functor
 
@@ -786,23 +786,23 @@ class IDMatchedCatalog(MultiMatchedCatalog):
             * 'all' (default): returns computed values for coadd and all visit cats
             * 'stats': returns mean, std, and count of values computed from all catalogs
             * 'mean': returns mean of values computed from all catalogs
-            * 'std': returns standard deviation of values computed from all catalogs. 
+            * 'std': returns standard deviation of values computed from all catalogs.
 
         client : distributed.Client (optional)
             If a client is provided, then the computations will be distributed
-            over the visit catalogs using `client.map`.        
+            over the visit catalogs using `client.map`.
         """
         if client and not self._matched:
             self.match()
-    
+
         if client:
             func_worker = FuncWorker(func, query=query)
             vals = client.map(func_worker, self.cats)
-            aligned_vals = [v.result().loc[self.index] for v in vals]            
+            aligned_vals = [v.result().loc[self.index] for v in vals]
         else:
             vals = [func(c, query=query) for c in self.cats]
-            aligned_vals = [v.loc[self.index] for v in vals]            
-        
+            aligned_vals = [v.loc[self.index] for v in vals]
+
         val_df = pd.concat(aligned_vals, axis=1, keys=self.names)
         if how=='all':
             return val_df
@@ -832,7 +832,7 @@ class MultiBandCatalog(IDMatchedCatalog):
 
     reference_filt : str
         Filter to use as the "reference" filter.  This becomes relevant
-        when using a `MultiBandCatalog` as the catalog for a `QADataset`, 
+        when using a `MultiBandCatalog` as the catalog for a `QADataset`,
         as the `.color_ds` attribute takes the values of `x` and the functor
         calculations from reference band.  This is not really used for anything
         yet, since the main reason to use a `MultiBandCatalog` is to investigate
@@ -856,7 +856,7 @@ class MultiBandCatalog(IDMatchedCatalog):
             cats.append(self.catalog_dict[filt])
 
         super(MultiBandCatalog, self).__init__(cats, **kwargs)
-        
+
     @property
     def n_filters(self):
         return len(self.filters)
@@ -876,7 +876,7 @@ class MultiBandCatalog(IDMatchedCatalog):
 
         For `GRIZ`, this returns `['GRI', 'RIZ']`
         """
-        return ['{}{}{}'.format(c1[0],c1[-1],c2[-1]) 
+        return ['{}{}{}'.format(c1[0],c1[-1],c2[-1])
                 for c1, c2 in zip(self.colors[0:-1], self.colors[1:])]
 
     @property
@@ -886,20 +886,20 @@ class MultiBandCatalog(IDMatchedCatalog):
         For `self.filters=['HSC-G', 'HSC-R', 'HSC-I', 'HSC-Z']`, this returns
         `[('HSC-G', 'HSC-R'), ('HSC-R', 'HSC-I']), ('HSC-I', 'HSC-Z')]`
         """
-        return [(self.filters[i], self.filters[i+1]) 
+        return [(self.filters[i], self.filters[i+1])
                     for i in range(self.n_filters - 1)]
 
 
 class ButlerCatalog(ParquetCatalog):
     """Base class for getting QA catalog from dataId(s)
 
-    This currently depends on the butler-filename-hacking done in 
-    `lsst.pipe.analysis` to retrieve filenames.  
+    This currently depends on the butler-filename-hacking done in
+    `lsst.pipe.analysis` to retrieve filenames.
 
-    Not to be implemented on its own; use subclasses for which 
-    `_dataset_name` and `_default_description` are defined, 
+    Not to be implemented on its own; use subclasses for which
+    `_dataset_name` and `_default_description` are defined,
     such as `CoaddCatalog`, `VisitCatalog`, or `ColorCatalog`.
-    
+
     Parameters
     ----------
     butler : Butler object
@@ -924,7 +924,7 @@ class ButlerCatalog(ParquetCatalog):
         if description is None:
             description = self._default_description
         self.description = description
-        
+
         filenames = []
         for dataId in dataIdList:
             tableFilenamer = Filenamer(butler, self._dataset_name, dataId)
@@ -936,13 +936,13 @@ class CoaddCatalog(ButlerCatalog):
     """
     _dataset_name = 'qaTableCoadd'
     _default_description = 'forced'
-    
+
 class VisitCatalog(ButlerCatalog):
     """Visit QA table dataset retrieval given dataId(s)
     """
     _dataset_name = 'qaTableVisit'
     _default_description = 'catalog'
-    
+
 class ColorCatalog(ButlerCatalog):
     """Color QA table dataset retrieval given dataId(s)
     """
@@ -950,36 +950,37 @@ class ColorCatalog(ButlerCatalog):
     _default_description = 'forced'
 
 class MultilevelParquetCatalog(Catalog):
+
     def __init__(self, parq, name=None, dataset=None, filt=None):
         self.subcat = {}
         if dataset is not None:
             self.subcat['dataset'] = dataset
         if filt is not None:
             self.subcat['filter'] = filt
-        
+
         self.parq = parq
         self._name = name
         self._initialize()
-        
+
     def _get_coords(self):
         df = self.get_columns(['coord_ra', 'coord_dec'])
         df = df.iloc[:, [0,1]]
-        
+
         if isinstance(df.columns, pd.MultiIndex):
             levelsToDrop = ['dataset', 'filter']
             for level in self.subcat:
                 levelsToDrop.remove(level)
             df.columns = df.columns.droplevel(levelsToDrop)
-        
+
         self._coords = (df*180 / np.pi).rename(columns={'coord_ra':'ra',
                                                         'coord_dec':'dec'})
-        
+
     @property
     def columns(self):
         return self.parq.columns
-    
+
     def get_columns(self, columns, **kwargs):
         columnDict = self.subcat.copy()
         columnDict.update(kwargs)
         columnDict['column'] = columns
-        return self.parq.to_df(columns=columnDict)
+        return self.parq.toDataFrame(columns=columnDict)

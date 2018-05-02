@@ -2,7 +2,7 @@
 
 
 The deepCoadd_qa table is a table with QA columns of interest computed
-for all filters for which the deepCoadd_obj tables are written. 
+for all filters for which the deepCoadd_obj tables are written.
 """
 from collections import defaultdict
 import functools
@@ -47,7 +47,7 @@ class ConsolidateQATableTask(CmdLineTask):
         return parser
 
     def run(self, patchRefList):
-        df = pd.concat([patchRef.get().to_df() for patchRef in patchRefList])
+        df = pd.concat([patchRef.get().toDataFrame() for patchRef in patchRefList])
         patchRefList[0].put(ParquetTable(dataFrame=df), self.outputDataset)
 
     def writeMetadata(self, dataRef):

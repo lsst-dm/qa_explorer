@@ -1,7 +1,7 @@
 """Command-line task and associated config for writing QA tables.
 
 The deepCoadd_qa table is a table with QA columns of interest computed
-for all filters for which the deepCoadd_obj tables are written. 
+for all filters for which the deepCoadd_obj tables are written.
 """
 from lsst.daf.persistence.butler import Butler
 from lsst.pex.config import (Config, Field, ConfigField, ListField, DictField, ConfigDictField,
@@ -26,14 +26,14 @@ ROOT = os.path.abspath(os.path.dirname(__file__))
 class PostprocessCatalogTask(CmdLineTask):
     """Base class for postprocessing calculations on catalogs
 
-    """    
+    """
 
     inputDataset = 'deepCoadd_obj'
 
     @classmethod
     def _makeArgumentParser(cls):
         """Create a suitable ArgumentParser.
-        
+
         """
         parser = ArgumentParser(name=cls._DefaultName)
         parser.add_id_argument("--id", cls.inputDataset,
@@ -52,7 +52,7 @@ class PostprocessCatalogTask(CmdLineTask):
     def doCalculations(self, dataRef):
         """Do postprocessing calculations
 
-        Takes a dataRef pointing to deepCoadd_obj; 
+        Takes a dataRef pointing to deepCoadd_obj;
         returns a dataframe with results of postprocessing calculations.
 
         Parameters
@@ -104,5 +104,3 @@ class WriteQATableTask(PostprocessCatalogTask):
         # This makes a multilevel column index, with filter as first level
         df = pd.concat(dfDict, axis=1, names=['filter', 'column'])
         return df
-
-

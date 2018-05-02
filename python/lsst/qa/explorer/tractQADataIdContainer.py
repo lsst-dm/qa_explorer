@@ -31,7 +31,7 @@ class TractQADataIdContainer(CoaddDataIdContainer):
         """Make self.refList from self.idList
 
         Generates a list of data references given tract and/or patch.
-        This is a copy of `TractDataIdContainer`, except that it doesn't 
+        This is a copy of `TractDataIdContainer`, except that it doesn't
         require "filter", since the QA data products it is designed to serve
         are merged over filters.
         """

@@ -11,6 +11,7 @@ from lsst.coadd.utils import TractDataIdContainer
 from lsst.pipe.tasks.multiBand import MergeSourcesTask, MergeSourcesConfig
 from lsst.pipe.tasks.multiBand import _makeGetSchemaCatalogs
 from lsst.coadd.utils.coaddDataIdContainer import ExistingCoaddDataIdContainer
+from lsst.utils import getPackageDir
 
 import functools
 import re, os
@@ -20,8 +21,6 @@ from .parquetTable import ParquetTable
 from .catalog import MultilevelParquetCatalog
 from .functors import CompositeFunctor, RAColumn, DecColumn
 
-# Question: is there a way that LSST packages store data files?
-ROOT = os.path.abspath(os.path.dirname(__file__))
 
 class PostprocessCatalogTask(CmdLineTask):
     """Base class for postprocessing calculations on catalogs
@@ -83,7 +82,7 @@ class WriteQATableTask(PostprocessCatalogTask):
     """Compute columns of QA interest from coadd object tables
 
     This computes columns based on a YAML specification file,
-    `functors.yaml`, which lives next to the code.  The specification
+    `functors.yaml`, which lives in the `data` subdirectory.
 
     """
     _DefaultName = "writeQATable"
@@ -93,7 +92,9 @@ class WriteQATableTask(PostprocessCatalogTask):
     outputDataset = 'deepCoadd_qa'
 
     def doCalculations(self, parq, dataId):
-        funcs = CompositeFunctor.from_yaml(os.path.join(ROOT, 'functors.yaml'))
+        functorFile = os.path.join(getPackageDir("qa_explorer"),
+                                   'data','functors.yaml')
+        funcs = CompositeFunctor.from_yaml(functorFile)
         funcs.funcDict.update({'ra':RAColumn(), 'dec':DecColumn()})
         dfDict = {}
         for filt in parq.columnLevelNames['filter']:

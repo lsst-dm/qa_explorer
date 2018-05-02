@@ -29,7 +29,7 @@ class ConsolidateQATableConfig(Config):
     coaddName = Field(dtype=str, default="deep", doc="Name of coadd")
 
 class ConsolidateQATableTask(CmdLineTask):
-    """Write filter-merged source tables to parquet
+    """Write patch-merged source tables to a tract-level parquet file
     """
     _DefaultName = "consolidateQATable"
     ConfigClass = ConsolidateQATableConfig

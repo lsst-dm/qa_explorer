@@ -4,6 +4,11 @@
 The deepCoadd_qa table is a table with QA columns of interest computed
 for all filters for which the deepCoadd_obj tables are written. 
 """
+from collections import defaultdict
+import functools
+import re, os
+import pandas as pd
+
 from lsst.daf.persistence.butler import Butler
 from lsst.pex.config import (Config, Field, ConfigField, ListField, DictField, ConfigDictField,
                              ConfigurableField)
@@ -13,11 +18,6 @@ from lsst.pipe.tasks.multiBand import MergeSourcesTask, MergeSourcesConfig
 from lsst.pipe.tasks.multiBand import _makeGetSchemaCatalogs
 from lsst.coadd.utils.coaddDataIdContainer import ExistingCoaddDataIdContainer
 from lsst.coadd.utils import TractDataIdContainer
-
-from collections import defaultdict
-import functools
-import re, os
-import pandas as pd
 
 from .parquetTable import ParquetTable
 from .tractQADataIdContainer import TractQADataIdContainer

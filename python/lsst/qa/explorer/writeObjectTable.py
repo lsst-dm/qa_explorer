@@ -22,7 +22,7 @@ from .parquetTable import ParquetTable
 
 class WriteObjectTableConfig(MergeSourcesConfig):
     priorityList = ListField(dtype=str, default=['HSC-G', 'HSC-R', 'HSC-I', 'HSC-Z', 'HSC-Y'],
-                             doc="Priority-ordered list of bands for the merge.")    
+                             doc="Priority-ordered list of bands for the merge.")
     engine = Field(dtype=str, default="pyarrow", doc="Parquet engine for writing (pyarrow or fastparquet)")
 
 class WriteObjectTableTask(MergeSourcesTask):
@@ -48,7 +48,7 @@ class WriteObjectTableTask(MergeSourcesTask):
 
         We will use the ArgumentParser to get a list of data
         references for patches; the RunnerClass will sort them into lists
-        of data references for the same patch. 
+        of data references for the same patch.
 
         References first of self.inputDatasets, rather than
         self.inputDataset (which parent class does.)
@@ -68,7 +68,7 @@ class WriteObjectTableTask(MergeSourcesTask):
 
         Parameters
         ----------
-        patchRef : 
+        patchRef :
             Data reference for patch
 
         Returns
@@ -107,9 +107,11 @@ class WriteObjectTableTask(MergeSourcesTask):
 
                 # Sort columns by name, to ensure matching schema among patches
                 df = df.reindex(sorted(df.columns), axis=1)
+                df['tractId'] = patchRef.dataId['tract']
+                df['patchId'] = patchRef.dataId['patch']
 
                 # Make columns a 3-level MultiIndex
-                df.columns = pd.MultiIndex.from_tuples([(dataset, filt, c) for c in df.columns], 
+                df.columns = pd.MultiIndex.from_tuples([(dataset, filt, c) for c in df.columns],
                                                        names=('dataset', 'filter', 'column'))
                 dfs.append(df)
 

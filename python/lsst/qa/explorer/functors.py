@@ -112,7 +112,7 @@ class CompositeFunctor(Functor):
         try:
             df = pd.concat(valDict, axis=1)
         except TypeError:
-            print([(k, type(v) for k,v in valDict.items())])
+            print([(k, type(v)) for k,v in valDict.items()])
             raise
         return df
 

@@ -39,11 +39,20 @@ class Functor(object):
 
     Parameters
     ----------
+    allow_difference : bool
+        Defines whether to allow operations like subtraction of this calculation
+        performed on two different catalogs (e.g., should be False for labels)
     """
+
+    _allow_difference = True
     _default_dataset = 'forced_src'
 
-    def __init__(self, dataset=None, **kwargs):
+    def __init__(self, dataset=None, allow_difference=None, **kwargs):
         self._dataset = dataset
+        if allow_difference is not None:
+            self.allow_difference = allow_difference
+        else:
+            self.allow_difference = self._allow_difference
 
     @property
     def dataset(self):

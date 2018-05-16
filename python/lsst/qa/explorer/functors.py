@@ -18,10 +18,10 @@ class Functor(object):
     """Base class for computations performed on catalogs
 
     Subclasses must implement `_func`, which defines the calculation
-    to be performed.  The way the calculation actually happens is an 
+    to be performed.  The way the calculation actually happens is an
     interaction between the catalog's `_apply_func` method
     (which uses the functor's `_func` method and defines the format
-    and content of the result and such) 
+    and content of the result and such)
     and the functor `__call__` method, which controls things like
     whether nans are dropped.
 
@@ -29,11 +29,11 @@ class Functor(object):
     a `columns` property) that defines which
     columns are required to be read from the catalog to perform the calculation.
 
-    Results are returned by default as in-memory `pandas.Series` or `pandas.DataFrame`, 
+    Results are returned by default as in-memory `pandas.Series` or `pandas.DataFrame`,
     unless called with `dask=True`, in which case a dask DataFrame is returned.
 
-    Note that when implementing `_func`, use the dask versions of ufuncs for 
-    array math, instead of numpy; e.g. `da.sin`, `da.cos`, 
+    Note that when implementing `_func`, use the dask versions of ufuncs for
+    array math, instead of numpy; e.g. `da.sin`, `da.cos`,
     instead of `np.sin`, `np.cos`.
 
 
@@ -41,17 +41,17 @@ class Functor(object):
     ----------
     """
     _default_dataset = 'forced_src'
-    
+
     def __init__(self, dataset=None, **kwargs):
         self._dataset = dataset
-        
+
     @property
     def dataset(self):
         if self._dataset is not None:
             return self._dataset
         else:
             return self._default_dataset
-    
+
     @property
     def columns(self):
         """Columns required to perform calculation
@@ -60,7 +60,7 @@ class Functor(object):
             return self._columns
         except AttributeError:
             raise NotImplementedError('Must define columns property or _columns attribute')
-    
+
     def _func(self, df, dropna=True):
         raise NotImplementedError('Must define calculation on dataframe')
 
@@ -70,10 +70,14 @@ class Functor(object):
                 kwargs['dataset'] = self.dataset
 
         return catalog.get_columns(columns=self.columns, **kwargs)
-        
-    def __call__(self, catalog, **kwargs):
+
+    def __call__(self, catalog, dropna=False, **kwargs):
         df = self._get_cols(catalog, **kwargs)
         vals = self._func(df)
+
+        if dropna:
+            vals = vals.dropna()
+
         return vals
 
 
@@ -82,14 +86,14 @@ class CompositeFunctor(Functor):
     """Perform multiple calculations at once on a catalog
 
     Returns a dataframe with columns being the keys of `funcDict`.  If called
-    on a `MatchedCatalog` or `MultiMatchedCatalog` with `how='all'`, then 
+    on a `MatchedCatalog` or `MultiMatchedCatalog` with `how='all'`, then
     the columns will be a multi-level index, indexed first by functor name
     then by catalog name.
-    
+
     Parameters
     ----------
     funcDict : dict
-        Dictionary of functors.  
+        Dictionary of functors.
 
     """
 
@@ -97,12 +101,12 @@ class CompositeFunctor(Functor):
         self.funcDict = funcDict
         super(CompositeFunctor, self).__init__(**kwargs)
 
-    @property 
+    @property
     def columns(self):
         return list(set([x for y in [f.columns for f in self.funcDict.values()] for x in y]))
-    
+
     def __call__(self, catalog, **kwargs):
-        df = pd.concat({k : f(catalog, **kwargs) 
+        df = pd.concat({k : f(catalog, **kwargs)
                         for k,f in self.funcDict.items()}, axis=1)
         return df
 
@@ -117,7 +121,7 @@ class CompositeFunctor(Functor):
         funcs['label'] = init_fromDict(conf['label'])
         for func,val in conf['funcs'].items():
             funcs[func] = init_fromDict(val)
-        
+
         for dataset,flags in conf['flags'].items():
             if flags is None:
                 continue
@@ -322,7 +326,7 @@ class StarGalaxyLabeller(Labeller):
         test = (x < 0.5).astype(int)
         test = test.mask(mask, 2)
         #are these backwards?
-        label = pd.Series(pd.Categorical.from_codes(test, categories=['galaxy', 'star', self._null_label]), 
+        label = pd.Series(pd.Categorical.from_codes(test, categories=['galaxy', 'star', self._null_label]),
                             index=x.index, name='label')
         if self._force_str:
             label = label.astype(str)
@@ -337,7 +341,7 @@ class NumStarLabeller(Labeller):
         x = df[self._columns][self._columns[0]]
 
         # Number of filters
-        n = len(x.unique()) - 1 
+        n = len(x.unique()) - 1
 
         label = pd.Series(pd.cut(x, [-1, 0, n-1 , n], labels=['noStar', 'maybe', 'star']),
                             index=x.index, name='label')

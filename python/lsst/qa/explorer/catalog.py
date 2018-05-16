@@ -17,6 +17,12 @@ from .match import match_lists
 from .functors import Labeller, CompositeFunctor, RAColumn, DecColumn
 from .utils import result
 
+# This is for temporary backwards compatibility
+try:
+    from lsst.pipe.analysis.utils import Filenamer
+except ImportError:
+    pass
+
 
 class Catalog(object):
     """Base class for columnwise interface to afwTable

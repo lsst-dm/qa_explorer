@@ -680,7 +680,7 @@ class ParquetCatalog(Catalog):
     def df(self):
         return result(self._df)
 
-    def get_columns(self, columns, query=None, add_flags=False, client=None):
+    def get_columns(self, columns, query=None, add_flags=False, client=None, **kwargs):
         """Get desired columns as dask dataframe
 
         Parameters

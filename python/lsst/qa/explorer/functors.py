@@ -71,12 +71,27 @@ class Functor(object):
 
         return catalog.get_columns(columns=self.columns, **kwargs)
 
-    def __call__(self, catalog, dropna=False, **kwargs):
+    def __call__(self, catalog, dropna=False, client=None, dask=False, **kwargs):
         df = self._get_cols(catalog, **kwargs)
         vals = self._func(df)
 
+        # The following for backward compatibility.  Hopefully this will evolve/clean up.
         if dropna:
-            vals = vals.dropna()
+            try:
+                if client is not None:
+                    vals = client.compute(vals[da.isfinite(vals)])
+                else:
+                    vals = vals[da.isfinite(vals)]
+            except (TypeError, ValueError):
+                if client is not None:
+                    vals = client.compute(vals.dropna())
+                else:
+                    vals = vals.dropna()
+
+        if dask:
+            return vals
+        else:
+            return result(vals)
 
         return vals
 

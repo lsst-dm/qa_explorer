@@ -106,8 +106,14 @@ class CompositeFunctor(Functor):
         return list(set([x for y in [f.columns for f in self.funcDict.values()] for x in y]))
 
     def __call__(self, catalog, **kwargs):
-        df = pd.concat({k : f(catalog, **kwargs)
-                        for k,f in self.funcDict.items()}, axis=1)
+        valDict = {k : f(catalog, **kwargs)
+                        for k,f in self.funcDict.items()}
+
+        try:
+            df = pd.concat(valDict, axis=1)
+        except TypeError:
+            print([(k, type(v) for k,v in valDict.items())])
+            raise
         return df
 
     def __getitem__(self, item):

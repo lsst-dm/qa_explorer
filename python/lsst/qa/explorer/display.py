@@ -3,6 +3,7 @@ import pandas as pd
 
 import lsst.afw.coord as afwCoord
 import lsst.afw.geom as afwGeom
+import lsst.afw.geom.angle as afwAngle
 import lsst.afw.image as afwImage
 import lsst.afw.display
 
@@ -95,7 +96,7 @@ class QADisplay(lsst.afw.display.Display):
             obj = find_closest(self.dmap, ra, dec)
             ra, dec  = obj.ra, obj.dec
 
-        pos = afwCoord.IcrsCoord(ra*afwGeom.degrees, dec*afwGeom.degrees)
+        pos = afwGeom.SpherePoint(ra, dec, afwAngle.degrees)
         wcs = self._WcsFromId(dataId)
         xy = wcs.skyToPixel(pos)
         print(ra, dec, xy)
@@ -173,7 +174,7 @@ class CoaddDisplay(QADisplay):
 
     def _get_dataId(self, ra, dec, **kwargs):
         skyMap = self.butler.get('deepCoadd_skyMap')
-        pos = afwCoord.IcrsCoord(ra*afwGeom.degrees, dec*afwGeom.degrees)
+        pos = afwGeom.SpherePoint(ra, dec, afwAngle.degrees)
         tractInfo, patchInfo = skyMap.findClosestTractPatchList([pos])[0]
         
         tractId = tractInfo.getId()

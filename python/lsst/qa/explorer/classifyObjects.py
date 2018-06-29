@@ -31,6 +31,7 @@ import lsst.pex.config as pexConfig
 from lsst.pipe.base import Task
 from .parquetTable import ParquetTable
 
+__all__ = ["StarGalaxyClassifierTask", "StarGalaxyClassifierConfig"]
 
 class StarGalaxyClassifierConfig(pexConfig.Config):
     """Config for star galaxy classifier
@@ -89,20 +90,20 @@ class StarGalaxyClassifierTask(Task):
     `StarGalaxyClassifierTask` has five functions that add the extra columns needed to a new index in the
     parquet table.
 
-    addMagnitudes
+    `addMagnitudes`
         Use the information in the ``deepCoadd_calexp_calib`` to add CModel magntidue and error columns for
         each band to the new index in the parquet table
-    addSeeing
-        Add a column of the geometric mean of the ``base_SdssShape_psf`` matrix to the new index in the
-        parquet table
-    addColors
+    `addSeeing`
+        Add a column of the geometric mean of the seeing (``self.config.seeingColName``) matrix to the new
+        index in the parquet table
+    `addColors`
         Add a column for each color (e.g. g-r, r-i, i-z and z-Y for HSC) in the dataset to the new index.
         Needs to be run after addMagnitudes.
-    addMB
+    `addMB`
         Calculate the gradient and intercept of the relationship between PSF - CModel in each band and the
         seeing as defined by addSeeing. Add these to the new table index. Needs to be run after addMagnitudes.
-    addSNFlux
-        Divide the CModel flux by its error and add it as a column to the new index
+    `addSNFlux`
+        Divide the model flux by its error and add it as a column to the new index
 
     The function `makeClassifications` applies the given classifier to the data in the catalogue provided
     using the columns provided to create the features used by the classifier.
@@ -111,8 +112,9 @@ class StarGalaxyClassifierTask(Task):
     -----
     The classifier uses an Adaboost algorithum using a decision tree that is trained on a truth table from
     Leauthaud et al 2007 (HST). The task requires the PSF and CModel fluxes and errors in each band and the
-    ``base_SdssShape_psf`` enteries in each band. These are then used to calculate the columns required
-    by the classifier. The columns required for each classifier are stored in the classifier pickle.
+    seeing (``self.config.seeingColName``) enteries in each band. These are then used to calculate the
+    columns required by the classifier. The columns required for each classifier are stored in the
+    classifier pickle.
     """
 
     _DefaultName = "starGalaxyClassifier"
@@ -136,8 +138,8 @@ class StarGalaxyClassifierTask(Task):
         -----
         Check that all the required filters are in the file, then add the extra magnitude columns needed to
         the table and run the classifier for the given patch and tract. The magnitude columns are calculated
-        from the modelfit_CModel_flux columns in each band using the calibration from the
-        deepCoadd_calexp_calib. Operates on a single patch.
+        from the ``self.config.modelColName`` columns in each band using the calibration from the
+        ``deepCoadd_calexp_calib``. Operates on a single patch.
         """
 
         cat = dataRef.get("deepCoadd_obj").toDataFrame({"dataset": "meas"})
@@ -168,6 +170,16 @@ class StarGalaxyClassifierTask(Task):
             missingFilters = list(set(filters) - filtersInCat)
             raise RuntimeError("Not all required filters are present in the catalog: \
                                 missing {}.".format(missingFilters))
+
+        colsRequired = {self.config.seeingColName + "_xx", self.config.seeingColName + "_xy",
+                        self.config.seeingColName + "_yy", self.config.psfColName, self.config.modelColName,
+                        self.config.psfColName + "Sigma", self.config.modelColName + "Sigma"}
+        for band in filters:
+            colsInCat = set(cat[band].columns)
+            missingCols = list(set(colsRequired) - colsInCat)
+            if len(missingCols) > 0:
+                raise RuntimeError("Not all required columns are present in catalog: \
+                                    missing {} in {}.".format(missingCols, band))
 
         cat = self.addMagnitudes(cat, dataRef, filters)
         cat = self.run(cat, filters, clfMorph, colsToUseMorph, clf, colsToUse)
@@ -218,24 +230,24 @@ class StarGalaxyClassifierTask(Task):
 
         The columns added are:
             PSF mangitudes in all the bands (in wavelength order)
-                Added by addMagnitudes, units: magnitudes, column name: `magPsf + band`
+                Added by `addMagnitudes`, units: magnitudes, column name: ``magPsf + band``
             PSF magntiude errors in all the bands
-                Added by addMagntidues, units: magnitudes, column name: `magPsfErr + band`
+                Added by `addMagnitudes`, units: magnitudes, column name: ``magPsfErr + band``
             CModel magnitudes in all the bands
-                Added by addMagnitudes, units: magnitudes, column name: `magModel + band`
+                Added by `addMagnitudes`, units: magnitudes, column name: ``magModel + band``
             CModel magnitude error in al the bands
-                Added by addMagntidues, units: magnitudes, column name: `magModelErr + band`
+                Added by `addMagnitudes`, units: magnitudes, column name: ``magModelErr + band``
             Seeing in all the bands
-                Added by addSeeing, units: arcsecs, column name: `seeing + band`
+                Added by `addSeeing`, units: arcsecs, column name: ``seeing + band``
             Colors from all bands
-                Added by addColors, units: magnitudes, column name: `first band - second band`
+                Added by `addColors`, units: magnitudes, column name: ``first band - second band``
             Gradient of relationship between psf - cmodel and seeing
-                Added by addMB, units: magnitudes/arcses, column name: `m`
+                Added by `addMB`, units: magnitudes/arcses, column name: ``m``
             Intercept of relationship between psf - cmodel and seeing
-                Added by addMB, units: magnitudes, column name: `b`
+                Added by `addMB`, units: magnitudes, column name: ``b``
             Flux signal to noise in all bands
-                Added by addSNFlux, units: none, column name: `fluxSN + band`
-        These columns are added into a new index called `featuresSG` and more information is given in their
+                Added by `addSNFlux`, units: none, column name: ``fluxSN + band``
+        These columns are added into a new index called ``featuresSG`` and more information is given in their
         respective functions.
         """
 
@@ -273,9 +285,9 @@ class StarGalaxyClassifierTask(Task):
 
         Notes
         -----
-        The columns added are called `magPsf + filter name`, `magPsfErr + filter name`,
-        `magModel + filter name` and `magModelErr + filter name`. They are added for every filter given in the
-        filters argument.
+        The columns added are called ``magPsf + filter name``, ``magPsfErr + filter name``,
+        ``magModel + filter name`` and ``magModelErr + filter name``. They are added for every filter given
+        in the filters argument.
         """
 
         colsIn = [self.config.psfColName, self.config.modelColName]
@@ -287,13 +299,13 @@ class StarGalaxyClassifierTask(Task):
 
             for (i, col) in enumerate(colsIn):
 
-                goodFlux = np.where((np.isfinite(cat[band][col])) & (cat[band][col] > 0.0))[0]
+                goodFlux = ((np.isfinite(cat[band][col])) & (cat[band][col] > 0.0))
 
                 magCol = np.array([np.nan]*len(cat))
                 magErrCol = np.array([np.nan]*len(cat))
 
-                flux = cat[band][col].iloc[goodFlux]
-                fluxErr = cat[band][col + "Sigma"].iloc[goodFlux]
+                flux = cat[band][col][goodFlux]
+                fluxErr = cat[band][col + "Sigma"][goodFlux]
 
                 mags, magErrs = calib.getMagnitude(flux.values, fluxErr.values)
 
@@ -307,7 +319,7 @@ class StarGalaxyClassifierTask(Task):
 
     def addSeeing(self, cat, filters):
         """Add seeing defined by seeing = (xx*yy - xy*xy)**0.25 where xx, yy and xy are enteries in the
-        base_SdssShape_psf matrix
+        ``self.config.seeingColName`` matrix
 
         Parameters
         ----------
@@ -321,8 +333,8 @@ class StarGalaxyClassifierTask(Task):
 
         Notes
         -----
-        The new columns added are called `seeing + filter name` and are added for every filter in the list of
-        filters provided.
+        The new columns added are called ``seeing + filter name`` and are added for every ``filter name`` in
+        the list of filters provided.
         """
 
         seeingCol = self.config.seeingColName
@@ -354,9 +366,9 @@ class StarGalaxyClassifierTask(Task):
         Notes
         -----
         len(filters)-1 new columns are added giving each filter minus the filter after it when the filters
-        are arranged in wavelength order. These columns are named `filter[n]-filter[n+1]`. E.g. for HSC:
-        `HSC-G-HSC-R`, `HSC-R-HSC-I`, `HSC-I-HSC-Z` and `HSC-Z-HSC-Y`. Needs to be run after addMagnitudes so
-        that the magnitude columns are already present.
+        are arranged in wavelength order. These columns are named ``filter[n]-filter[n+1]``. E.g. for HSC:
+        ``HSC-G-HSC-R``, ``HSC-R-HSC-I``, ``HSC-I-HSC-Z`` and ``HSC-Z-HSC-Y``. Needs to be run after
+        addMagnitudes so that the magnitude columns are already present.
         """
 
         i = 0
@@ -384,7 +396,7 @@ class StarGalaxyClassifierTask(Task):
 
         Notes
         -----
-        These columns are named `m` and `b` where m is the gradient and b is the intercept. Needs to be run
+        These columns are named ``m`` and ``b`` where m is the gradient and b is the intercept. Needs to be run
         after addMagnitudes so that the required columns are present.
         """
 
@@ -442,18 +454,18 @@ class StarGalaxyClassifierTask(Task):
 
         Notes
         -----
-        These columns are named `fluxSN + filter name` and are added in every filter included in the filters
+        These columns are named ``fluxSN + filter name`` and are added in every filter included in the filters
         list.
         """
 
         for band in filters:
-            cat["featuresSGSep", "fluxSN" + band] = cat[band]["modelfit_CModel_flux"] / \
-                                                    cat[band]["modelfit_CModel_fluxSigma"]
+            cat["featuresSGSep", "fluxSN" + band] = cat[band][self.config.modelColName] / \
+                                                    cat[band][self.config.modelColName + "Sigma"]
 
         return cat
 
     def makeClassifications(self, cat, clf, colsToUse):
-        """Apply classifier to features defined from `cat` by using the columns in `colsToUse`.
+        """Apply classifier to features defined from ``cat`` by using the columns in ``colsToUse``.
 
         Parameters
         ----------
@@ -466,9 +478,9 @@ class StarGalaxyClassifierTask(Task):
 
         Returns
         -------
-        probsOut : `np.array`
+        probsOut : `numpy.array`
             An array of the probabilities to be a star, 1 = star and 0 = galaxy.
-        flags : `np.array`
+        flags : `numpy.array`
             An array of flags, set if any of the input columns are NaNs.
         """
 

@@ -154,16 +154,15 @@ class StarGalaxyClassifierTask(Task):
         # put this into /datasets/hsc then the butler will get it
         # Add classifier_pickle to obs_base datasets, copy deepCoadd_skyMap.
         # Filters and column headings come from the classifier pickle
-        clfFilenameMorph = "/home/sr525/starGalaxy/clfIsotonicMorph.pickle"
-        with open(clfFilenameMorph, "rb") as f:
-            filters = pickle.load(f)
-            clfMorph = pickle.load(f)
-            colsToUseMorph = pickle.load(f)
-        clfFilename = "/home/sr525/starGalaxy/clfIsotonicColour.pickle"
-        with open(clfFilename, "rb") as f:
-            filters = pickle.load(f)
-            clf = pickle.load(f)
-            colsToUse = pickle.load(f)
+        clfDictMorph = dataRef.get("starGalaxy_morphOnlyClassifier", version=self.config.version)
+        filters = clfDictMorph["filters"]
+        clfMorph = clfDictMorph["clf"]
+        colsToUseMorph = clfDictMorph["colsToUse"]
+
+        clfDict = dataRef.get("starGalaxy_classifier", version=self.config.version)
+        filters = clfDictMorph["filters"]
+        clf = clfDictMorph["clf"]
+        colsToUse = clfDictMorph["colsToUse"]
 
         filtersInCat = set(cat.columns.get_level_values(0))
         if not filtersInCat >= set(filters):

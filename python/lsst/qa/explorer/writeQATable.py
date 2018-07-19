@@ -41,7 +41,7 @@ class PostprocessCatalogTask(CmdLineTask):
         return parser
 
 
-    def run(self, patchRef):
+    def runDataRef(self, patchRef):
         """Do calculations; write result
         """
         parq = patchRef.get()

@@ -23,8 +23,6 @@
 Applies star galaxy classifier
 """
 
-import pickle
-
 import numpy as np
 
 import lsst.pex.config as pexConfig
@@ -32,6 +30,7 @@ from lsst.pipe.base import Task
 from .parquetTable import ParquetTable
 
 __all__ = ["StarGalaxyClassifierTask", "StarGalaxyClassifierConfig"]
+
 
 class StarGalaxyClassifierConfig(pexConfig.Config):
     """Config for star galaxy classifier
@@ -160,9 +159,9 @@ class StarGalaxyClassifierTask(Task):
         colsToUseMorph = clfDictMorph["colsToUse"]
 
         clfDict = dataRef.get("starGalaxy_classifier", version=self.config.version)
-        filters = clfDictMorph["filters"]
-        clf = clfDictMorph["clf"]
-        colsToUse = clfDictMorph["colsToUse"]
+        filters = clfDict["filters"]
+        clf = clfDict["clf"]
+        colsToUse = clfDict["colsToUse"]
 
         filtersInCat = set(cat.columns.get_level_values(0))
         if not filtersInCat >= set(filters):
@@ -395,8 +394,8 @@ class StarGalaxyClassifierTask(Task):
 
         Notes
         -----
-        These columns are named ``m`` and ``b`` where m is the gradient and b is the intercept. Needs to be run
-        after addMagnitudes so that the required columns are present.
+        These columns are named ``m`` and ``b`` where m is the gradient and b is the intercept. Needs to be
+        run after addMagnitudes so that the required columns are present.
         """
 
         for band in filters:

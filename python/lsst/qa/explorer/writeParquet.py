@@ -92,7 +92,7 @@ class WriteObjectTableTask(MergeSourcesTask):
             catalogDict[dataset] = catalog
         return filterName, catalogDict
 
-    def mergeCatalogs(self, catalogs, patchRef):
+    def run(self, catalogs, patchRef):
         """Merge multiple catalogs.
 
         Parameters

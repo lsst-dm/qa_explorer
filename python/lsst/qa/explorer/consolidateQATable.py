@@ -46,7 +46,7 @@ class ConsolidateQATableTask(CmdLineTask):
                                ContainerClass=TractQADataIdContainer)
         return parser
 
-    def run(self, patchRefList):
+    def runDataRef(self, patchRefList):
         df = pd.concat([patchRef.get().toDataFrame() for patchRef in patchRefList])
         patchRefList[0].put(ParquetTable(dataFrame=df), self.outputDataset)
 

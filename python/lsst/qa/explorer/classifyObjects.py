@@ -173,7 +173,7 @@ class StarGalaxyClassifierTask(Task):
 
         colsRequired = {self.config.seeingColName + "_xx", self.config.seeingColName + "_xy",
                         self.config.seeingColName + "_yy", self.config.psfColName, self.config.modelColName,
-                        self.config.psfColName + "Sigma", self.config.modelColName + "Sigma"}
+                        self.config.psfColName + "Err", self.config.modelColName + "Err"}
         for band in filters:
             colsInCat = set(cat[band].columns)
             missingCols = list(set(colsRequired) - colsInCat)
@@ -305,7 +305,7 @@ class StarGalaxyClassifierTask(Task):
                 magErrCol = np.array([np.nan]*len(cat))
 
                 flux = cat[band][col][goodFlux]
-                fluxErr = cat[band][col + "Sigma"][goodFlux]
+                fluxErr = cat[band][col + "Err"][goodFlux]
 
                 mags, magErrs = calib.getMagnitude(flux.values, fluxErr.values)
 
@@ -460,7 +460,7 @@ class StarGalaxyClassifierTask(Task):
 
         for band in filters:
             cat["featuresSGSep", "fluxSN" + band] = cat[band][self.config.modelColName] / \
-                                                    cat[band][self.config.modelColName + "Sigma"]
+                                                    cat[band][self.config.modelColName + "Err"]
 
         return cat
 

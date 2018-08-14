@@ -4,7 +4,6 @@ import pandas as pd
 import dask.dataframe as dd
 import dask.array as da
 # from distributed import Future
-import fastparquet
 import glob, re
 import random
 import logging
@@ -16,6 +15,12 @@ import string
 from .match import match_lists
 from .functors import Labeller, CompositeFunctor, RAColumn, DecColumn
 from .utils import result
+
+# This is for temporary backwards compatibility
+try:
+    from lsst.pipe.analysis.utils import Filenamer
+except ImportError:
+    pass
 
 
 class Catalog(object):
@@ -674,7 +679,7 @@ class ParquetCatalog(Catalog):
     def df(self):
         return result(self._df)
 
-    def get_columns(self, columns, query=None, add_flags=False, client=None):
+    def get_columns(self, columns, query=None, add_flags=False, client=None, **kwargs):
         """Get desired columns as dask dataframe
 
         Parameters

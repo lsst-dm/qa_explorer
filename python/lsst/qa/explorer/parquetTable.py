@@ -284,7 +284,7 @@ class MultilevelParquetTable(ParquetTable):
             if not newColumns:
                 raise ValueError('None of the requested columns ({}) are available!'.format(columns))
             pfColumns = self._stringify(newColumns)
-            df = self.pf.read(columns=pfColumns, use_pandas_metadata=True).to_pandas()
+            df = self._pf.read(columns=pfColumns, use_pandas_metadata=True).to_pandas()
 
         if droplevels:
             # Drop levels of column index that have just one entry

@@ -11,7 +11,7 @@ from param import ParameterizedFunction, ParamOverrides
 from holoviews.core.operation import Operation
 from holoviews.streams import Stream, BoundsXY, LinkedStream
 from holoviews.plotting.bokeh.callbacks import Callback
-from holoviews.operation.datashader import datashade, dynspread
+from holoviews.operation.datashader import datashade, dynspread, rasterize
 from holoviews.operation import decimate
 decimate.max_samples = 5000
 
@@ -250,14 +250,16 @@ class scattersky(ParameterizedFunction):
         sky_filterpoints = filterpoints.instance(xdim='ra', ydim='dec', set_title=False)
         sky_pts = hv.util.Dynamic(dset, operation=sky_filterpoints,
                                   streams=[self.p.filter_stream])
-        sky_opts = dict(plot={'height':self.p.height, 'width':self.p.height},
+        sky_opts = dict(plot={'height':self.p.height, 'width':self.p.height + 100}, #cmap width?
                               # 'tools':['box_select']},
                         norm=dict(axiswise=True))
-        sky_shaded = datashade(sky_pts, cmap=cc.palette[self.p.sky_cmap],
+        sky_shaded = rasterize(sky_pts,
                                aggregator=ds.mean(self.p.ydim), height=self.p.height,
-                               width=self.p.width)
-        sky = dynspread(sky_shaded).opts(**sky_opts)
-        
+                               width=self.p.width).options(colorbar=True,
+                                                           cmap=cc.palette[self.p.sky_cmap])
+        sky = sky_shaded.opts(**sky_opts)
+        # sky = dynspread(sky_shaded).opts(**sky_opts)
+
         # Set up summary table
         table = hv.util.Dynamic(dset, operation=summary_table.instance(ydim=self.p.ydim),
                                 streams=[self.p.filter_stream])

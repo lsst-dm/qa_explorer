@@ -19,14 +19,14 @@ import parambokeh
 
 from bokeh.palettes import Greys9
 
-# Define Stream class that stores filters for various Dimensions 
+# Define Stream class that stores filters for various Dimensions
 class FilterStream(Stream):
     """
     Stream to apply arbitrary filtering on a Dataset.
 
     Many of the plotting functions accept a `FilterStream` object;
-    the utility of this is that you can define a single `FilterStream`, 
-    and if you connect the same one to all your plots, then all of the 
+    the utility of this is that you can define a single `FilterStream`,
+    and if you connect the same one to all your plots, then all of the
     selections/flag selections/etc. can be linked.
 
     See the demo notebooks for an example of usage.
@@ -61,10 +61,10 @@ class FlagSetter(Stream):
     def __init__(self, filter_stream, **kwargs):
         super(FlagSetter, self).__init__(**kwargs)
         self.filter_stream = filter_stream
-    
+
     def event(self, **kwargs):
         self.filter_stream.event(**kwargs)
-        
+
 class SkyFlags(Stream):
     """Experimental; not currently used for anything
     """
@@ -124,11 +124,10 @@ class filter_dset(Operation):
         Flags to ignore""")
 
     def _process(self, dset, key=None):
-        filter_dict = self.p.filter_range.copy()
+        filter_dict = {} if self.p.filter_range is None else self.p.filter_range.copy()
         filter_dict.update({f:True for f in self.p.flags})
         filter_dict.update({f:False for f in self.p.bad_flags})
-        if self.p.filter_range is not None:
-            dset = dset.select(**filter_dict)
+        dset = dset.select(**filter_dict)
         return dset
 
 # Define Operation that filters based on FilterStream state (which provides the filter_range)
@@ -150,7 +149,7 @@ class filterpoints(Operation):
     set_title = param.Boolean(default=False)
 
     def _process(self, dset, key=None):
-        dset = filter_dset(dset, flags=self.p.flags, bad_flags=self.p.bad_flags, 
+        dset = filter_dset(dset, flags=self.p.flags, bad_flags=self.p.bad_flags,
                             filter_range=self.p.filter_range)
         kdims = [dset.get_dimension(self.p.xdim), dset.get_dimension(self.p.ydim)]
         vdims = [dim for dim in dset.dimensions() if dim.name not in kdims]
@@ -162,7 +161,7 @@ class filterpoints(Operation):
                                                                   len(ydata))
             pts = pts.relabel(title)
         return pts
-    
+
 
 class summary_table(Operation):
     ydim = param.String(default=None)
@@ -174,7 +173,7 @@ class summary_table(Operation):
         Flags to ignore""")
 
     def _process(self, dset, key=None):
-        ds = filter_dset(dset, filter_range=self.p.filter_range, 
+        ds = filter_dset(dset, filter_range=self.p.filter_range,
                         flags=self.p.flags, bad_flags=self.p.bad_flags)
         if self.p.ydim is None:
             cols = [dim.name for dim in dset.vdims]
@@ -206,7 +205,7 @@ class scattersky(ParameterizedFunction):
     """
     Creates two datashaded views from a Dataset.
 
-    First plot is an x-y scatter plot, with colormap according to density 
+    First plot is an x-y scatter plot, with colormap according to density
     of points; second plot is a sky plot where the colormap corresponds
     to the average y values of the first plot in each datashaded pixel.
     """
@@ -223,15 +222,19 @@ class scattersky(ParameterizedFunction):
         Height in pixels of the combined layout""")
     width = param.Number(default=900, doc="""
         Width in pixels of the combined layout""")
-    filter_stream = param.ClassSelector(default=FilterStream(), class_=FilterStream, 
+    filter_stream = param.ClassSelector(default=FilterStream(), class_=FilterStream,
         doc="Stream to which selection ranges get added.")
     show_rawsky = param.Boolean(default=False, doc="""
         Whether to show the "unselected" sky points in greyscale when there is a selection.""")
 
     def __call__(self, dset, **params):
         self.p = ParamOverrides(self, params)
+        if self.p.xdim not in dset.dimensions():
+            raise ValueError('{} not in Dataset.'.format(self.p.xdim))
         if self.p.ydim not in dset.dimensions():
             raise ValueError('{} not in Dataset.'.format(self.p.ydim))
+        if ('ra' not in dset.dimensions()) or ('dec' not in dset.dimensions()):
+            raise ValueError('ra and/or dec not in Dataset.')
 
         # Set up scatter plot
         scatter_filterpoints = filterpoints.instance(xdim=self.p.xdim, ydim=self.p.ydim)
@@ -265,18 +268,18 @@ class scattersky(ParameterizedFunction):
         scatter_notifier = partial(notify_stream, filter_stream=self.p.filter_stream,
                                    xdim=self.p.xdim, ydim=self.p.ydim)
         scatter_select.add_subscriber(scatter_notifier)
-        
+
         sky_select = BoundsXY(source=sky)
         sky_notifier = partial(notify_stream, filter_stream=self.p.filter_stream,
                                xdim='ra', ydim='dec')
         sky_select.add_subscriber(sky_notifier)
-        
+
         # Reset
         reset = Reset(source=scatter)
         reset.add_subscriber(partial(reset_stream, self.p.filter_stream))
-        
+
         raw_scatter = datashade(scatter_filterpoints(dset), cmap=Greys9[::-1][:5])
-        
+
         if self.p.show_rawsky:
             raw_sky = datashade(sky_filterpoints(dset), cmap=Greys9[::-1][:5])
             return (table + raw_scatter*scatter + raw_sky*sky)
@@ -287,23 +290,23 @@ class scattersky(ParameterizedFunction):
 class multi_scattersky(ParameterizedFunction):
     """Layout of multiple scattersky plots, one for each vdim in dset
     """
-    
+
     filter_stream = param.ClassSelector(default=FilterStream(), class_=FilterStream)
 
-    ignored_dimensions = param.List(default=['x', 'ra', 'dec', 'label', 'ccdId', 'patchId'])
     height = param.Number(default=300)
     width = param.Number(default=900)
+    xdim = param.String(default='x', doc="""
+        Dimension of the dataset to use as x-coordinate""")
 
     def _get_ydims(self, dset):
         # Get dimensions from first Dataset type found in input
         return [dim.name for dim in dset.traverse(lambda x: x, [hv.Dataset])[0].vdims]
-        # return [dim.name for dim in dset.traverse(lambda x: x, [hv.Dataset])[0].dimensions()
-        #         if dim.name not in self.p.ignored_dimensions]
-    
+
     def __call__(self, dset, **params):
         self.p = param.ParamOverrides(self, params)
         return hv.Layout([scattersky(dset, filter_stream=self.p.filter_stream,
-                                  ydim=ydim, height=self.p.height, width=self.p.width) 
+                                     xdim=self.p.xdim, ydim=ydim,
+                                     height=self.p.height, width=self.p.width)
                        for ydim in self._get_ydims(dset)]).cols(3).opts(plot={'merge_tools':False})
 
 
@@ -346,36 +349,36 @@ class skyplot(ParameterizedFunction):
 
     def __call__(self, dset, **params):
         self.p = ParamOverrides(self, params)
-        
+
         if self.p.vdim is None:
             vdim = dset.vdims[0].name
         else:
             vdim = self.p.vdim
 
-        
+
         pts = hv.util.Dynamic(dset, operation=skypoints,
                                streams=[self.p.filter_stream])
-        
+
         if self.p.aggregator == 'mean':
             aggregator = ds.mean(vdim)
         elif self.p.aggregator == 'std':
             aggregator = ds.std(vdim)
         elif self.p.aggregator == 'count':
             aggregator = ds.count()
-        
+
         kwargs = dict(cmap=cc.palette[self.p.cmap],
                       aggregator=aggregator)
         if self.p.width is not None:
             kwargs.update(width=self.p.width, height=self.p.height)
 #                          streams=[hv.streams.RangeXY])
-            
-        decimate_opts = dict(plot={'tools':['hover', 'box_select']}, 
-                            style={'alpha':0, 'size':self.p.decimate_size, 
+
+        decimate_opts = dict(plot={'tools':['hover', 'box_select']},
+                            style={'alpha':0, 'size':self.p.decimate_size,
                                    'nonselection_alpha':0})
 
         decimated = decimate(pts).opts(**decimate_opts)
         sky_shaded = datashade(pts, **kwargs)
-    
+
         return dynspread(sky_shaded) * decimated
 
 class skyplot_layout(ParameterizedFunction):
@@ -385,12 +388,12 @@ class skyplot_layout(ParameterizedFunction):
 
     def __call__(self, skyplots, **params):
         self.p = param.ParamOverrides(self, params)
-        
+
         pointer = hv.streams.PointerXY(x=0, y=0)
         cross_opts = dict(style={'line_width':1, 'color':'black'})
-        cross_dmap = hv.DynamicMap(lambda x, y: (hv.VLine(x).opts(**cross_opts) * 
-                                                 hv.HLine(y).opts(**cross_opts)), streams=[pointer])    
-        
+        cross_dmap = hv.DynamicMap(lambda x, y: (hv.VLine(x).opts(**cross_opts) *
+                                                 hv.HLine(y).opts(**cross_opts)), streams=[pointer])
+
         plots = []
         for s in skyplots:
             if self.p.crosshair:
@@ -398,7 +401,7 @@ class skyplot_layout(ParameterizedFunction):
             else:
                 plot = s
             plots.append(plot)
-                
+
         return hv.Layout(plots)
 
 class skyshade(Operation):
@@ -430,11 +433,10 @@ class skyshade(Operation):
 
         datashaded = dynspread(datashade(element, **kwargs))
 
-        # decimate_opts = dict(plot={'tools':['hover', 'box_select']}, 
-        #                     style={'alpha':0, 'size':self.p.decimate_size, 
+        # decimate_opts = dict(plot={'tools':['hover', 'box_select']},
+        #                     style={'alpha':0, 'size':self.p.decimate_size,
         #                            'nonselection_alpha':0})
 
         # decimated = decimate(element, max_samples=self.p.max_samples).opts(**decimate_opts)
 
         return datashaded #* decimated
-

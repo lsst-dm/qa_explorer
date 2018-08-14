@@ -36,16 +36,15 @@ def init_fromDict(initDict, basePath='lsst.qa.explorer.functors',
         (relative to `basePath`).
 
     """
-    pythonType = doImport('{0}.{1}'.format(basePath, initDict[typeKey]))
+    initDict = initDict.copy()
+    pythonType = doImport('{0}.{1}'.format(basePath, initDict.pop(typeKey)))
     args = []
     if 'args' in initDict:
-        args = initDict['args']
+        args = initDict.pop('args')
         if isinstance(args, str):
             args = [args]
-    kwargs = {}
-    if 'kwargs' in initDict:
-        kwargs.update(initDict['kwargs'])
-    return pythonType(*args, **kwargs)
+
+    return pythonType(*args, **initDict)
 
 
 def get_visits_sql(field, tract, filt, sqlitedir='/scratch/hchiang2/parejko/'):

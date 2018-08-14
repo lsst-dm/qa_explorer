@@ -1,11 +1,13 @@
-
-x:
-    functor: Mag
-    args:
-        base_PsfFlux
-label:
-    functor: StarGalaxyLabeller
 funcs:
+    psfMag:
+        functor: Mag
+        args:
+            - base_PsfFlux
+        kwargs:
+            filt: HSC-G
+            dataset: meas
+    label:
+        functor: StarGalaxyLabeller
     cmodel_magDiff:
         functor: MagDiff
         args:
@@ -26,13 +28,11 @@ funcs:
     deconvolved_moments:
         functor: DeconvolvedMoments
 flags:
-    ref:
-        - calib_psfUsed
-        - merge_measurement_i
-        - merge_measurement_r
-        - merge_measurement_z
-        - merge_measurement_y
-        - merge_measurement_g
-        - base_PixelFlags_flag_inexact_psfCenter
-    meas:
-    forced_src:
+    - calib_psfUsed
+    - merge_measurement_i
+    - merge_measurement_r
+    - merge_measurement_z
+    - merge_measurement_y
+    - merge_measurement_g
+    - base_PixelFlags_flag_inexact_psfCenter
+    - detect_isPrimary

@@ -234,7 +234,7 @@ class MultilevelParquetTable(ParquetTable):
             matches = [re.search(pattern, c) for c in columns]
             return [m.groups() for m in matches if m is not None]
 
-    def toDataFrame(self, columns=None):
+    def toDataFrame(self, columns=None, droplevels=True):
         """Get table (or specified columns) as a pandas DataFrame
 
         To get specific columns in specified sub-levels:
@@ -286,15 +286,16 @@ class MultilevelParquetTable(ParquetTable):
             pfColumns = self._stringify(newColumns)
             df = self.pf.read(columns=pfColumns, use_pandas_metadata=True).to_pandas()
 
-        # Drop levels of column index that have just one entry
-        levelsToDrop = [n for l,n in zip(df.columns.levels, df.columns.names)
-                        if len(l)==1]
+        if droplevels:
+            # Drop levels of column index that have just one entry
+            levelsToDrop = [n for l,n in zip(df.columns.levels, df.columns.names)
+                            if len(l)==1]
 
-        # Prevent error when trying to drop *all* columns
-        if len(levelsToDrop) == len(df.columns.names):
-            levelsToDrop.remove(df.columns.names[-1])
+            # Prevent error when trying to drop *all* columns
+            if len(levelsToDrop) == len(df.columns.names):
+                levelsToDrop.remove(df.columns.names[-1])
 
-        df.columns = df.columns.droplevel(levelsToDrop)
+            df.columns = df.columns.droplevel(levelsToDrop)
 
         return df
 

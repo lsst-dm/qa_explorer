@@ -1,148 +1,176 @@
-from __future__ import print_function, division
+import yaml
 
 import pandas as pd
 import numpy as np
 import re
-import fastparquet
-import logging
-import dask.dataframe as dd
-import dask.array as da
-import dask
-import time
-import inspect
-import yaml
 
-from .utils import result, init_fromDict
+from lsst.qa.explorer.parquetTable import ParquetTable, MultilevelParquetTable
+from lsst.qa.explorer.utils import init_fromDict
 
 class Functor(object):
-    """Base class for computations performed on catalogs
+    _default_dataset = 'ref'
+    _columnLevels = ('filter', 'dataset', 'column')
+    _dfLevels = ('column',)
 
-    Subclasses must implement `_func`, which defines the calculation
-    to be performed.  The way the calculation actually happens is an 
-    interaction between the catalog's `_apply_func` method
-    (which uses the functor's `_func` method and defines the format
-    and content of the result and such) 
-    and the functor `__call__` method, which controls things like
-    whether nans are dropped.
+    def __init__(self, filt=None, dataset=None):
+        self.filt = filt
+        self.dataset = dataset if dataset is not None else self._default_dataset
 
-    Subclasses must also define `_columns` attribute (or equivalently
-    a `columns` property) that defines which
-    columns are required to be read from the catalog to perform the calculation.
-
-    Results are returned by default as in-memory `pandas.Series` or `pandas.DataFrame`, 
-    unless called with `dask=True`, in which case a dask DataFrame is returned.
-
-    Note that when implementing `_func`, use the dask versions of ufuncs for 
-    array math, instead of numpy; e.g. `da.sin`, `da.cos`, 
-    instead of `np.sin`, `np.cos`.
-
-
-    Parameters
-    ----------
-    """
-    _default_dataset = 'forced_src'
-    
-    def __init__(self, dataset=None, **kwargs):
-        self._dataset = dataset
-        
-    @property
-    def dataset(self):
-        if self._dataset is not None:
-            return self._dataset
-        else:
-            return self._default_dataset
-    
     @property
     def columns(self):
         """Columns required to perform calculation
         """
-        try:
-            return self._columns
-        except AttributeError:
+        if not hasattr(self, '_columns'):
             raise NotImplementedError('Must define columns property or _columns attribute')
-    
+        return self._columns
+
+    def multilevelColumns(self, parq):
+        if not set(parq.columnLevels) == set(self._columnLevels):
+            raise ValueError('ParquetTable does not have the expected column levels. ' +
+                             'Got {0}; expected {1}.'.format(parq.columnLevels, self._columnLevels))
+
+        columnDict = {'column' : self.columns,
+                      'dataset' : self.dataset}
+        if self.filt is None:
+            if 'filter' in parq.columnLevels:
+                if self.dataset=='ref':
+                    columnDict['filter'] = parq.columnLevelNames['filter'][0]
+                else:
+                    raise ValueError("'filt' not set for functor {}".format(self.name) +
+                                     "(dataset {}) ".format(self.dataset) +
+                                     "and ParquetTable " +
+                                     "contains multiple filters in column index. " +
+                                     "Set 'filt' or set 'dataset' to 'ref'.")
+        else:
+            columnDict['filter'] = self.filt
+
+        return parq._colsFromDict(columnDict)
+
     def _func(self, df, dropna=True):
         raise NotImplementedError('Must define calculation on dataframe')
 
-    def _get_cols(self, catalog, **kwargs):
-        if self.dataset is not None:
-            if 'dataset' not in kwargs:
-                kwargs['dataset'] = self.dataset
+    def _get_cols(self, parq):
+        """Retrieve dataframe necessary for calculation.
 
-        return catalog.get_columns(columns=self.columns, **kwargs)
-        
-    def __call__(self, catalog, **kwargs):
-        df = self._get_cols(catalog, **kwargs)
+        Returns dataframe upon which `self._func` can act.
+        """
+        if isinstance(parq, MultilevelParquetTable):
+            columns = self.multilevelColumns(parq)
+        else:
+            columns = self.columns
+
+        df = parq.toDataFrame(columns=columns, droplevels=False)
+        df = self._setLevels(df)
+        return df
+
+    def _setLevels(self, df):
+        levelsToDrop = [n for n in df.columns.names if n not in self._dfLevels]
+        df.columns = df.columns.droplevel(levelsToDrop)
+        return df
+
+    def _dropna(self, vals):
+        return vals.dropna()
+
+    def __call__(self, parq, dropna=False):
+        df = self._get_cols(parq)
+
         vals = self._func(df)
+
+        if dropna:
+            vals = self._dropna(vals)
+
         return vals
 
+    @property
+    def name(self):
+        """Full name of functor (suitable for figure labels)
+        """
+        return NotImplementedError
 
+    @property
+    def shortname(self):
+        """Short name of functor (suitable for column name/dict key)
+        """
+        return self.name
 
 class CompositeFunctor(Functor):
     """Perform multiple calculations at once on a catalog
 
-    Returns a dataframe with columns being the keys of `funcDict`.  If called
-    on a `MatchedCatalog` or `MultiMatchedCatalog` with `how='all'`, then 
-    the columns will be a multi-level index, indexed first by functor name
-    then by catalog name.
-    
     Parameters
     ----------
-    funcDict : dict
-        Dictionary of functors.  
+    funcDict : `dict`
+        Dictionary of functors.
 
     """
+    dataset = None
 
-    def __init__(self, funcDict, **kwargs):
-        self.funcDict = funcDict
-        super(CompositeFunctor, self).__init__(**kwargs)
+    def __init__(self, funcs, **kwargs):
 
-    @property 
+        if type(funcs) == dict:
+            self.funcDict = funcs
+        else:
+            self.funcDict = {f.shortname : f for f in funcs}
+
+        self._filt = None
+
+        super().__init__(**kwargs)
+
+    @property
+    def filt(self):
+        return self._filt
+
+    @filt.setter
+    def filt(self, filt):
+        if filt is not None:
+            for _, f in self.funcDict.items():
+                f.filt = filt
+        self._filt = filt
+
+    @property
     def columns(self):
         return list(set([x for y in [f.columns for f in self.funcDict.values()] for x in y]))
-    
-    def __call__(self, catalog, **kwargs):
-        df = pd.concat({k : f(catalog, **kwargs) 
-                        for k,f in self.funcDict.items()}, axis=1)
-        return df
 
-    def __getitem__(self, item):
-        return self.funcDict[item]
+    def multilevelColumns(self, parq):
+        return list(set([x for y in [f.multilevelColumns(parq)
+                                     for f in self.funcDict.values()] for x in y]))
+
+    def __call__(self, parq, **kwargs):
+
+        if isinstance(parq, MultilevelParquetTable):
+            columns = self.multilevelColumns(parq)
+            df = parq.toDataFrame(columns=columns, droplevels=False)
+            valDict = {}
+            for k,f in self.funcDict.items():
+                subdf = f._setLevels(df[f.multilevelColumns(parq)])
+                valDict[k] = f._func(subdf)
+        else:
+            columns = self.columns
+            df = parq.toDataFrame(columns=columns)
+            valDict = {k : f._func(df) for k,f in self.funcDict.items()}
+
+        try:
+            valDf = pd.concat(valDict, axis=1)
+        except TypeError:
+            print([(k, type(v)) for k,v in valDict.items()])
+            raise
+
+        if kwargs.get('dropna', False):
+            valDf = valDf.dropna(how='any')
+
+        return valDf
 
     @classmethod
-    def from_yaml(cls, filename):
+    def from_yaml(cls, filename, **kwargs):
         conf = yaml.load(open(filename).read())
         funcs = {}
-        funcs['x'] = init_fromDict(conf['x'])
-        funcs['label'] = init_fromDict(conf['label'])
         for func,val in conf['funcs'].items():
             funcs[func] = init_fromDict(val)
-        
-        for dataset,flags in conf['flags'].items():
-            if flags is None:
-                continue
-            if isinstance(flags, str):
-                flags = [flags]
-            for flag in flags:
-                funcs[flag] = Column(flag, dataset=dataset)
 
-        return cls(funcs)
+        if 'flags' in conf:
+            for flag in conf['flags']:
+                funcs[flag] = Column(flag, dataset='ref')
 
-class TestFunctor(Functor):
-    name = 'test'
-
-    def __init__(self, n=None, seed=1234, **kwargs):
-        self.n = n
-        self.seed = seed
-        super(TestFunctor, self).__init__(**kwargs)
-
-    def __call__(self, catalog):
-        np.random.seed(self.seed)
-        n = len(catalog) if self.n is None else self.n
-        u = np.random.random(n)
-        x = np.ones(n)
-        x[u < 0.5] = -1
-        return x
+        return cls(funcs, **kwargs)
 
 def mag_aware_eval(df, expr):
     """Evaluate an expression on a DataFrame, knowing what the 'mag' function means
@@ -180,7 +208,7 @@ class CustomFunctor(Functor):
 
     def __init__(self, expr, **kwargs):
         self.expr = expr
-        super(CustomFunctor, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     @property
     def name(self):
@@ -209,7 +237,7 @@ class Column(Functor):
     """
     def __init__(self, col, **kwargs):
         self.col = col
-        super(Column, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     @property
     def name(self):
@@ -237,7 +265,7 @@ class CoordColumn(Column):
 
     def __init__(self, col, calculate=False, **kwargs):
         self.calculate = calculate
-        super(CoordColumn, self).__init__(col, **kwargs)
+        super().__init__(col, **kwargs)
 
     def _func(self, df):
         res = df[self.col]
@@ -248,18 +276,18 @@ class CoordColumn(Column):
 class RAColumn(CoordColumn):
     name = 'RA'
     def __init__(self, **kwargs):
-        super(RAColumn, self).__init__('coord_ra', **kwargs)
+        super().__init__('coord_ra', **kwargs)
 
     def __call__(self, catalog, **kwargs):
-        return super(RAColumn, self).__call__(catalog, **kwargs)
+        return super().__call__(catalog, **kwargs)
 
 class DecColumn(CoordColumn):
     name = 'Dec'
     def __init__(self, **kwargs):
-        super(DecColumn, self).__init__('coord_dec', **kwargs)
+        super().__init__('coord_dec', **kwargs)
 
     def __call__(self, catalog, **kwargs):
-        return super(DecColumn, self).__call__(catalog, **kwargs)
+        return super().__call__(catalog, **kwargs)
 
 
 def fluxName(col):
@@ -268,38 +296,122 @@ def fluxName(col):
     return col
 
 class Mag(Functor):
-    def __init__(self, col, **kwargs):
+    """Compute calibrated magnitude
+
+    Parameters
+    col : `str`
+        Name of flux column
+    calib : `lsst.afw.image.calib.Calib` (optional)
+        Object that knows zero point.
+    """
+    _default_dataset = 'meas'
+
+    def __init__(self, col, calib=None, **kwargs):
         self.col = fluxName(col)
-        super(Mag, self).__init__(**kwargs)
+        self.calib = calib
+        if calib is not None:
+            self.fluxMag0 = calib.getFluxMag0()[0]
+        else:
+            self.fluxMag0 = 63095734448.0194 # Where does this come from??
+
+        super().__init__(**kwargs)
 
     @property
     def columns(self):
         return [self.col]
 
     def _func(self, df):
-        return -2.5*da.log10(df[self.col])
+        with np.warnings.catch_warnings():
+            np.warnings.filterwarnings('ignore', r'invalid value encountered')
+            np.warnings.filterwarnings('ignore', r'divide by zero')
+            return -2.5*np.log10(df[self.col] / self.fluxMag0)
 
     @property
     def name(self):
         return 'mag_{0}'.format(self.col)
 
 class MagDiff(Functor):
+    _default_dataset = 'meas'
+
     """Functor to calculate magnitude difference"""
     def __init__(self, col1, col2, **kwargs):
         self.col1 = fluxName(col1)
         self.col2 = fluxName(col2)
-        super(MagDiff, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     @property
     def columns(self):
         return [self.col1, self.col2]
 
     def _func(self, df):
-        return -2.5*da.log10(df[self.col1]/df[self.col2])
+        with np.warnings.catch_warnings():
+            np.warnings.filterwarnings('ignore', r'invalid value encountered')
+            np.warnings.filterwarnings('ignore', r'divide by zero')
+            return -2.5*np.log10(df[self.col1]/df[self.col2])
 
     @property
     def name(self):
         return '(mag_{0} - mag_{1})'.format(self.col1, self.col2)
+
+    @property
+    def shortname(self):
+        return 'magDiff_{0}_{1}'.format(self.col1, self.col2)
+
+class Color(Functor):
+    _default_dataset = 'forced_src'
+    _dfLevels = ('filter', 'column')
+
+    def __init__(self, col, filt2, filt1, **kwargs):
+        self.col = fluxName(col)
+        self.filt2 = filt2
+        self.filt1 = filt1
+
+        self.mag2 = Mag(col, filt=filt2, **kwargs)
+        self.mag1 = Mag(col, filt=filt1, **kwargs)
+
+        super().__init__(**kwargs)
+
+    @property
+    def filt(self):
+        return None
+
+    @filt.setter
+    def filt(self, filt):
+        pass
+
+    def _func(self, df):
+        mag2 = self.mag2._func(df[self.filt2])
+        mag1 = self.mag1._func(df[self.filt1])
+        return mag2 - mag1
+
+#    def __call__(self, *args, **kwargs):
+#        vals = (self.mag2(*args, **kwargs) -
+#                self.mag1(*args, **kwargs))
+#
+#        # Gotta do this again because pandas will
+#        #  impute missing data during the above operation
+#        #  if different nans in the two mags.
+#        if kwargs.get('dropna', False):
+#            vals = self._dropna(vals)
+#
+#        return vals
+
+    @property
+    def columns(self):
+        return [self.mag1.col, self.mag2.col]
+
+    def multilevelColumns(self, parq):
+        return [(self.dataset, self.filt1, self.col),
+                (self.dataset, self.filt2, self.col)]
+
+    @property
+    def name(self):
+        return '{0} - {1} ({2})'.format(self.filt2, self.filt1, self.col)
+
+    @property
+    def shortname(self):
+        return '{0}_{1}m{2}'.format(self.col, self.filt2.replace('-', ''),
+                                    self.filt1.replace('-',''))
 
 class Labeller(Functor):
     """Main function of this subclass is to override the dropna=True
@@ -309,8 +421,8 @@ class Labeller(Functor):
     name = 'label'
     _force_str = False
 
-    def __call__(self, catalog, dropna=False, **kwargs):
-        return super(Labeller, self).__call__(catalog, dropna=False, **kwargs)
+    def __call__(self, parq, dropna=False, **kwargs):
+        return super().__call__(parq, dropna=False, **kwargs)
 
 class StarGalaxyLabeller(Labeller):
     _columns = ["base_ClassificationExtendedness_value"]
@@ -322,7 +434,7 @@ class StarGalaxyLabeller(Labeller):
         test = (x < 0.5).astype(int)
         test = test.mask(mask, 2)
         #are these backwards?
-        label = pd.Series(pd.Categorical.from_codes(test, categories=['galaxy', 'star', self._null_label]), 
+        label = pd.Series(pd.Categorical.from_codes(test, categories=['galaxy', 'star', self._null_label]),
                             index=x.index, name='label')
         if self._force_str:
             label = label.astype(str)
@@ -337,7 +449,7 @@ class NumStarLabeller(Labeller):
         x = df[self._columns][self._columns[0]]
 
         # Number of filters
-        n = len(x.unique()) - 1 
+        n = len(x.unique()) - 1
 
         label = pd.Series(pd.cut(x, [-1, 0, n-1 , n], labels=['noStar', 'maybe', 'star']),
                             index=x.index, name='label')
@@ -350,13 +462,13 @@ class NumStarLabeller(Labeller):
 
 class DeconvolvedMoments(Functor):
     name = 'Deconvolved Moments'
+    shortname = 'deconvolvedMoments'
     _columns = ("ext_shapeHSM_HsmSourceMoments_xx",
                 "ext_shapeHSM_HsmSourceMoments_yy",
                 "base_SdssShape_xx", "base_SdssShape_yy",
                 # "ext_shapeHSM_HsmSourceMoments",
                 "ext_shapeHSM_HsmPsfMoments_xx",
                 "ext_shapeHSM_HsmPsfMoments_yy")
-    _default_dataset = 'ref'
 
     def _func(self, df):
         """Calculate deconvolved moments"""
@@ -373,28 +485,29 @@ class DeconvolvedMoments(Functor):
             # raise TaskError("No psf shape parameter found in catalog")
             raise RuntimeError('No psf shape parameter found in catalog')
 
-        return hsm.where(da.isfinite(hsm), sdss) - psf
+        return hsm.where(np.isfinite(hsm), sdss) - psf
 
 class SdssTraceSize(Functor):
     """Functor to calculate SDSS trace radius size for sources"""
     name = "SDSS Trace Size"
+    shortname = 'sdssTrace'
     _columns = ("base_SdssShape_xx", "base_SdssShape_yy")
 
     def _func(self, df):
-        srcSize = da.sqrt(0.5*(df["base_SdssShape_xx"] + df["base_SdssShape_yy"]))
+        srcSize = np.sqrt(0.5*(df["base_SdssShape_xx"] + df["base_SdssShape_yy"]))
         return srcSize
 
 
 class PsfSdssTraceSizeDiff(Functor):
     """Functor to calculate SDSS trace radius size difference (%) between object and psf model"""
     name = "PSF - SDSS Trace Size"
+    shortname = 'psf_sdssTrace'
     _columns = ("base_SdssShape_xx", "base_SdssShape_yy",
                 "base_SdssShape_psf_xx", "base_SdssShape_psf_yy")
-    _default_dataset = 'ref'
 
     def _func(self, df):
-        srcSize = da.sqrt(0.5*(df["base_SdssShape_xx"] + df["base_SdssShape_yy"]))
-        psfSize = da.sqrt(0.5*(df["base_SdssShape_psf_xx"] + df["base_SdssShape_psf_yy"]))
+        srcSize = np.sqrt(0.5*(df["base_SdssShape_xx"] + df["base_SdssShape_yy"]))
+        psfSize = np.sqrt(0.5*(df["base_SdssShape_psf_xx"] + df["base_SdssShape_psf_yy"]))
         sizeDiff = 100*(srcSize - psfSize)/(0.5*(srcSize + psfSize))
         return sizeDiff
 
@@ -402,12 +515,13 @@ class PsfSdssTraceSizeDiff(Functor):
 class HsmTraceSize(Functor):
     """Functor to calculate HSM trace radius size for sources"""
     name = 'HSM Trace Size'
+    shortname = 'hsmTrace'
     _columns = ("ext_shapeHSM_HsmSourceMoments_xx",
                 "ext_shapeHSM_HsmSourceMoments_yy")
-    _default_dataset = 'ref'
+
 
     def _func(self, df):
-        srcSize = da.sqrt(0.5*(df["ext_shapeHSM_HsmSourceMoments_xx"] +
+        srcSize = np.sqrt(0.5*(df["ext_shapeHSM_HsmSourceMoments_xx"] +
                                df["ext_shapeHSM_HsmSourceMoments_yy"]))
         return srcSize
 
@@ -415,16 +529,16 @@ class HsmTraceSize(Functor):
 class PsfHsmTraceSizeDiff(Functor):
     """Functor to calculate HSM trace radius size difference (%) between object and psf model"""
     name = 'PSF - HSM Trace Size'
+    shortname = 'psf_HsmTrace'
     _columns = ("ext_shapeHSM_HsmSourceMoments_xx",
                 "ext_shapeHSM_HsmSourceMoments_yy",
                 "ext_shapeHSM_HsmPsfMoments_xx",
                 "ext_shapeHSM_HsmPsfMoments_yy")
-    _default_dataset = 'ref'
 
     def _func(self, df):
-        srcSize = da.sqrt(0.5*(df["ext_shapeHSM_HsmSourceMoments_xx"] +
+        srcSize = np.sqrt(0.5*(df["ext_shapeHSM_HsmSourceMoments_xx"] +
                                df["ext_shapeHSM_HsmSourceMoments_yy"]))
-        psfSize = da.sqrt(0.5*(df["ext_shapeHSM_HsmPsfMoments_xx"] +
+        psfSize = np.sqrt(0.5*(df["ext_shapeHSM_HsmPsfMoments_xx"] +
                                df["ext_shapeHSM_HsmPsfMoments_yy"]))
         sizeDiff = 100*(srcSize - psfSize)/(0.5*(srcSize + psfSize))
         return sizeDiff
@@ -432,8 +546,7 @@ class PsfHsmTraceSizeDiff(Functor):
 class Seeing(Functor):
     name = 'seeing'
     _columns = ('ext_shapeHSM_HsmPsfMoments_xx', 'ext_shapeHSM_HsmPsfMoments_yy')
-    _default_dataset = 'ref'
 
     def _func(self, df):
-        return 0.168*2.35*da.sqrt(0.5*(df['ext_shapeHSM_HsmPsfMoments_xx']**2 +
+        return 0.168*2.35*np.sqrt(0.5*(df['ext_shapeHSM_HsmPsfMoments_xx']**2 +
                                        df['ext_shapeHSM_HsmPsfMoments_yy']**2))

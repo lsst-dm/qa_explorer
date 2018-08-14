@@ -250,6 +250,13 @@ class Column(Functor):
     def _func(self, df):
         return df[self.col]
 
+class Index(Functor):
+    columns = ['coord_ra'] # just a dummy; something has to be here
+    _default_dataset = 'ref'
+
+    def _func(self, df):
+        return pd.Series(df.index, index=df.index)
+
 class IDColumn(Column):
     col = 'id'
     _allow_difference = False
@@ -329,6 +336,46 @@ class Mag(Functor):
     @property
     def name(self):
         return 'mag_{0}'.format(self.col)
+
+class MagErr(Mag):
+    """Compute calibrated magnitude uncertainty
+
+    Parameters
+    col : `str`
+        Name of flux column
+    calib : `lsst.afw.image.calib.Calib` (optional)
+        Object that knows zero point.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.calib is not None:
+            self.fluxMag0Err = self.calib.getFluxMag0()[1]
+        else:
+            self.fluxMag0Err = 0.
+
+    @property
+    def columns(self):
+        return [self.col, self.col + 'Sigma']
+
+    def _func(self, df):
+        with np.warnings.catch_warnings():
+            np.warnings.filterwarnings('ignore', r'invalid value encountered')
+            np.warnings.filterwarnings('ignore', r'divide by zero')
+            fluxCol, fluxErrCol = self.columns
+            x = df[fluxErrCol] / df[fluxCol]
+            y = self.fluxMag0Err / self.fluxMag0
+            magErr = (2.5 / np.log(10.)) * np.sqrt(x*x + y*y)
+            return magErr
+
+    @property
+    def name(self):
+        return super().name + '_err'
+
+class NanoMaggie(Mag):
+
+    def _func(self, df):
+        return (df[self.col] / self.fluxMag0) * 1e9
 
 class MagDiff(Functor):
     _default_dataset = 'meas'

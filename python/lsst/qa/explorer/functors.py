@@ -8,6 +8,62 @@ from lsst.qa.explorer.parquetTable import ParquetTable, MultilevelParquetTable
 from lsst.qa.explorer.utils import init_fromDict
 
 class Functor(object):
+    """Define and execute a calculation on a deepCoadd_obj ParquetTable
+
+    The `__call__` method accepts a ``ParquetTable`` object, and returns the result
+    of the calculation as a single column.  Each functor defines what columns are needed
+    for the calculation, and only these columns are read from the ``ParquetTable``.
+
+    The action of  `__call__` consists of two steps: first, loading the necessary
+    columns from disk into memory as a ``pandas.DataFrame` object; and second, performing
+    the computation on this dataframe and returning the result.
+
+
+    To define a new `Functor`, a subclass must define a `_func` method,
+    that takes a ``pandas.DataFrame`` and returns result in a ``pandas.Series``.
+    In addition, it must define the following attributes
+
+    * `_columns`: The columns necessary to perform the calculation
+    * `name`: A name appropriate for a figure axis label
+    * `shortname`: A name appropriate for use as a dictionary key
+
+    On initialization, a `Functor` should declare what filter (`filt` kwarg) and dataset
+    (e.g. `'ref'`, `'meas'`, `'forced_src'`) it is intended to be applied to.
+    This enables the `_get_cols` method to extract the proper columns from the parquet file.
+    If not specified, the dataset will fall back on the `_default_dataset` attribute.
+    If filter is not specified and `dataset` is anything other than `'ref'`, then an error
+    will be raised when trying to perform the calculation.
+
+    As currently implemented, `Functor` is only set up to expect a `ParquetTable`
+    of the format of the `deepCoadd_obj` dataset; that is, a `MultilevelParquetTable`
+    with the levels of the column index being `filter`, `dataset`, and `column`.
+    This is defined in the `_columnLevels` attribute, as well as being implicit in
+    the role of the `filt` and `dataset` attributes defined at initialization.
+    In addition, the `_get_cols` method that
+    reads the dataframe from the `ParquetTable` will return a dataframe with column
+    index levels defined by the `_dfLevels` attribute; by default, this is `column`.
+
+    The `_columnLevels` and `_dfLevels` attributes should generally not need to
+    be changed, unless `_func` needs columns from multiple filters or datasets
+    to do the calculation.
+    An example of this is the ``lsst.qa.explorer.functors.Color` functor, for which
+    `_dfLevels = ('filter', 'column')`, and `_func` expects the dataframe it gets to
+    have those levels in the column index.
+
+    While not currently implemented, it would be
+    relatively straightforward to generalize the base `Functor` class to be able to
+    accept arbitrary `ParquetTable` formats (other than that of `deepCoadd_obj`).
+
+    Parameters
+    ----------
+    filt : str
+        Filter upon which to do the calculation
+
+    dataset : str
+        Dataset upon which to do the calculation (e.g., 'ref', 'meas', 'forced_src').
+
+    """
+
     _default_dataset = 'ref'
     _columnLevels = ('filter', 'dataset', 'column')
     _dfLevels = ('column',)
@@ -96,10 +152,29 @@ class Functor(object):
 class CompositeFunctor(Functor):
     """Perform multiple calculations at once on a catalog
 
+    The role of a `CompositeFunctor` is to group together computations from multiple
+    functors.  Instead of returning ``pandas.Series`` a `CompositeFunctor` returns
+    a ``pandas.Dataframe``, with the column names being the keys of `funcDict`.
+
+    The `columns` attribute of a `CompositeFunctor` is the union of all columns in all
+    the component functors.
+
+    A `CompositeFunctor` does not use a `_func` method itself; rather,
+    when a `CompositeFunctor` is called, all its columns are loaded
+    at once, and the resulting dataframe is passed to the `_func` method of each component
+    functor.  This has the advantage of only doing I/O (reading from parquet file) once,
+    and works because each individual `_func` method of each component functor does not
+    care if there are *extra* columns in the dataframe being passed; only that it must contain
+    *at least* the `columns` it expects.
+
+    An important and useful class method is `from_yaml`, which takes as argument the path to a YAML
+    file specifying a collection of functors.
+
     Parameters
     ----------
-    funcDict : `dict`
-        Dictionary of functors.
+    funcs : `dict` or `list`
+        Dictionary or list of functors.  If a list, then it will be converted
+        into a dictonary according to the `.shortname` attribute of each functor.
 
     """
     dataset = None
@@ -251,6 +326,8 @@ class Column(Functor):
         return df[self.col]
 
 class Index(Functor):
+    """Return the value of the index for each object
+    """
     columns = ['coord_ra'] # just a dummy; something has to be here
     _default_dataset = 'ref'
 
@@ -265,7 +342,7 @@ class FootprintNPix(Column):
     col = 'base_Footprint_nPix'
 
 class CoordColumn(Column):
-    """Base class for coordinate column
+    """Base class for coordinate column, in degress
     """
     _allow_difference = False
     _radians = True
@@ -281,6 +358,8 @@ class CoordColumn(Column):
         return res
 
 class RAColumn(CoordColumn):
+    """Right Ascension, in degrees
+    """
     name = 'RA'
     def __init__(self, **kwargs):
         super().__init__('coord_ra', **kwargs)
@@ -289,6 +368,8 @@ class RAColumn(CoordColumn):
         return super().__call__(catalog, **kwargs)
 
 class DecColumn(CoordColumn):
+    """Declination, in degrees
+    """
     name = 'Dec'
     def __init__(self, **kwargs):
         super().__init__('coord_dec', **kwargs)
@@ -305,9 +386,22 @@ def fluxName(col):
 class Mag(Functor):
     """Compute calibrated magnitude
 
+    Takes a `calib` argument, which returns the flux at mag=0
+    as `calib.getFluxMag0()`.  If not provided, then the default
+    `fluxMag0` is 63095734448.0194, which is default for HSC.
+
+    This calculation hides warnings about invalid values and dividing by zero.
+
+    As for all functors, a `dataset` and `filt` kwarg should be provided upon
+    initialization.  Unlike the default `Functor`, however, the default dataset
+    for a `Mag` is `'meas'`, rather than `'ref'`.
+
     Parameters
+    ----------
     col : `str`
-        Name of flux column
+        Name of flux column from which to compute magnitude.  Can be parseable
+        by `lsst.qa.explorer.functors.fluxName` function---that is, you can pass
+        `'modelfit_CModel'` instead of `'modelfit_CModel_flux'`) and it will understand.
     calib : `lsst.afw.image.calib.Calib` (optional)
         Object that knows zero point.
     """
@@ -339,6 +433,8 @@ class Mag(Functor):
 
 class MagErr(Mag):
     """Compute calibrated magnitude uncertainty
+
+    Takes the same `calib` object as `lsst.qa.explorer.functors.Mag`.
 
     Parameters
     col : `str`
@@ -373,7 +469,8 @@ class MagErr(Mag):
         return super().name + '_err'
 
 class NanoMaggie(Mag):
-
+    """
+    """
     def _func(self, df):
         return (df[self.col] / self.fluxMag0) * 1e9
 
@@ -405,6 +502,30 @@ class MagDiff(Functor):
         return 'magDiff_{0}_{1}'.format(self.col1, self.col2)
 
 class Color(Functor):
+    """Compute the color between two filters
+
+    Computes color by initializing two different `Mag`
+    functors based on the `col` and filters provided, and
+    then returning the difference.
+
+    This is enabled by the `_func` expecting a dataframe with a
+    multilevel column index, with both `'filter'` and `'column'`,
+    instead of just `'column'`, which is the `Functor` default.
+    This is controlled by the `_dfLevels` attribute.
+
+    Also of note, the default dataset for `Color` is `forced_src'`,
+    whereas for `Mag` it is `'meas'`.
+
+    Parameters
+    ----------
+    col : str
+        Name of flux column from which to compute; same as would be passed to
+        ``lsst.qa.explorer.functors.Mag``.
+
+    filt2, filt1 : str
+        Filters from which to compute magnitude difference.
+        Color computed is `Mag(filt2) - Mag(filt1)`.
+    """
     _default_dataset = 'forced_src'
     _dfLevels = ('filter', 'column')
 

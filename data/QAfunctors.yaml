@@ -3,9 +3,8 @@ funcs:
         functor: Mag
         args:
             - base_PsfFlux
-        kwargs:
-            filt: HSC-G
-            dataset: meas
+        filt: HSC-G
+        dataset: meas
     label:
         functor: StarGalaxyLabeller
     cmodel_magDiff:

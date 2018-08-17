@@ -95,25 +95,26 @@ class FunctorTestCase(unittest.TestCase):
             pass
 
     def testMagDiff(self):
-        filt = 'HSC-G'
-        val = self._funcVal(MagDiff('base_PsfFlux', 'modelfit_CModel', filt=filt))
+        for filt in self.filters:
+            filt = 'HSC-G'
+            val = self._funcVal(MagDiff('base_PsfFlux', 'modelfit_CModel', filt=filt))
 
-        mag1 = self._funcVal(Mag('modelfit_CModel', filt=filt))
-        mag2 = self._funcVal(Mag('base_PsfFlux', filt=filt))
+            mag1 = self._funcVal(Mag('modelfit_CModel', filt=filt))
+            mag2 = self._funcVal(Mag('base_PsfFlux', filt=filt))
 
-        assert_series_equal((mag2 - mag1).dropna(), val)
+            assert_series_equal((mag2 - mag1).dropna(), val)
 
     def testLabeller(self):
         labels = self._funcVal(StarGalaxyLabeller())
 
     def testOther(self):
 
-        filt = 'HSC-G'
-        for Func in [DeconvolvedMoments,
-                     SdssTraceSize,
-                     PsfSdssTraceSizeDiff,
-                     HsmTraceSize, PsfHsmTraceSizeDiff, Seeing]:
-            val = self._funcVal(Func(filt=filt))
+        for filt in self.filters:
+            for Func in [DeconvolvedMoments,
+                         SdssTraceSize,
+                         PsfSdssTraceSizeDiff,
+                         HsmTraceSize, PsfHsmTraceSizeDiff, Seeing]:
+                val = self._funcVal(Func(filt=filt))
 
     def _compositeFuncVal(self, functor):
         assert type(functor) == CompositeFunctor

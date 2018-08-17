@@ -177,7 +177,7 @@ class FunctorTestCase(unittest.TestCase):
 
     def testYaml(self):
         functorFile = os.path.join(getPackageDir("qa_explorer"),
-                                   'data','functors.yaml')
+                                   'data','QAfunctors.yaml')
 
         func = CompositeFunctor.from_yaml(functorFile, filt='HSC-G')
         df = self._compositeFuncVal(func)

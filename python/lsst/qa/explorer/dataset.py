@@ -10,6 +10,40 @@ from lsst.qa.explorer.match import match_lists
 from lsst.qa.explorer.plots import filter_dset, FilterStream
 
 class QADataset(object):
+    """Convenience wrapper of holoviews Dataset for catalog-type data
+
+    The main purpose of this object is to easily package a `DataFrame`
+    containing some catalog-style data (e.g., the result of a postprocessing
+    analysis) as a Holoviews `Dataset` object.  This involves the following:
+
+    * defining which columns are "key dimensions" ("kdims") or "value dimensions"
+    ("vdims").  The `_idNames` and `_kdims` attributes define what columns
+    get automatically categorized as "kdims" (such as RA, Dec, label, etc.); also, any
+    flags (identified as boolean columns by inspection) are also kdims.  By default,
+    everything else is a "vdim" (meaning, an quantity whose value is interesting).
+    Otherwise, specific 'vdims' may be noted, in which case some columns will be
+    unused by the `hv.Dataset`.
+
+    * Defining the `hv.Dataset` object, which beyond defining the dimensions
+    also necessitates getting rid of infs/nans in the data.
+
+    Some subclasses of `QADataset` may also choose to defer creation of the `.df`
+    attribute, which in this main object is passed as a parameter at initialization.
+    Such a subclass will then need to define a `_makeDataFrame` method
+    (See, for example, `MatchedQADataset`.)
+
+    Parameters
+    ----------
+    df : `pandas.DataFrame`
+        Dataframe to wrap; e.g., the output of a `PostprocessAnalysis`.
+
+    vdims : `str`, optional
+        Column names to count as "value dimensions"; that is,
+        quantities that you might want to explore.  If 'all' (default),
+        then the vdims will be everything except `._kdims`, `._idNames`
+        and flags (which are defined as all boolean columns).
+
+    """
 
     _idNames = ('patchId', 'tractId')
     _kdims = ('ra', 'dec', 'psfMag', 'label')
@@ -22,9 +56,6 @@ class QADataset(object):
 
         self._ds = None
         self._flags = None
-
-#         # Extra arguments are to pass to parq.toDataFrame()
-#         self._columnDict = kwargs
 
     @property
     def df(self):
@@ -43,6 +74,8 @@ class QADataset(object):
 
     @property
     def flags(self):
+        """All boolean columns of dataframe
+        """
         if self._flags is None:
             self._flags = [c for c in self.df.columns
                             if self.df[c].dtype == np.dtype('bool')]
@@ -149,6 +182,34 @@ class QADataset(object):
             return dmap
 
 class MatchedQADataset(QADataset):
+    """A QADataset constructed from positional matching of two others
+
+    The purpose of this is to, e.g., compare results of some postprocessing
+    analysis of one rerun to that of another.  This does so by closest
+    RA/Dec spatial matching.  For this object, the `.df` attribute
+    is computed as follows:  all 'kdims' are taken from the `data1`
+    `QADataset`, and the value of the 'vdims' is computed as the
+    difference of the values between the datasets (`data2 - data1`).
+
+    Matching is done using `lsst.qa.explorer.match.match_lists`, which
+    uses a KDTree.
+
+    TODO: Results should be cached in `match_registry`, if provided.
+
+    Parameters
+    ----------
+    data1, data2 : `lsst.qa.explorer.dataset.QADataset`
+        Two datasets to match.
+
+    match_radius : `float`
+        Max match distance in arcsec.  Default is 0.5.
+
+    match_registry : `str`
+        Path to an .h5 file containing cached match results.
+        (Not implemented yet; implementation should parallel
+        that of `lsst.qa.explorer.catalog.MatchedCatalog`).
+
+    """
     def __init__(self, data1, data2,
                  match_radius=0.5, match_registry=None,
                  **kwargs):

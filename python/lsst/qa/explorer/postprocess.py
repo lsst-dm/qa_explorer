@@ -215,16 +215,16 @@ class PostprocessTask(CmdLineTask):
         return parser
 
 
-    def run(self, patchRef):
+    def runDataRef(self, patchRef):
         """Do calculations; write result
         """
         parq = patchRef.get()
         dataId = patchRef.dataId
-        df = self.doCalculations(parq, dataId)
+        df = self.run(parq, dataId)
         self.write(df, patchRef)
         return df
 
-    def doCalculations(self, parq, dataId):
+    def run(self, parq, dataId):
         """Do postprocessing calculations
 
         Takes a `ParquetTable` object and dataId,
@@ -268,7 +268,7 @@ class MultibandPostprocessTask(PostprocessTask):
     by the YAML file will be superceded.
     """
 
-    def doCalculations(self, parq, dataId):
+    def run(self, parq, dataId):
         funcs = CompositeFunctor.from_yaml(self.config.functorFile)
         dfDict = {}
         for filt in parq.columnLevelNames['filter']:

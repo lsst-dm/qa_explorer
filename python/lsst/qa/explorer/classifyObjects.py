@@ -37,11 +37,11 @@ class StarGalaxyClassifierConfig(pexConfig.Config):
 
     Notes
     -----
-    The version name is specifed by user in the mkClassifier task and is used to read in the correct
+    The label is specifed by user in the mkClassifier task and is used to read in the correct
     classifiers.
     """
-    version = pexConfig.Field(
-        doc="Version information",
+    label = pexConfig.Field(
+        doc="Label provides version information",
         dtype=str,
         default="HSC-COSMOS-20180528",
     )
@@ -153,12 +153,12 @@ class StarGalaxyClassifierTask(Task):
         # put this into /datasets/hsc then the butler will get it
         # Add classifier_pickle to obs_base datasets, copy deepCoadd_skyMap.
         # Filters and column headings come from the classifier pickle
-        clfDictMorph = dataRef.get("starGalaxy_morphOnlyClassifier", version=self.config.version)
+        clfDictMorph = dataRef.get("starGalaxy_morphOnlyClassifier", label=self.config.label)
         filters = clfDictMorph["filters"]
         clfMorph = clfDictMorph["clf"]
         colsToUseMorph = clfDictMorph["colsToUse"]
 
-        clfDict = dataRef.get("starGalaxy_classifier", version=self.config.version)
+        clfDict = dataRef.get("starGalaxy_classifier", label=self.config.label)
         filters = clfDict["filters"]
         clf = clfDict["clf"]
         colsToUse = clfDict["colsToUse"]

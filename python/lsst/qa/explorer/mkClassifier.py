@@ -39,11 +39,11 @@ class MakeStarGalaxyClassifierConfig(pexConfig.Config):
 
     Notes
     -----
-    The version name is used to save the classifier and is used by StarGalaxyClassifierTask to identify
+    The label is used to save the classifier and is used by StarGalaxyClassifierTask to identify
     the requested classifier.
     """
-    version = pexConfig.Field(
-        doc="Version information",
+    label = pexConfig.Field(
+        doc="Label provides version information",
         dtype=str,
         default="HSC-COSMOS-20180538",
         )
@@ -120,7 +120,7 @@ class MakeStarGalaxyClassifierTask(Task):
         """
         trainingData = dataRef.get("deepCoadd_sg_features_tract").toDataFrame()
         filters = self.config.filters
-        dataRef.dataId["version"] = self.config.version
+        dataRef.dataId["label"] = self.config.label
 
         if self.config.classifierType == "morph" or self.config.classifierType == "both":
             cols = self.config.columnsMorph

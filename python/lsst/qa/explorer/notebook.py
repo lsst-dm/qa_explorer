@@ -1,7 +1,7 @@
 """
 Enabling auto-generation and assemply of interactive QA notebooks
 
-Most of the stuff in here should be decently self-explanatory?  
+Most of the stuff in here should be decently self-explanatory?
 """
 
 
@@ -18,9 +18,9 @@ DEFAULT_FLAGS = ['calib_psfUsed', 'qaBad_flag',
                  'base_PixelFlags_flag_inexact_psfCenter']
 
 DEFAULT_FUNCTORS = (('cmodel', "MagDiff('modelfit_CModel', 'base_PsfFlux')"),
-                ('gauss', "MagDiff('base_GaussianFlux', 'base_PsfFlux')"),
-                ('count', "Column('base_InputCount_value')"),
-                ('seeing', "Seeing()"))
+                    ('gauss', "MagDiff('base_GaussianFlux', 'base_PsfFlux')"),
+                    ('count', "Column('base_InputCount_value')"),
+                    ('seeing', "Seeing()"))
 
 DEFAULT_MATCHED_FUNCTORS = (('gauss', "MagDiff('base_GaussianFlux', 'base_PsfFlux')"),
                             ('seeing', "Seeing()"))
@@ -28,7 +28,7 @@ DEFAULT_MATCHED_FUNCTORS = (('gauss', "MagDiff('base_GaussianFlux', 'base_PsfFlu
 
 DEFAULT_COLOR_FUNCTORS = (('psfmag', "Mag('base_PsfFlux')"),
                           ('cmodel', "Mag('modelfit_CModel')"),
-                          ('kron',  "Mag('ext_photometryKron_KronFlux')"))
+                          ('kron', "Mag('ext_photometryKron_KronFlux')"))
 
 DEFAULT_COLOR_FLAGS = ['calib_psfUsed', 'qaBad_flag', 'base_PixelFlags_flag_inexact_psfCenter']
 
@@ -43,8 +43,8 @@ class Cell(object):
     Basic idea is to define `code` attribute or property
     on subclasses, and then a call to this object returns
     a `nbf` code cell node.  Pass keyword arguments
-    to cell as needed for subclass (define `params` to 
-    say what is required), these are variables to be 
+    to cell as needed for subclass (define `params` to
+    say what is required), these are variables to be
     interpolated into the `code` string.
     """
     params = []
@@ -65,22 +65,25 @@ class HvImportCell(Cell):
 import holoviews as hv
 hv.notebook_extension('bokeh')"""
 
+
 class ButlerInitCell(Cell):
     params = ('repo',)
     code = """\
 from lsst.daf.persistence import Butler
 butler = Butler('{repo}')"""
 
+
 class DaskClientCell(Cell):
     def __init__(self, scheduler_file):
         self.scheduler_file = scheduler_file
-        
+
     @property
     def code(self):
         code = 'from distributed import Client\n'
         code += 'client = Client(scheduler_file={})'.format(self.scheduler_file)
         return code
-    
+
+
 class DefineCoaddCatalogCell(Cell):
     params = ('tract', 'filt')
     code = """\
@@ -92,6 +95,7 @@ filt = "{filt}"
 dataId = {{'tract':tract, 'filter':filt}}
 catalog = CoaddCatalog(butler, dataId)"""
 
+
 class DefineMatchedCatalogCell(Cell):
     params = ('tract', 'filt')
     code = """\
@@ -102,9 +106,11 @@ tract = {tract}
 filt = "{filt}"
 dataId = {{'tract':tract, 'filter':filt}}
 coaddCat = CoaddCatalog(butler, dataId)
-visitCats = [VisitCatalog(butler, {{'tract': tract, 'filter':filt, 'visit':v}}, name=v) for v in get_visits(butler, tract, filt)]
+visitCats = [VisitCatalog(butler, {{'tract': tract, 'filter':filt, 'visit':v}}, name=v)
+             for v in get_visits(butler, tract, filt)]
 catalog = MultiMatchedCatalog(coaddCat, visitCats, match_registry='QAmatchRegistry.h5')"""
-    
+
+
 class DefineColorCatalogCell(Cell):
     params = ('tract', 'filters', 'short_filters', 'reference_filter')
     code = """\
@@ -115,15 +121,16 @@ filts = {filters}
 short_filts = '{short_filters}'
 reference_filt = '{reference_filter}'
 
-catalog = MultiBandCatalog({{filt: CoaddCatalog(butler, {{'tract':tract, 'filter':filt}}, name=filt) for filt in filts}}, 
+catalog = MultiBandCatalog({{filt: CoaddCatalog(butler, {{'tract':tract, 'filter':filt}}, name=filt)
+                                for filt in filts}},
                            short_filters=short_filts, reference_filt=reference_filt)"""
 
 
 class DefineFunctorsCell(Cell):
-        
+
     def __init__(self, functors=DEFAULT_FUNCTORS):
         self.functors = functors
-        
+
     @property
     def import_command(self):
         to_import = set()
@@ -131,26 +138,26 @@ class DefineFunctorsCell(Cell):
             m = re.search('(\w+)\(', v)
             to_import.add(m.group(1))
         return 'from lsst.qa.explorer.functors import ' + ','.join(to_import) + '\n'
-    
+
     @property
     def code(self):
         code = '# Modify this cell to calculate whatever functors you want\n\n'
         code += self.import_command
         for k, v in self.functors:
-            code += '{} = {}\n'.format(k,v)
-        
+            code += '{} = {}\n'.format(k, v)
+
         code += '\nfuncs = {{'
         for k, v in self.functors:
             code += "'{0}':{0},".format(k)
         code += '}}'
         return code
-    
-    
+
+
 class DefineDatasetCell(Cell):
     def __init__(self, flags=DEFAULT_FLAGS, client=False):
         self.flags = flags
         self.client = client
-    
+
     @property
     def code(self):
         code = "from lsst.qa.explorer.dataset import QADataset\n"
@@ -161,24 +168,28 @@ class DefineDatasetCell(Cell):
             code += "data = QADataset(catalog, funcs, flags=flags)"
         return code
 
+
 class CalculateDFCell(Cell):
     code = """\
 # Calculate dataframe; see how long it takes.
 %time data.df.head()"""
-    
+
+
 class MultiScatterskyCell(Cell):
     code = """\
 from lsst.qa.explorer.plots import FilterStream, multi_scattersky
 filter_stream = FilterStream()
 multi_scattersky(data.ds, filter_stream=filter_stream, width=900, height=300)"""
-    
+
+
 class FlagSetterCell(Cell):
-    code ="""\
+    code = """\
 from lsst.qa.explorer.plots import FlagSetter
 import parambokeh
 
 flag_setter = FlagSetter(filter_stream=filter_stream, flags=data.flags, bad_flags=data.flags)
 parambokeh.Widgets(flag_setter, callback=flag_setter.event, push=False, on_init=True)"""
+
 
 class ExploreCell(Cell):
     def __init__(self, dimension):
@@ -187,7 +198,7 @@ class ExploreCell(Cell):
     @property
     def prefix(self):
         raise NotImplementedError('Must define prefix for cell type')
-    
+
     @property
     def code(self):
         code = """\
@@ -201,13 +212,16 @@ tap = hv.streams.Tap(source={0}_dmap, rename={{{{'x':'ra', 'y':'dec'}}}})
 
 {0}_dmap""".format(self.prefix, self.dimension)
         return code
-    
+
+
 class CoaddExploreCell(ExploreCell):
     prefix = 'coadd'
 
+
 class VisitExploreCell(ExploreCell):
     prefix = 'visit'
-    
+
+
 class GingaCell(Cell):
     @property
     def prefix(self):
@@ -224,15 +238,17 @@ from lsst.qa.explorer.display import {1}Display
 {0}_display.connect_tap(tap)
 {0}_display.embed()""".format(self.prefix, self.prefix.capitalize(), self.displayInit)
         return code
-        
+
+
 class CoaddGingaCell(GingaCell):
     prefix = 'coadd'
     displayInit = 'CoaddDisplay(butler, filt, dims=(500,500))'
 
+
 class VisitGingaCell(GingaCell):
     prefix = 'visit'
     displayInit = 'VisitDisplay(butler, filt, tract, dims=(500,500))'
-    
+
 
 class SkyplotCell(Cell):
     code = """\
@@ -243,21 +259,22 @@ skyplots = [skyplot(data.ds.groupby('label'), vdim=d, filter_stream=filter_strea
 skyplot_layout(skyplots).cols(3)
     """
 
+
 class CommentCell(Cell):
     def __init__(self, comment):
         self.comment = comment
-        
+
     @property
     def code(self):
         return "# {}".format(self.comment)
 
 
 class QANotebook(object):
-    def __init__(self, repo, flags=DEFAULT_FLAGS, functors=DEFAULT_FUNCTORS, client=False, 
+    def __init__(self, repo, flags=DEFAULT_FLAGS, functors=DEFAULT_FUNCTORS, client=False,
                  scheduler_file=None, **params):
         self.nb = nbf.v4.new_notebook()
         self.params = params
-        self.params.update({'repo':repo})
+        self.params.update({'repo': repo})
 
         self.flags = flags
         self.functors = functors
@@ -266,7 +283,6 @@ class QANotebook(object):
             self.client = True
         self.scheduler_file = scheduler_file
 
-                
     @property
     def setup_cells(self):
         cells = [HvImportCell(), ButlerInitCell()]
@@ -277,7 +293,7 @@ class QANotebook(object):
     @property
     def define_catalog_cell(self):
         return CommentCell('Define `catalog` here`')
-    
+
     @property
     def definition_cells(self):
         return [self.define_catalog_cell,
@@ -287,26 +303,27 @@ class QANotebook(object):
     @property
     def plotting_cells(self):
         return [MultiScatterskyCell(), FlagSetterCell(), SkyplotCell()]
-    
+
     @property
     def cells(self):
         return self.setup_cells + self.definition_cells + self.plotting_cells
-    
+
     def generate_cells(self):
         for cell in self.cells:
             self.nb.cells.append(cell(**self.params))
 
     def write(self, filename):
-        self.generate_cells()        
+        self.generate_cells()
         with open(filename, 'w') as f:
             nbf.write(self.nb, f)
-            
+
+
 class Coadd_QANotebook(QANotebook):
-            
+
     def __init__(self, repo, tract, filt, **kwargs):
         kwargs.update(dict(tract=tract, filt=filt))
         super(Coadd_QANotebook, self).__init__(repo=repo, **kwargs)
-        
+
     @property
     def define_catalog_cell(self):
         return DefineCoaddCatalogCell()
@@ -314,31 +331,33 @@ class Coadd_QANotebook(QANotebook):
     @property
     def plotting_cells(self):
         return [MultiScatterskyCell(), FlagSetterCell(),
-               CoaddExploreCell(self.functors[0][0]), CoaddGingaCell(), SkyplotCell()]
+                CoaddExploreCell(self.functors[0][0]), CoaddGingaCell(), SkyplotCell()]
+
 
 class VisitMatch_QANotebook(QANotebook):
     def __init__(self, repo, tract, filt, functors=DEFAULT_MATCHED_FUNCTORS, **kwargs):
         kwargs.update(dict(tract=tract, filt=filt))
         super(VisitMatch_QANotebook, self).__init__(repo=repo, functors=functors, **kwargs)
-        
+
     @property
     def define_catalog_cell(self):
         return DefineMatchedCatalogCell()
-    
+
     @property
     def plotting_cells(self):
         return [MultiScatterskyCell(), FlagSetterCell(),
-               VisitExploreCell(self.functors[0][0]), VisitGingaCell()]
-    
+                VisitExploreCell(self.functors[0][0]), VisitGingaCell()]
+
+
 class ColorColor_QANotebook(QANotebook):
-    def __init__(self, repo, tract, 
-                 filters=HSC_FILTERS, short_filters=HSC_SHORT_FILTERS, 
-                 reference_filter=REFERENCE_FILTER, 
+    def __init__(self, repo, tract,
+                 filters=HSC_FILTERS, short_filters=HSC_SHORT_FILTERS,
+                 reference_filter=REFERENCE_FILTER,
                  flags=DEFAULT_COLOR_FLAGS, functors=DEFAULT_COLOR_FUNCTORS, **kwargs):
         kwargs.update(dict(tract=tract, filters=filters, short_filters=short_filters,
-                          reference_filter=reference_filter))
+                           reference_filter=reference_filter))
         super(ColorColor_QANotebook, self).__init__(repo=repo, flags=flags, functors=functors, **kwargs)
-        
+
     @property
     def define_catalog_cell(self):
         return DefineColorCatalogCell()
@@ -346,4 +365,4 @@ class ColorColor_QANotebook(QANotebook):
     @property
     def plotting_cells(self):
         return [CodeCell('data.color_explore()'),
-               CodeCell('%%opts Points [width=600, height=600]\ndata.color_fit_explore()')]
+                CodeCell('%%opts Points [width=600, height=600]\ndata.color_fit_explore()')]

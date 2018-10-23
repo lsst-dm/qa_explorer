@@ -4,8 +4,10 @@ import pandas as pd
 import numpy as np
 import re
 
-from lsst.qa.explorer.parquetTable import ParquetTable, MultilevelParquetTable
+
+from lsst.qa.explorer.parquetTable import MultilevelParquetTable
 from lsst.qa.explorer.utils import init_fromDict
+
 
 class Functor(object):
     """Define and execute a calculation on a deepCoadd_obj ParquetTable
@@ -85,11 +87,11 @@ class Functor(object):
             raise ValueError('ParquetTable does not have the expected column levels. ' +
                              'Got {0}; expected {1}.'.format(parq.columnLevels, self._columnLevels))
 
-        columnDict = {'column' : self.columns,
-                      'dataset' : self.dataset}
+        columnDict = {'column': self.columns,
+                      'dataset': self.dataset}
         if self.filt is None:
             if 'filter' in parq.columnLevels:
-                if self.dataset=='ref':
+                if self.dataset == 'ref':
                     columnDict['filter'] = parq.columnLevelNames['filter'][0]
                 else:
                     raise ValueError("'filt' not set for functor {}".format(self.name) +
@@ -149,6 +151,7 @@ class Functor(object):
         """
         return self.name
 
+
 class CompositeFunctor(Functor):
     """Perform multiple calculations at once on a catalog
 
@@ -184,7 +187,7 @@ class CompositeFunctor(Functor):
         if type(funcs) == dict:
             self.funcDict = funcs
         else:
-            self.funcDict = {f.shortname : f for f in funcs}
+            self.funcDict = {f.shortname: f for f in funcs}
 
         self._filt = None
 
@@ -215,18 +218,18 @@ class CompositeFunctor(Functor):
             columns = self.multilevelColumns(parq)
             df = parq.toDataFrame(columns=columns, droplevels=False)
             valDict = {}
-            for k,f in self.funcDict.items():
+            for k, f in self.funcDict.items():
                 subdf = f._setLevels(df[f.multilevelColumns(parq)])
                 valDict[k] = f._func(subdf)
         else:
             columns = self.columns
             df = parq.toDataFrame(columns=columns)
-            valDict = {k : f._func(df) for k,f in self.funcDict.items()}
+            valDict = {k: f._func(df) for k, f in self.funcDict.items()}
 
         try:
             valDf = pd.concat(valDict, axis=1)
         except TypeError:
-            print([(k, type(v)) for k,v in valDict.items()])
+            print([(k, type(v)) for k, v in valDict.items()])
             raise
 
         if kwargs.get('dropna', False):
@@ -238,7 +241,7 @@ class CompositeFunctor(Functor):
     def from_yaml(cls, filename, **kwargs):
         conf = yaml.load(open(filename).read())
         funcs = {}
-        for func,val in conf['funcs'].items():
+        for func, val in conf['funcs'].items():
             funcs[func] = init_fromDict(val)
 
         if 'flags' in conf:
@@ -246,6 +249,7 @@ class CompositeFunctor(Functor):
                 funcs[flag] = Column(flag, dataset='ref')
 
         return cls(funcs, **kwargs)
+
 
 def mag_aware_eval(df, expr):
     """Evaluate an expression on a DataFrame, knowing what the 'mag' function means
@@ -263,10 +267,11 @@ def mag_aware_eval(df, expr):
     try:
         expr_new = re.sub('mag\((\w+)\)', '-2.5*log(\g<1>)/log(10)', expr)
         val = df.eval(expr_new, truediv=True)
-    except:
+    except Exception:  # Should check what actually gets raised
         expr_new = re.sub('mag\((\w+)\)', '-2.5*log(\g<1>_flux)/log(10)', expr)
         val = df.eval(expr_new, truediv=True)
     return val
+
 
 class CustomFunctor(Functor):
     """Arbitrary computation on a catalog
@@ -307,9 +312,11 @@ class CustomFunctor(Functor):
     def _func(self, df):
         return mag_aware_eval(df, self.expr)
 
+
 class Column(Functor):
     """Get column with specified name
     """
+
     def __init__(self, col, **kwargs):
         self.col = col
         super().__init__(**kwargs)
@@ -325,21 +332,26 @@ class Column(Functor):
     def _func(self, df):
         return df[self.col]
 
+
 class Index(Functor):
     """Return the value of the index for each object
     """
-    columns = ['coord_ra'] # just a dummy; something has to be here
+
+    columns = ['coord_ra']  # just a dummy; something has to be here
     _default_dataset = 'ref'
 
     def _func(self, df):
         return pd.Series(df.index, index=df.index)
 
+
 class IDColumn(Column):
     col = 'id'
     _allow_difference = False
 
+
 class FootprintNPix(Column):
     col = 'base_Footprint_nPix'
+
 
 class CoordColumn(Column):
     """Base class for coordinate column, in degress
@@ -357,20 +369,24 @@ class CoordColumn(Column):
             res *= 180 / np.pi
         return res
 
+
 class RAColumn(CoordColumn):
     """Right Ascension, in degrees
     """
     name = 'RA'
+
     def __init__(self, **kwargs):
         super().__init__('coord_ra', **kwargs)
 
     def __call__(self, catalog, **kwargs):
         return super().__call__(catalog, **kwargs)
 
+
 class DecColumn(CoordColumn):
     """Declination, in degrees
     """
     name = 'Dec'
+
     def __init__(self, **kwargs):
         super().__init__('coord_dec', **kwargs)
 
@@ -382,6 +398,7 @@ def fluxName(col):
     if not col.endswith('_flux'):
         col += '_flux'
     return col
+
 
 class Mag(Functor):
     """Compute calibrated magnitude
@@ -413,7 +430,7 @@ class Mag(Functor):
         if calib is not None:
             self.fluxMag0 = calib.getFluxMag0()[0]
         else:
-            self.fluxMag0 = 63095734448.0194 # Where does this come from??
+            self.fluxMag0 = 63095734448.0194  # Where does this come from??
 
         super().__init__(**kwargs)
 
@@ -430,6 +447,7 @@ class Mag(Functor):
     @property
     def name(self):
         return 'mag_{0}'.format(self.col)
+
 
 class MagErr(Mag):
     """Compute calibrated magnitude uncertainty
@@ -468,16 +486,20 @@ class MagErr(Mag):
     def name(self):
         return super().name + '_err'
 
+
 class NanoMaggie(Mag):
     """
     """
+
     def _func(self, df):
         return (df[self.col] / self.fluxMag0) * 1e9
+
 
 class MagDiff(Functor):
     _default_dataset = 'meas'
 
     """Functor to calculate magnitude difference"""
+
     def __init__(self, col1, col2, **kwargs):
         self.col1 = fluxName(col1)
         self.col2 = fluxName(col2)
@@ -500,6 +522,7 @@ class MagDiff(Functor):
     @property
     def shortname(self):
         return 'magDiff_{0}_{1}'.format(self.col1, self.col2)
+
 
 class Color(Functor):
     """Compute the color between two filters
@@ -579,7 +602,8 @@ class Color(Functor):
     @property
     def shortname(self):
         return '{0}_{1}m{2}'.format(self.col, self.filt2.replace('-', ''),
-                                    self.filt1.replace('-',''))
+                                    self.filt1.replace('-', ''))
+
 
 class Labeller(Functor):
     """Main function of this subclass is to override the dropna=True
@@ -592,6 +616,7 @@ class Labeller(Functor):
     def __call__(self, parq, dropna=False, **kwargs):
         return super().__call__(parq, dropna=False, **kwargs)
 
+
 class StarGalaxyLabeller(Labeller):
     _columns = ["base_ClassificationExtendedness_value"]
     _column = "base_ClassificationExtendedness_value"
@@ -601,13 +626,16 @@ class StarGalaxyLabeller(Labeller):
         mask = x.isnull()
         test = (x < 0.5).astype(int)
         test = test.mask(mask, 2)
-        #are these backwards?
-        label = pd.Series(pd.Categorical.from_codes(test, categories=['galaxy', 'star', self._null_label]),
-                            index=x.index, name='label')
+
+        # are these backwards?
+        categories = ['galaxy', 'star', self._null_label]
+        label = pd.Series(pd.Categorical.from_codes(test, categories=categories),
+                          index=x.index, name='label')
         if self._force_str:
             label = label.astype(str)
         return label
         # return np.where(df[self._column] < 0.5, 'star', 'galaxy')
+
 
 class NumStarLabeller(Labeller):
     _columns = ['numStarFlags']
@@ -619,8 +647,9 @@ class NumStarLabeller(Labeller):
         # Number of filters
         n = len(x.unique()) - 1
 
-        label = pd.Series(pd.cut(x, [-1, 0, n-1 , n], labels=['noStar', 'maybe', 'star']),
-                            index=x.index, name='label')
+        labels = ['noStar', 'maybe', 'star']
+        label = pd.Series(pd.cut(x, [-1, 0, n-1, n], labels=labels),
+                          index=x.index, name='label')
 
         if self._force_str:
             label = label.astype(str)
@@ -640,7 +669,7 @@ class DeconvolvedMoments(Functor):
 
     def _func(self, df):
         """Calculate deconvolved moments"""
-        if "ext_shapeHSM_HsmSourceMoments_xx" in df.columns: # _xx added by tdm
+        if "ext_shapeHSM_HsmSourceMoments_xx" in df.columns:  # _xx added by tdm
             hsm = df["ext_shapeHSM_HsmSourceMoments_xx"] + df["ext_shapeHSM_HsmSourceMoments_yy"]
         else:
             hsm = np.ones(len(df))*np.nan
@@ -654,6 +683,7 @@ class DeconvolvedMoments(Functor):
             raise RuntimeError('No psf shape parameter found in catalog')
 
         return hsm.where(np.isfinite(hsm), sdss) - psf
+
 
 class SdssTraceSize(Functor):
     """Functor to calculate SDSS trace radius size for sources"""
@@ -687,7 +717,6 @@ class HsmTraceSize(Functor):
     _columns = ("ext_shapeHSM_HsmSourceMoments_xx",
                 "ext_shapeHSM_HsmSourceMoments_yy")
 
-
     def _func(self, df):
         srcSize = np.sqrt(0.5*(df["ext_shapeHSM_HsmSourceMoments_xx"] +
                                df["ext_shapeHSM_HsmSourceMoments_yy"]))
@@ -710,6 +739,7 @@ class PsfHsmTraceSizeDiff(Functor):
                                df["ext_shapeHSM_HsmPsfMoments_yy"]))
         sizeDiff = 100*(srcSize - psfSize)/(0.5*(srcSize + psfSize))
         return sizeDiff
+
 
 class Seeing(Functor):
     name = 'seeing'

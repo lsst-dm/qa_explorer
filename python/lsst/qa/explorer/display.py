@@ -1,9 +1,7 @@
 import numpy as np
 import pandas as pd
 
-import lsst.afw.coord as afwCoord
 import lsst.afw.geom as afwGeom
-import lsst.afw.geom.angle as afwAngle
 import lsst.afw.image as afwImage
 import lsst.afw.display
 
@@ -11,13 +9,18 @@ from functools import partial
 
 from .match import match_lists
 
+
 class hashable_dict(dict):
-  def __key(self):
-    return tuple((k,self[k]) for k in sorted(self))
-  def __hash__(self):
-    return hash(self.__key())
-  def __eq__(self, other):
-    return self.__key() == other.__key()
+
+    def __key(self):
+        return tuple((k, self[k]) for k in sorted(self))
+
+    def __hash__(self):
+        return hash(self.__key())
+
+    def __eq__(self, other):
+        return self.__key() == other.__key()
+
 
 def find_closest(dmap, ra, dec):
     df = dmap.values()[0].data
@@ -28,14 +31,15 @@ def find_closest(dmap, ra, dec):
 
     return obj
 
+
 class QADisplay(lsst.afw.display.Display):
     """Base class for display object enabling image viewing at given coordinate
 
     The main purpose of this is to be able to connect a `lsst.afw.display.Display` object
-    to a `holoviews.Tap` stream that has a source in a holoviews plot window, such 
-    that a new image can be loaded due to a mouse click on the plot. 
+    to a `holoviews.Tap` stream that has a source in a holoviews plot window, such
+    that a new image can be loaded due to a mouse click on the plot.
 
-    Not for direct use; use instead the `CoaddDisplay` or `VisitDisplay` 
+    Not for direct use; use instead the `CoaddDisplay` or `VisitDisplay`
     subclasses.
 
     Parameters
@@ -49,7 +53,7 @@ class QADisplay(lsst.afw.display.Display):
         operations like "find the exact coordinates of the closest source
         to the place where I clicked."
 
-    Additional keyword arguments passed to `lsst.afw.display.Display`, 
+    Additional keyword arguments passed to `lsst.afw.display.Display`,
     such as `dims=(500,500)`
 
     """
@@ -94,9 +98,9 @@ class QADisplay(lsst.afw.display.Display):
 
         if self.dmap is not None:
             obj = find_closest(self.dmap, ra, dec)
-            ra, dec  = obj.ra, obj.dec
+            ra, dec = obj.ra, obj.dec
 
-        pos = afwGeom.SpherePoint(ra, dec, afwAngle.degrees)
+        pos = afwGeom.SpherePoint(ra, dec, afwGeom.degrees)
         wcs = self._WcsFromId(dataId)
         xy = wcs.skyToPixel(pos)
         print(ra, dec, xy)
@@ -106,7 +110,7 @@ class QADisplay(lsst.afw.display.Display):
     def _WcsFromId(self, dataId):
         """Get requested WCS
         """
-        exp = self._expFromId(dataId) # This is by default redundant
+        exp = self._expFromId(dataId)  # This is by default redundant
         return exp.getWcs()
 
     def _get_dataId(self, *args, **kwargs):
@@ -155,6 +159,7 @@ class QADisplay(lsst.afw.display.Display):
         self.tap_stream = tap
         self.dmap = tap.source
 
+
 class CoaddDisplay(QADisplay):
     """Display object enabling coadd image viewing at desired location
 
@@ -174,9 +179,9 @@ class CoaddDisplay(QADisplay):
 
     def _get_dataId(self, ra, dec, **kwargs):
         skyMap = self.butler.get('deepCoadd_skyMap')
-        pos = afwGeom.SpherePoint(ra, dec, afwAngle.degrees)
+        pos = afwGeom.SpherePoint(ra, dec, afwGeom.degrees)
         tractInfo, patchInfo = skyMap.findClosestTractPatchList([pos])[0]
-        
+
         tractId = tractInfo.getId()
         # If two patches returned, then choose one where point is inside inner bbox
         for p in patchInfo:
@@ -185,8 +190,8 @@ class CoaddDisplay(QADisplay):
             if p.getInnerBBox().contains(afwGeom.Point2I(xy)):
                 patchIndex = p.getIndex()
                 break
-        
-        dataId = {'tract':tractId, 'patch':'{},{}'.format(*patchIndex), 'filter':self.filt}
+
+        dataId = {'tract': tractId, 'patch': '{},{}'.format(*patchIndex), 'filter': self.filt}
         return dataId
 
 
@@ -216,11 +221,11 @@ class VisitDisplay(QADisplay):
         if self.dmap is None:
             raise ValueError('Must connect a visit dmap!')
 
-        visit = int(self.dmap.keys()[0][0]) #Is there a way to do this via key rather than index?
+        visit = int(self.dmap.keys()[0][0])  # Is there a way to do this via key rather than index?
         obj = find_closest(self.dmap, ra, dec)
         ccd = int(obj.ccdId)
 
-        dataId = {'visit' : visit, 'filter' : self.filt, 'ccd' : ccd, 'tract' : self.tract}
+        dataId = {'visit': visit, 'filter': self.filt, 'ccd': ccd, 'tract': self.tract}
         return dataId
 
     def _WcsFromId(self, dataId):

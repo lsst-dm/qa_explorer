@@ -49,6 +49,7 @@ class ParquetTable(object):
         Path to Parquet file.
 
     """
+
     def __init__(self, filename=None, dataFrame=None):
         if filename is not None:
             self._pf = pq.ParquetFile(filename)
@@ -207,8 +208,8 @@ class MultilevelParquetTable(ParquetTable):
     @property
     def columnLevelNames(self):
         if self._columnLevelNames is None:
-            self._columnLevelNames = {level : list(np.unique(np.array(self.columns)[:,i]))
-                                      for i,level in enumerate(self.columnLevels)}
+            self._columnLevelNames = {level: list(np.unique(np.array(self.columns)[:, i]))
+                                      for i, level in enumerate(self.columnLevels)}
         return self._columnLevelNames
 
     @property
@@ -288,8 +289,8 @@ class MultilevelParquetTable(ParquetTable):
 
         if droplevels:
             # Drop levels of column index that have just one entry
-            levelsToDrop = [n for l,n in zip(df.columns.levels, df.columns.names)
-                            if len(l)==1]
+            levelsToDrop = [n for l, n in zip(df.columns.levels, df.columns.names)
+                            if len(l) == 1]
 
             # Prevent error when trying to drop *all* columns
             if len(levelsToDrop) == len(df.columns.names):
@@ -301,7 +302,7 @@ class MultilevelParquetTable(ParquetTable):
 
     def _colsFromDict(self, colDict):
         new_colDict = {}
-        for i,l in enumerate(self.columnLevels):
+        for i, l in enumerate(self.columnLevels):
             if l in colDict:
                 if isinstance(colDict[l], str):
                     new_colDict[l] = [colDict[l]]

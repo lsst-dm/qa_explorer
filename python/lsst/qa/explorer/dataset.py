@@ -9,6 +9,7 @@ import holoviews as hv
 from lsst.qa.explorer.match import match_lists
 from lsst.qa.explorer.plots import filter_dset, FilterStream
 
+
 class QADataset(object):
     """Convenience wrapper of holoviews Dataset for catalog-type data
 
@@ -48,7 +49,6 @@ class QADataset(object):
     _idNames = ('patchId', 'tractId')
     _kdims = ('ra', 'dec', 'psfMag', 'label')
 
-
     def __init__(self, df, vdims='all'):
 
         self._df = df
@@ -78,7 +78,7 @@ class QADataset(object):
         """
         if self._flags is None:
             self._flags = [c for c in self.df.columns
-                            if self.df[c].dtype == np.dtype('bool')]
+                           if self.df[c].dtype == np.dtype('bool')]
         return self._flags
 
     def _getDims(self):
@@ -88,8 +88,8 @@ class QADataset(object):
         vdims = []
         for c in self.df.columns:
             if (c in self._kdims or
-                c in self._idNames or
-                c in self.flags):
+                    c in self._idNames or
+                    c in self.flags):
                 kdims.append(c)
             else:
                 if self._vdims == 'all':
@@ -125,16 +125,16 @@ class QADataset(object):
         self._ds = ds
 
     def skyPoints(self, vdim, maxMag, label='star', magCol='psfMag',
-                     filter_range=None, flags=None, bad_flags=None):
-        selectDict = {magCol : (0,maxMag),
-                       'label' : label}
+                  filter_range=None, flags=None, bad_flags=None):
+        selectDict = {magCol: (0, maxMag),
+                      'label': label}
         ds = self.ds.select(**selectDict)
         ds = filter_dset(ds, filter_range=filter_range, flags=flags, bad_flags=bad_flags)
 
         pts = hv.Points(ds, kdims=['ra', 'dec'], vdims=self.vdims + [magCol] + self.idNames)
         return pts.options(color_index=vdim)
 
-    def skyDmap(self, vdim, magRange=(np.arange(16,24.1, 0.2)), magCol='psfMag',
+    def skyDmap(self, vdim, magRange=(np.arange(16, 24.1, 0.2)), magCol='psfMag',
                 filter_stream=None,
                 range_override=None):
             """Dynamic map of values of a particular dimension
@@ -171,15 +171,16 @@ class QADataset(object):
             ra_min, ra_max = self.df.ra.quantile([0, 1])
             dec_min, dec_max = self.df.dec.quantile([0, 1])
 
-            ranges = {vdim : (y_min, y_max),
-                      'ra' : (ra_min, ra_max),
-                      'dec' : (dec_min, dec_max)}
+            ranges = {vdim: (y_min, y_max),
+                      'ra': (ra_min, ra_max),
+                      'dec': (dec_min, dec_max)}
             if range_override is not None:
                 ranges.update(range_override)
 
             dmap = dmap.redim.values(label=['galaxy', 'star'],
                                      maxMag=magRange).redim.range(**ranges)
             return dmap
+
 
 class MatchedQADataset(QADataset):
     """A QADataset constructed from positional matching of two others
@@ -210,6 +211,7 @@ class MatchedQADataset(QADataset):
         that of `lsst.qa.explorer.catalog.MatchedCatalog`).
 
     """
+
     def __init__(self, data1, data2,
                  match_radius=0.5, match_registry=None,
                  **kwargs):
@@ -243,14 +245,13 @@ class MatchedQADataset(QADataset):
 
         good = np.isfinite(dist)
 
-        logging.info('{0} matched within {1} arcsec, {2} did not.'.format(good.sum(), self.match_radius, (~good).sum()))
+        fmtArgs = good.sum(), self.match_radius, (~good).sum()
+        logging.info('{0} matched within {1} arcsec, {2} did not.'.format(*fmtArgs))
 
         # Save indices as labels, not positions, as required by dask
         i1 = id1[good]
         i2 = id2[inds[good]]
         d = pd.Series(dist[good] * 3600, index=id1[good], name='match_distance')
-
-        match_df = pd.DataFrame({'id2':i2, 'distance':d}, index=i1)
 
         self._match_inds1 = i1
         self._match_inds2 = i2

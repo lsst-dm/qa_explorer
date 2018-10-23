@@ -3,22 +3,18 @@
 The deepCoadd_qa table is a table with QA columns of interest computed
 for all filters for which the deepCoadd_obj tables are written.
 """
-from lsst.daf.persistence.butler import Butler
-from lsst.pex.config import (Config, Field, ConfigField, ListField, DictField, ConfigDictField,
-                             ConfigurableField)
-from lsst.pipe.base import Task, CmdLineTask, ArgumentParser, TaskRunner, TaskError
-from lsst.coadd.utils import TractDataIdContainer
-from lsst.pipe.tasks.multiBand import MergeSourcesTask, MergeSourcesConfig
-from lsst.pipe.tasks.multiBand import _makeGetSchemaCatalogs
+from lsst.pex.config import Config, Field
+from lsst.pipe.base import CmdLineTask, ArgumentParser
 from lsst.coadd.utils.coaddDataIdContainer import ExistingCoaddDataIdContainer
 from lsst.utils import getPackageDir
 
 import functools
-import re, os
+import os
 import pandas as pd
 
 from .parquetTable import ParquetTable
 from .functors import CompositeFunctor, RAColumn, DecColumn, Column
+
 
 class PostprocessAnalysis(object):
     """Calculate columns from ParquetTable
@@ -83,9 +79,9 @@ class PostprocessAnalysis(object):
 
     @property
     def func(self):
-        additionalFuncs = {'ra' : RAColumn(),
-                           'dec' : DecColumn(),}
-        additionalFuncs.update({flag : Column(flag) for flag in self.flags})
+        additionalFuncs = {'ra': RAColumn(),
+                           'dec': DecColumn()}
+        additionalFuncs.update({flag: Column(flag) for flag in self.flags})
 
         if isinstance(self.functors, CompositeFunctor):
             func = self.functors
@@ -214,7 +210,6 @@ class PostprocessTask(CmdLineTask):
                                help="data ID, e.g. --id tract=12345 patch=1,2")
         return parser
 
-
     def runDataRef(self, patchRef):
         """Do calculations; write result
         """
@@ -250,7 +245,6 @@ class PostprocessTask(CmdLineTask):
         df['patchId'] = dataId['patch']
         return df
 
-
     def write(self, df, parqRef):
         parqRef.put(ParquetTable(dataFrame=df), self.outputDataset)
 
@@ -258,6 +252,7 @@ class PostprocessTask(CmdLineTask):
         """No metadata to write.
         """
         pass
+
 
 class MultibandPostprocessTask(PostprocessTask):
     """Do the same set of postprocessing calculations on all bands
@@ -281,10 +276,12 @@ class MultibandPostprocessTask(PostprocessTask):
         df = pd.concat(dfDict, axis=1, names=['filter', 'column'])
         return df
 
+
 class WriteQATableConfig(PostprocessConfig):
     def setDefaults(self):
         self.functorFile = os.path.join(getPackageDir("qa_explorer"),
-                                             'data','QAfunctors.yaml')
+                                        'data', 'QAfunctors.yaml')
+
 
 class WriteQATableTask(MultibandPostprocessTask):
     """Compute columns of QA interest from coadd object tables

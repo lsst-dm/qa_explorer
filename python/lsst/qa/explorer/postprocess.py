@@ -1,9 +1,29 @@
+# This file is part of {{ cookiecutter.package_name }}.
+#
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """Command-line task and associated config for writing QA tables.
 
 The deepCoadd_qa table is a table with QA columns of interest computed
 for all filters for which the deepCoadd_obj tables are written.
 """
-from lsst.pex.config import Config, Field
+from lsst.pex.config import Config, Field, DictField
 from lsst.pipe.base import CmdLineTask, ArgumentParser
 from lsst.coadd.utils.coaddDataIdContainer import ExistingCoaddDataIdContainer
 from lsst.utils import getPackageDir
@@ -92,6 +112,10 @@ class PostprocessAnalysis(object):
         func.filt = self.filt
 
         return func
+
+    @property
+    def noDupCols(self):
+        return [name for name, func in self.func.funcDict.items() if func.noDup]
 
     @property
     def df(self):
@@ -254,6 +278,36 @@ class PostprocessTask(CmdLineTask):
         pass
 
 
+def flattenFilters(df, filterDict, noDupCols=['coord_ra', 'coord_dec']):
+    """Flattens a dataframe with multilevel column index
+    """
+    newDf = pd.DataFrame()
+    for filt, filtShort in filterDict.items():
+        try:
+            subdf = df[filt]
+        except KeyError:
+            continue
+        newColumns = {c: '{0}_{1}'.format(filtShort, c)
+                      for c in subdf.columns if c not in noDupCols}
+        cols = list(newColumns.keys())
+        newDf = pd.concat([newDf, subdf[cols].rename(columns=newColumns)], axis=1)
+
+    newDf = pd.concat([subdf[noDupCols], newDf], axis=1)
+    return newDf
+
+
+class MultibandPostprocessConfig(PostprocessConfig):
+    filterMap = DictField(keytype=str, itemtype=str,
+                          default={'HSC-G': 'g', 'HSC-R': 'r',
+                                   'HSC-I': 'i', 'HSC-Z': 'z',
+                                   'HSC-Y': 'y'},
+                          doc="Dictionary mapping full filter name to short one " +
+                              "for column name munging.")
+    multilevelOutput = Field(dtype=bool, default=True,
+                             doc="Whether results dataframe should have a " +
+                                 "multilevel column index or be flat and name-munged.")
+
+
 class MultibandPostprocessTask(PostprocessTask):
     """Do the same set of postprocessing calculations on all bands
 
@@ -262,6 +316,9 @@ class MultibandPostprocessTask(PostprocessTask):
     input `deepCoadd_obj` table.  Any specific `"filt"` keywords specified
     by the YAML file will be superceded.
     """
+    _DefaultName = "MultibandPostprocess"
+    ConfigClass = MultibandPostprocessConfig
+
 
     def run(self, parq, dataId):
         funcs = CompositeFunctor.from_yaml(self.config.functorFile)
@@ -274,6 +331,11 @@ class MultibandPostprocessTask(PostprocessTask):
 
         # This makes a multilevel column index, with filter as first level
         df = pd.concat(dfDict, axis=1, names=['filter', 'column'])
+
+        if not self.config.multilevelOutput:
+            noDupCols = analysis.noDupCols + ['patchId']
+            df = flattenFilters(df, self.config.filterMap, noDupCols=noDupCols)
+
         return df
 
 

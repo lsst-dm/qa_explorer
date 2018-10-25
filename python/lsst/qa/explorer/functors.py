@@ -32,7 +32,7 @@ class Functor(object):
     On initialization, a `Functor` should declare what filter (`filt` kwarg) and dataset
     (e.g. `'ref'`, `'meas'`, `'forced_src'`) it is intended to be applied to.
     This enables the `_get_cols` method to extract the proper columns from the parquet file.
-    If not specified, the dataset will fall back on the `_default_dataset` attribute.
+    If not specified, the dataset will fall back on the `_defaultDataset` attribute.
     If filter is not specified and `dataset` is anything other than `'ref'`, then an error
     will be raised when trying to perform the calculation.
 
@@ -66,13 +66,23 @@ class Functor(object):
 
     """
 
-    _default_dataset = 'ref'
+    _defaultDataset = 'ref'
     _columnLevels = ('filter', 'dataset', 'column')
     _dfLevels = ('column',)
+    _defaultNoDup = False
 
-    def __init__(self, filt=None, dataset=None):
+    def __init__(self, filt=None, dataset=None, noDup=None):
         self.filt = filt
-        self.dataset = dataset if dataset is not None else self._default_dataset
+        self.dataset = dataset if dataset is not None else self._defaultDataset
+        self._noDup = noDup
+
+    @property
+    def noDup(self):
+        if self._noDup is not None:
+            return self._noDup
+        else:
+            return self._defaultNoDup
+
 
     @property
     def columns(self):
@@ -338,7 +348,8 @@ class Index(Functor):
     """
 
     columns = ['coord_ra']  # just a dummy; something has to be here
-    _default_dataset = 'ref'
+    _defaultDataset = 'ref'
+    _defaultNoDup = True
 
     def _func(self, df):
         return pd.Series(df.index, index=df.index)
@@ -347,6 +358,7 @@ class Index(Functor):
 class IDColumn(Column):
     col = 'id'
     _allow_difference = False
+    _defaultNoDup = True
 
 
 class FootprintNPix(Column):
@@ -354,10 +366,11 @@ class FootprintNPix(Column):
 
 
 class CoordColumn(Column):
-    """Base class for coordinate column, in degress
+    """Base class for coordinate column, in degrees
     """
     _allow_difference = False
     _radians = True
+    _defaultNoDup = True
 
     def __init__(self, col, calculate=False, **kwargs):
         self.calculate = calculate
@@ -422,7 +435,7 @@ class Mag(Functor):
     calib : `lsst.afw.image.calib.Calib` (optional)
         Object that knows zero point.
     """
-    _default_dataset = 'meas'
+    _defaultDataset = 'meas'
 
     def __init__(self, col, calib=None, **kwargs):
         self.col = fluxName(col)
@@ -496,7 +509,7 @@ class NanoMaggie(Mag):
 
 
 class MagDiff(Functor):
-    _default_dataset = 'meas'
+    _defaultDataset = 'meas'
 
     """Functor to calculate magnitude difference"""
 
@@ -549,8 +562,9 @@ class Color(Functor):
         Filters from which to compute magnitude difference.
         Color computed is `Mag(filt2) - Mag(filt1)`.
     """
-    _default_dataset = 'forced_src'
+    _defaultDataset = 'forced_src'
     _dfLevels = ('filter', 'column')
+    _defaultNoDup = True
 
     def __init__(self, col, filt2, filt1, **kwargs):
         self.col = fluxName(col)

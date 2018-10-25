@@ -38,7 +38,7 @@ class QADataset(object):
     df : `pandas.DataFrame`
         Dataframe to wrap; e.g., the output of a `PostprocessAnalysis`.
 
-    vdims : `str`, optional
+    vdims : `str` or `list`, optional
         Column names to count as "value dimensions"; that is,
         quantities that you might want to explore.  If 'all' (default),
         then the vdims will be everything except `._kdims`, `._idNames`
@@ -59,7 +59,11 @@ class QADataset(object):
 
     @property
     def df(self):
-        """Dataframe
+        """Dataframe containing all columns to be explored
+
+        This is either passed directly in the constructor or
+        created by the `._makeDataFrame()` method, which
+        can be implemented differently in subclasses.
         """
         if self._df is None:
             self._makeDataFrame()
@@ -126,6 +130,32 @@ class QADataset(object):
 
     def skyPoints(self, vdim, maxMag, label='star', magCol='psfMag',
                   filter_range=None, flags=None, bad_flags=None):
+        """Points object with ra, dec as key dimensions and requested value dimension
+
+        This is used by `skyDmap` to make an interactive colormapped plot of
+        individual points in the dataset (as opposed to a datashaded view.)
+
+        Parameters
+        ----------
+        vdim : str
+            Name of requested value dimension (one of the columns of `.df`);
+            this will be the color_index.
+
+        maxMag : float
+            Faint limit of objects to plot.  Points are selected to have
+            `magCol < maxMag`.
+
+        label : str
+            Label to select points (e.g., `'star'`, `'galaxy'` or any other
+            label that is in the 'label' column of `.df`)
+
+        magCol : str
+            Dimension that gets filtered on by `maxMag`.
+
+        filter_range, flags, bad_flags : `dict`, `list`, `list`
+            Arguments passed by `FilterStream` object (from `skyDmap`).
+
+        """
         selectDict = {magCol: (0, maxMag),
                       'label': label}
         ds = self.ds.select(**selectDict)
@@ -148,7 +178,7 @@ class QADataset(object):
                 Values of faint magnitude limit.  Only points up to this limit will be plotted.
                 Beware of scrolling to too faint a limit; it might give you too many points!
 
-            filter_stream : explorer.plots.FilterStream, optional
+            filter_stream : `qa.explorer.plots.FilterStream`, optional
                 Stream of constraints that controls what data to display.  Useful to link
                 multiple plots together
 
@@ -205,7 +235,7 @@ class MatchedQADataset(QADataset):
     match_radius : `float`
         Max match distance in arcsec.  Default is 0.5.
 
-    match_registry : `str`
+    match_registry : `str` (optional)
         Path to an .h5 file containing cached match results.
         (Not implemented yet; implementation should parallel
         that of `lsst.qa.explorer.catalog.MatchedCatalog`).

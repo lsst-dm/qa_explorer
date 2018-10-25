@@ -1,21 +1,21 @@
 
-import scipy.spatial.kdtree, numpy
+import scipy.spatial.kdtree
+import numpy
 from scipy import version
-from numpy import sin,cos,deg2rad,rad2deg,arcsin
+from numpy import sin, cos, deg2rad, rad2deg, arcsin
 import numpy as np
 import dask.array as da
-import time
 
-scipy_version  = ('.'.join(version.version.split('.')[0:2])).split('.')[0:2]
+scipy_version = ('.'.join(version.version.split('.')[0:2])).split('.')[0:2]
 
 def match_lists(ra1, dec1, ra2, dec2, dist, numNei=1):
     """crossmatches the list of objects (ra1,dec1) with
     another list of objects (ra2,dec2) with the matching radius "dist"
     The routines searches for up to numNei closest neighbors
-    the routine returns the distance to the neighbor and the list 
+    the routine returns the distance to the neighbor and the list
     of indices of the neighbor. Everything is in degrees.
     if no match is found the distance is NaN.
-    Example: 
+    Example:
     > dist, ind = match_lists(ra1,dec1,ra2,dec2, 1./3600)
     > goodmatch_ind = numpy.isfinite(dist)
     > plot(ra1[goodmatch_ind],ra2[ind[goodmatch_ind]])
@@ -26,9 +26,9 @@ def match_lists(ra1, dec1, ra2, dec2, dist, numNei=1):
          array([[0, 1],
                 [3, 3]]))
     """
-    cosd = lambda x : da.cos(x * np.pi/180)
-    sind = lambda x : da.sin(x * np.pi/180)
-    mindist = 2 * sind(dist/2.) 
+    cosd = lambda x: da.cos(x * np.pi/180)
+    sind = lambda x: da.sin(x * np.pi/180)
+    mindist = 2 * sind(dist/2.)
     getxyz = lambda r, d: [cosd(r)*cosd(d), sind(r)*cosd(d), sind(d)]
     xyz1 = numpy.array(getxyz(ra1, dec1))
     xyz2 = numpy.array(getxyz(ra2, dec2))

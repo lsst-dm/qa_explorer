@@ -122,7 +122,7 @@ class PostprocessAnalysis(object):
 
     @property
     def noDupCols(self):
-        return [name for name, func in self.func.funcDict.items() if func.noDup]
+        return [name for name, func in self.func.funcDict.items() if func.noDup or func.dataset == 'ref']
 
     @property
     def df(self):
@@ -299,7 +299,7 @@ class PostprocessTask(CmdLineTask):
         pass
 
 
-def flattenFilters(df, filterDict, noDupCols=['coord_ra', 'coord_dec']):
+def flattenFilters(df, filterDict, noDupCols=['coord_ra', 'coord_dec'], camelCase=False):
     """Flattens a dataframe with multilevel column index
     """
     newDf = pd.DataFrame()
@@ -308,7 +308,8 @@ def flattenFilters(df, filterDict, noDupCols=['coord_ra', 'coord_dec']):
             subdf = df[filt]
         except KeyError:
             continue
-        newColumns = {c: '{0}_{1}'.format(filtShort, c)
+        columnFormat = '{0}{1}' if camelCase else '{0}_{1}'
+        newColumns = {c: columnFormat.format(filtShort, c)
                       for c in subdf.columns if c not in noDupCols}
         cols = list(newColumns.keys())
         newDf = pd.concat([newDf, subdf[cols].rename(columns=newColumns)], axis=1)
@@ -324,6 +325,9 @@ class MultibandPostprocessConfig(PostprocessConfig):
                                    'HSC-Y': 'y'},
                           doc="Dictionary mapping full filter name to short one " +
                               "for column name munging.")
+    camelCase = Field(dtype=bool, default=False,
+                      doc="Write per-filter columns names with camelCase, else underscore "
+                          "For example: gPsfFlux instead of g_PsfFlux.")
     multilevelOutput = Field(dtype=bool, default=True,
                              doc="Whether results dataframe should have a " +
                                  "multilevel column index (True) or be flat " +
@@ -338,7 +342,7 @@ class MultibandPostprocessTask(PostprocessTask):
     input `deepCoadd_obj` table.  Any specific `"filt"` keywords specified
     by the YAML file will be superceded.
     """
-    _DefaultName = "MultibandPostprocess"
+    _DefaultName = "multibandPostprocess"
     ConfigClass = MultibandPostprocessConfig
 
     def run(self, parq, funcs=None, dataId=None):
@@ -358,7 +362,8 @@ class MultibandPostprocessTask(PostprocessTask):
             noDupCols = analysis.noDupCols
             if dataId is not None:
                 noDupCols += list(dataId.keys())
-            df = flattenFilters(df, self.config.filterMap, noDupCols=noDupCols)
+            df = flattenFilters(df, self.config.filterMap, noDupCols=noDupCols,
+                                camelCase=self.config.camelCase)
 
         return df
 
@@ -380,3 +385,21 @@ class WriteQATableTask(MultibandPostprocessTask):
 
     inputDataset = 'deepCoadd_obj'
     outputDataset = 'deepCoadd_qa'
+
+
+class TransformObjectCatalogConfig(MultibandPostprocessConfig):
+    def setDefaults(self):
+        self.functorFile = os.path.join(getPackageDir("obs_subaru"),
+                                        'policy', 'Object.yaml')
+        self.multilevelOutput = False
+        self.camelCase = True
+
+
+class TransformObjectCatalogTask(MultibandPostprocessTask):
+    """Compute Flatted Object Table as defined in the DPDD
+    """
+    _DefaultName = "transformObjectCatalog"
+    ConfigClass = TransformObjectCatalogConfig
+
+    inputDataset = 'deepCoadd_obj'
+    outputDataset = 'objectTable'

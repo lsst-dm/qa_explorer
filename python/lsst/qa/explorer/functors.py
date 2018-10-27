@@ -259,6 +259,15 @@ class CompositeFunctor(Functor):
         return valDf
 
     @classmethod
+    def renameCol(cls, col, renameRules):
+        if renameRules is None:
+            return col
+        for old, new in renameRules:
+            if col.startswith(old):
+                col = col.replace(old, new)
+        return col
+
+    @classmethod
     def from_file(cls, filename, **kwargs):
         with open(filename) as f:
             translationDefinition = yaml.safe_load(f)
@@ -271,9 +280,14 @@ class CompositeFunctor(Functor):
         for func, val in translationDefinition['funcs'].items():
             funcs[func] = init_fromDict(val)
 
+        if 'flag_rename_rules' in translationDefinition:
+            renameRules = translationDefinition['flag_rename_rules']
+        else:
+            renameRules = None
+
         if 'flags' in translationDefinition:
             for flag in translationDefinition['flags']:
-                funcs[flag] = Column(flag, dataset='ref')
+                funcs[cls.renameCol(flag, renameRules)] = Column(flag, dataset='ref')
 
         return cls(funcs, **kwargs)
 
@@ -377,6 +391,9 @@ class IDColumn(Column):
     _allow_difference = False
     _defaultNoDup = True
 
+    def _func(self, df):
+        return pd.Series(df.index, index=df.index)
+
 
 class FootprintNPix(Column):
     col = 'base_Footprint_nPix'
@@ -427,6 +444,12 @@ class DecColumn(CoordColumn):
 def fluxName(col):
     if not col.endswith('_instFlux'):
         col += '_instFlux'
+    return col
+
+
+def fluxErrName(col):
+    if not col.endswith('_instFluxErr'):
+        col += '_instFluxErr'
     return col
 
 
@@ -500,7 +523,7 @@ class MagErr(Mag):
 
     @property
     def columns(self):
-        return [self.col, self.col + 'Sigma']
+        return [self.col, self.col + 'Err']
 
     def _func(self, df):
         with np.warnings.catch_warnings():
@@ -585,6 +608,8 @@ class Color(Functor):
 
     def __init__(self, col, filt2, filt1, **kwargs):
         self.col = fluxName(col)
+        if filt2 == filt1:
+            raise RuntimeError("Cannot compute Color for %s: %s - %s " % (col, filt2, filt1))
         self.filt2 = filt2
         self.filt1 = filt1
 
@@ -779,3 +804,163 @@ class Seeing(Functor):
     def _func(self, df):
         return 0.168*2.35*np.sqrt(0.5*(df['ext_shapeHSM_HsmPsfMoments_xx']**2 +
                                        df['ext_shapeHSM_HsmPsfMoments_yy']**2))
+
+
+class e1(Functor):
+    name = "Distortion Ellipticity (e1)"
+    shortname = "Distortion"
+
+    def __init__(self, colXX, colXY, colYY, **kwargs):
+        self.colXX = colXX
+        self.colXY = colXY
+        self.colYY = colYY
+        self._columns = [self.colXX, self.colXY, self.colYY]
+        super().__init__(**kwargs)
+
+    @property
+    def columns(self):
+        return [self.colXX, self.colXY, self.colYY]
+
+    def _func(self, df):
+        return df[self.colXX] - df[self.colYY] / (df[self.colXX] + df[self.colYY])
+
+
+class e2(Functor):
+    name = "Ellipticity e2"
+
+    def __init__(self, colXX, colXY, colYY, **kwargs):
+        self.colXX = colXX
+        self.colXY = colXY
+        self.colYY = colYY
+        super().__init__(**kwargs)
+
+    @property
+    def columns(self):
+        return [self.colXX, self.colXY, self.colYY]
+
+    def _func(self, df):
+        return 2*df[self.colXY] / (df[self.colXX] + df[self.colYY])
+
+
+class RadiusFromQuadrupole(Functor):
+
+    def __init__(self, colXX, colXY, colYY, **kwargs):
+        self.colXX = colXX
+        self.colXY = colXY
+        self.colYY = colYY
+        super().__init__(**kwargs)
+
+    @property
+    def columns(self):
+        return [self.colXX, self.colXY, self.colYY]
+
+    def _func(self, df):
+        return (df[self.colXX]*df[self.colYY] - df[self.colXY]**2)**0.25
+
+
+class ReferenceBand(Functor):
+    name = 'Reference Band'
+    shortname = 'refBand'
+
+    @property
+    def columns(self):
+        return ["merge_measurement_i",
+                "merge_measurement_r",
+                "merge_measurement_z",
+                "merge_measurement_y",
+                "merge_measurement_g"]
+
+    def _func(self, df):
+        def getFilterAliasName(row):
+            # get column name with the max value (True > False)
+            colName = row.idxmax()
+            return colName.replace('merge_measurement_', '')
+
+        return df[self.columns].apply(getFilterAliasName, axis=1)
+
+
+class Photometry(Functor):
+    AB_FLUX_SCALE = 3.630780547701013425e12  # AB to NanoJansky (3631 Jansky)
+    LOG_AB_FLUX_SCALE = 12.56
+    FIVE_OVER_2LOG10 = 1.085736204758129569
+    # TO DO: DM-15751 will likely change this, and it should read from config/data in DM-16234
+    COADD_ZP = 27
+
+    def __init__(self, colFlux, colFluxErr=None, calib=None, **kwargs):
+        self.vhypot = np.vectorize(self.hypot)
+        self.col = colFlux
+        self.colFluxErr = colFluxErr
+
+        self.calib = calib
+        if calib is not None:
+            self.fluxMag0, self.fluxMag0Err = calib.getFluxMag0()
+        else:
+            self.fluxMag0 = 1./np.power(10, -0.4*self.COADD_ZP)
+            self.fluxMag0Err = 0.
+
+        super().__init__(**kwargs)
+
+    @property
+    def columns(self):
+        return [self.col]
+
+    @property
+    def name(self):
+        return 'mag_{0}'.format(self.col)
+
+    @classmethod
+    def hypot(cls, a, b):
+        if np.abs(a) < np.abs(b):
+                a, b = b, a
+        if a == 0.:
+            return 0.
+        q = b/a
+        return np.abs(a) * np.sqrt(1. + q*q)
+
+    def dn2flux(self, dn, fluxMag0):
+        return self.AB_FLUX_SCALE * dn / fluxMag0
+
+    def dn2mag(self, dn, fluxMag0):
+        with np.warnings.catch_warnings():
+            np.warnings.filterwarnings('ignore', r'invalid value encountered')
+            np.warnings.filterwarnings('ignore', r'divide by zero')
+            return -2.5 * np.log10(dn/fluxMag0)
+
+    def dn2fluxErr(self, dn, dnErr, fluxMag0, fluxMag0Err):
+        retVal = self.vhypot(dn * fluxMag0Err, dnErr * fluxMag0)
+        retVal *= self.AB_FLUX_SCALE / fluxMag0 / fluxMag0
+        return retVal
+
+    def dn2MagErr(self, dn, dnErr, fluxMag0, fluxMag0Err):
+        retVal = self.dn2fluxErr(dn, dnErr, fluxMag0, fluxMag0Err) / self.dn2flux(dn, fluxMag0)
+        return self.FIVE_OVER_2LOG10 * retVal
+
+
+class NanoJansky(Photometry):
+    def _func(self, df):
+        return self.dn2flux(df[self.col], self.fluxMag0)
+
+
+class NanoJanskyErr(Photometry):
+    @property
+    def columns(self):
+        return [self.col, self.colFluxErr]
+
+    def _func(self, df):
+        retArr = self.dn2fluxErr(df[self.col], df[self.colFluxErr], self.fluxMag0, self.fluxMag0Err)
+        return pd.Series(retArr, index=df.index)
+
+
+class Magnitude(Photometry):
+    def _func(self, df):
+        return self.dn2mag(df[self.col], self.fluxMag0)
+
+
+class MagnitudeErr(Photometry):
+    @property
+    def columns(self):
+        return [self.col, self.colFluxErr]
+
+    def _func(self, df):
+        retArr = self.dn2MagErr(df[self.col], df[self.colFluxErr], self.fluxMag0, self.fluxMag0Err)
+        return pd.Series(retArr, index=df.index)

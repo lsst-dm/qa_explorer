@@ -243,6 +243,16 @@ class PostprocessTask(CmdLineTask):
         self.write(df, patchRef)
         return df
 
+    def getFunctors(self):
+        funcs = CompositeFunctor.from_yaml(self.config.functorFile)
+        return funcs
+
+    def getAnalysis(self, parq, dataId):
+        funcs = self.getFunctors()
+        filt = dataId.get('filter', None)
+        analysis = PostprocessAnalysis(parq, funcs, filt=filt)
+        return analysis
+
     def run(self, parq, dataId):
         """Do postprocessing calculations
 
@@ -262,9 +272,7 @@ class PostprocessTask(CmdLineTask):
         df : `pandas.DataFrame`
 
         """
-        filt = dataId.get('filter', None)
-        funcs = CompositeFunctor.from_yaml(self.config.functorFile)
-        analysis = PostprocessAnalysis(parq, funcs, filt=filt)
+        analysis = self.getAnalysis(parq, dataId)
         df = analysis.df
         df['patchId'] = dataId['patch']
         return df

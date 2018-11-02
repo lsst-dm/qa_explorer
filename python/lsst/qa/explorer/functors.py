@@ -248,14 +248,22 @@ class CompositeFunctor(Functor):
         return valDf
 
     @classmethod
-    def from_yaml(cls, filename, **kwargs):
-        conf = yaml.load(open(filename).read())
+    def from_file(cls, filename, **kwargs):
+        with open(filename) as f:
+            translationDefinition = yaml.safe_load(f)
+
+        return cls.from_yaml(translationDefinition)
+
+    @classmethod
+    def from_yaml(cls, translationDefinition, **kwargs):
         funcs = {}
-        for func, val in conf['funcs'].items():
+        import pdb
+        pdb.set_trace()
+        for func, val in translationDefinition['funcs'].items():
             funcs[func] = init_fromDict(val)
 
-        if 'flags' in conf:
-            for flag in conf['flags']:
+        if 'flags' in translationDefinition:
+            for flag in translationDefinition['flags']:
                 funcs[flag] = Column(flag, dataset='ref')
 
         return cls(funcs, **kwargs)

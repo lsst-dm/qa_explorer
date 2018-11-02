@@ -234,26 +234,28 @@ class PostprocessTask(CmdLineTask):
                                help="data ID, e.g. --id tract=12345 patch=1,2")
         return parser
 
+    def getFunctors(self):
+        funcs = CompositeFunctor.from_file(self.config.functorFile)
+        return funcs
+
     def runDataRef(self, patchRef):
         """Do calculations; write result
         """
         parq = patchRef.get()
         dataId = patchRef.dataId
-        df = self.run(parq, dataId)
+        funcs = self.getFunctors()
+        df = self.run(parq, funcs=funcs, dataId=dataId)
         self.write(df, patchRef)
         return df
 
-    def getFunctors(self):
-        funcs = CompositeFunctor.from_yaml(self.config.functorFile)
-        return funcs
-
-    def getAnalysis(self, parq, dataId):
-        funcs = self.getFunctors()
-        filt = dataId.get('filter', None)
+    def getAnalysis(self, parq, funcs=None, filt=None):
+        # Avoids disk access if funcs is passed
+        if funcs is None:
+            funcs = self.getFunctors()
         analysis = PostprocessAnalysis(parq, funcs, filt=filt)
         return analysis
 
-    def run(self, parq, dataId):
+    def run(self, parq, funcs=None, dataId=None):
         """Do postprocessing calculations
 
         Takes a `ParquetTable` object and dataId,
@@ -272,9 +274,12 @@ class PostprocessTask(CmdLineTask):
         df : `pandas.DataFrame`
 
         """
-        analysis = self.getAnalysis(parq, dataId)
+        filt = dataId.get('filter', None)
+        analysis = self.getAnalysis(parq, funcs=funcs, filt=filt)
         df = analysis.df
-        df['patchId'] = dataId['patch']
+        if dataId is not None:
+            for key, value in dataId.items():
+                df[key] = value
         return df
 
     def write(self, df, parqRef):
@@ -313,7 +318,8 @@ class MultibandPostprocessConfig(PostprocessConfig):
                               "for column name munging.")
     multilevelOutput = Field(dtype=bool, default=True,
                              doc="Whether results dataframe should have a " +
-                                 "multilevel column index or be flat and name-munged.")
+                                 "multilevel column index (True) or be flat " +
+                                 "and name-munged (False).")
 
 
 class MultibandPostprocessTask(PostprocessTask):
@@ -327,21 +333,23 @@ class MultibandPostprocessTask(PostprocessTask):
     _DefaultName = "MultibandPostprocess"
     ConfigClass = MultibandPostprocessConfig
 
-
-    def run(self, parq, dataId):
-        funcs = CompositeFunctor.from_yaml(self.config.functorFile)
+    def run(self, parq, funcs=None, dataId=None):
         dfDict = {}
         for filt in parq.columnLevelNames['filter']:
-            analysis = PostprocessAnalysis(parq, funcs, filt=filt)
+            analysis = self.getAnalysis(parq, funcs=funcs, filt=filt)
             df = analysis.df
-            df['patchId'] = dataId['patch']
+            if dataId is not None:
+                for key, value in dataId.items():
+                    df[key] = value
             dfDict[filt] = df
 
         # This makes a multilevel column index, with filter as first level
         df = pd.concat(dfDict, axis=1, names=['filter', 'column'])
 
         if not self.config.multilevelOutput:
-            noDupCols = analysis.noDupCols + ['patchId']
+            noDupCols = analysis.noDupCols
+            if dataId is not None:
+                noDupCols += list(dataId.keys())
             df = flattenFilters(df, self.config.filterMap, noDupCols=noDupCols)
 
         return df

@@ -131,22 +131,22 @@ class FunctorTestCase(unittest.TestCase):
 
     def testComposite(self):
         filt = 'HSC-G'
-        funcDict = {'psfMag_ref' : Mag('base_PsfFlux', dataset='ref'),
-                 'ra' : RAColumn(),
-                 'dec' : DecColumn(),
-                 'psfMag' : Mag('base_PsfFlux', filt=filt),
-                 'cmodel_magDiff' : MagDiff('base_PsfFlux',
-                                            'modelfit_CModel', filt=filt)}
+        funcDict = {'psfMag_ref': Mag('base_PsfFlux', dataset='ref'),
+                    'ra': RAColumn(),
+                    'dec': DecColumn(),
+                    'psfMag': Mag('base_PsfFlux', filt=filt),
+                    'cmodel_magDiff': MagDiff('base_PsfFlux',
+                                              'modelfit_CModel', filt=filt)}
         func = CompositeFunctor(funcDict)
         df = self._compositeFuncVal(func)
 
         # Repeat same, but define filter globally instead of individually
-        funcDict2 = {'psfMag_ref' : Mag('base_PsfFlux', dataset='ref'),
-                 'ra' : RAColumn(),
-                 'dec' : DecColumn(),
-                 'psfMag' : Mag('base_PsfFlux'),
-                 'cmodel_magDiff' : MagDiff('base_PsfFlux',
-                                            'modelfit_CModel')}
+        funcDict2 = {'psfMag_ref': Mag('base_PsfFlux', dataset='ref'),
+                     'ra': RAColumn(),
+                     'dec': DecColumn(),
+                     'psfMag': Mag('base_PsfFlux'),
+                     'cmodel_magDiff': MagDiff('base_PsfFlux',
+                                               'modelfit_CModel')}
 
         func2 = CompositeFunctor(funcDict2, filt=filt)
         df2 = self._compositeFuncVal(func2)
@@ -170,15 +170,15 @@ class FunctorTestCase(unittest.TestCase):
         df = self._compositeFuncVal(CompositeFunctor(funcs))
 
     def testCompositeColor(self):
-        funcDict = {'a' : Mag('base_PsfFlux', dataset='meas', filt='HSC-G'),
-                    'b' : Mag('base_PsfFlux', dataset='forced_src', filt='HSC-G'),
-                    'c' : Color('base_PsfFlux', 'HSC-G', 'HSC-R')}
+        funcDict = {'a': Mag('base_PsfFlux', dataset='meas', filt='HSC-G'),
+                    'b': Mag('base_PsfFlux', dataset='forced_src', filt='HSC-G'),
+                    'c': Color('base_PsfFlux', 'HSC-G', 'HSC-R')}
 
         df = self._compositeFuncVal(CompositeFunctor(funcDict))
 
     def testYaml(self):
         functorFile = os.path.join(getPackageDir("qa_explorer"),
-                                   'data','QAfunctors.yaml')
+                                   'data', 'QAfunctors.yaml')
 
-        func = CompositeFunctor.from_yaml(functorFile, filt='HSC-G')
+        func = CompositeFunctor.from_file(functorFile, filt='HSC-G')
         df = self._compositeFuncVal(func)

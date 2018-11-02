@@ -286,7 +286,7 @@ def mag_aware_eval(df, expr):
         expr_new = re.sub('mag\((\w+)\)', '-2.5*log(\g<1>)/log(10)', expr)
         val = df.eval(expr_new, truediv=True)
     except Exception:  # Should check what actually gets raised
-        expr_new = re.sub('mag\((\w+)\)', '-2.5*log(\g<1>_flux)/log(10)', expr)
+        expr_new = re.sub('mag\((\w+)\)', '-2.5*log(\g<1>_instFlux)/log(10)', expr)
         val = df.eval(expr_new, truediv=True)
     return val
 
@@ -319,8 +319,8 @@ class CustomFunctor(Functor):
         cols = [c for c in re.findall('[a-zA-Z_]+', self.expr) if c not in self._ignore_words]
         not_a_col = []
         for c in flux_cols:
-            if not re.search('_flux$', c):
-                cols.append('{}_flux'.format(c))
+            if not re.search('_instFlux$', c):
+                cols.append('{}_instFlux'.format(c))
                 not_a_col.append(c)
             else:
                 cols.append(c)
@@ -416,8 +416,8 @@ class DecColumn(CoordColumn):
 
 
 def fluxName(col):
-    if not col.endswith('_flux'):
-        col += '_flux'
+    if not col.endswith('_instFlux'):
+        col += '_instFlux'
     return col
 
 
@@ -439,7 +439,7 @@ class Mag(Functor):
     col : `str`
         Name of flux column from which to compute magnitude.  Can be parseable
         by `lsst.qa.explorer.functors.fluxName` function---that is, you can pass
-        `'modelfit_CModel'` instead of `'modelfit_CModel_flux'`) and it will understand.
+        `'modelfit_CModel'` instead of `'modelfit_CModel_instFlux'`) and it will understand.
     calib : `lsst.afw.image.calib.Calib` (optional)
         Object that knows zero point.
     """

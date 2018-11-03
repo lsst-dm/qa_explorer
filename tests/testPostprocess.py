@@ -55,7 +55,7 @@ class PostprocessTestCase(unittest.TestCase):
         self.filters = self.parq.columnLevelNames['filter']
         self.task = MultibandPostprocessTask()
         self.shortFilters = [f for k, f in self.task.config.filterMap.items()
-                             if f in self.filters]
+                             if k in self.filters]
         self.task.config.functorFile = self.yamlFile
         self.funcs = self.task.getFunctors()
         self.columnNames = list(self.funcs.funcDict.keys())

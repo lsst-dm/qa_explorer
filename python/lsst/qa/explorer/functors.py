@@ -257,8 +257,6 @@ class CompositeFunctor(Functor):
     @classmethod
     def from_yaml(cls, translationDefinition, **kwargs):
         funcs = {}
-        import pdb
-        pdb.set_trace()
         for func, val in translationDefinition['funcs'].items():
             funcs[func] = init_fromDict(val)
 

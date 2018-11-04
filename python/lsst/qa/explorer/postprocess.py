@@ -84,7 +84,7 @@ class PostprocessAnalysis(object):
     flags : `list` (optional)
         List of flags to include in output table.
     """
-    _defaultFlags = ('calib_psfUsed', 'detect_isPrimary')
+    _defaultFlags = ('calib_psf_used', 'detect_isPrimary')
 
     def __init__(self, parq, functors, filt=None, flags=None):
         self.parq = parq

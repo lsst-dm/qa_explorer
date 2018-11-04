@@ -83,7 +83,6 @@ class Functor(object):
         else:
             return self._defaultNoDup
 
-
     @property
     def columns(self):
         """Columns required to perform calculation
@@ -202,6 +201,9 @@ class CompositeFunctor(Functor):
         self._filt = None
 
         super().__init__(**kwargs)
+
+        if 'filt' in kwargs:
+            self.filt = kwargs['filt']
 
     @property
     def filt(self):

@@ -202,9 +202,6 @@ class CompositeFunctor(Functor):
 
         super().__init__(**kwargs)
 
-        if 'filt' in kwargs:
-            self.filt = kwargs['filt']
-
     @property
     def filt(self):
         return self._filt
@@ -254,7 +251,7 @@ class CompositeFunctor(Functor):
         with open(filename) as f:
             translationDefinition = yaml.safe_load(f)
 
-        return cls.from_yaml(translationDefinition)
+        return cls.from_yaml(translationDefinition, **kwargs)
 
     @classmethod
     def from_yaml(cls, translationDefinition, **kwargs):

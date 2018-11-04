@@ -355,7 +355,7 @@ class MultibandPostprocessTask(PostprocessTask):
         return df
 
 
-class WriteQATableConfig(PostprocessConfig):
+class WriteQATableConfig(MultibandPostprocessConfig):
     def setDefaults(self):
         self.functorFile = os.path.join(getPackageDir("qa_explorer"),
                                         'data', 'QAfunctors.yaml')

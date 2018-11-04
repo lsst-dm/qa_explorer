@@ -35,11 +35,8 @@ class TractQADataIdContainer(CoaddDataIdContainer):
         require "filter", since the QA data products it is designed to serve
         are merged over filters.
         """
-        datasetType = namespace.config.coaddName + "Coadd_qa"
-        validKeys = set(["tract", "patch", ])
-
         def getPatchRefList(tract):
-            return [namespace.butler.dataRef(datasetType=datasetType,
+            return [namespace.butler.dataRef(datasetType=self.datasetType,
                                              tract=tract.getId(),
                                              patch="%d,%d" % patch.getIndex()) for patch in tract]
 
@@ -51,7 +48,8 @@ class TractQADataIdContainer(CoaddDataIdContainer):
             if "tract" in dataId:
                 tractId = dataId["tract"]
                 if "patch" in dataId:
-                    tractRefs[tractId].append(namespace.butler.dataRef(datasetType=datasetType, tract=tractId,
+                    tractRefs[tractId].append(namespace.butler.dataRef(datasetType=self.datasetType,
+                                                                       tract=tractId,
                                                                        patch=dataId['patch']))
                 else:
                     tractRefs[tractId] += getPatchRefList(skymap[tractId])

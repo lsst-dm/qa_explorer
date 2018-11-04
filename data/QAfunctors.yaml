@@ -27,7 +27,7 @@ funcs:
     deconvolved_moments:
         functor: DeconvolvedMoments
 flags:
-    - calib_psfUsed
+    - calib_psf_used
     - merge_measurement_i
     - merge_measurement_r
     - merge_measurement_z

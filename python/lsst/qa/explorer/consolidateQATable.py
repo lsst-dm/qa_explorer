@@ -47,3 +47,15 @@ class ConsolidateQATableTask(CmdLineTask):
         """No metadata to write.
         """
         pass
+
+
+class ConsolidateObjectTableConfig(ConsolidateQATableConfig):
+    pass
+
+
+class ConsolidateObjectTableTask(ConsolidateQATableTask):
+    _DefaultName = "consolidateObjectTable"
+    ConfigClass = ConsolidateObjectTableConfig
+
+    inputDataset = 'objectTable'
+    outputDataset = 'objectTable_tract'

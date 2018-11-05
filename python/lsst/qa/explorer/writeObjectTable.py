@@ -1,23 +1,37 @@
+# This file is part of qa_explorer.
+#
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 """Command-line task and associated config for writing deepCoadd_obj table.
 
 The deepCoadd_obj table is a merged catalog of deepCoadd_meas, deepCoadd_forced_src and deepCoadd_ref
 catalogs for multiple bands.
 """
-from lsst.daf.persistence.butler import Butler
-from lsst.pex.config import (Config, Field, ConfigField, ListField, DictField, ConfigDictField,
-                             ConfigurableField)
-from lsst.pipe.base import Task, CmdLineTask, ArgumentParser, TaskRunner, TaskError
-from lsst.coadd.utils import TractDataIdContainer
-from lsst.pipe.tasks.multiBand import _makeGetSchemaCatalogs
-from lsst.pipe.tasks.multiBandUtils import makeMergeArgumentParser, MergeSourcesRunner
-from lsst.coadd.utils.coaddDataIdContainer import ExistingCoaddDataIdContainer
-
-
 import functools
-import re
 import pandas as pd
 
 from .parquetTable import ParquetTable
+
+from lsst.pex.config import Config, Field, ListField
+from lsst.pipe.base import CmdLineTask
+from lsst.pipe.tasks.multiBandUtils import makeMergeArgumentParser, MergeSourcesRunner
 
 
 class WriteObjectTableConfig(Config):
@@ -99,7 +113,8 @@ class WriteObjectTableTask(CmdLineTask):
         catalogDict = {}
         for dataset in self.inputDatasets:
             catalog = patchRef.get(self.config.coaddName + "Coadd_" + dataset, immediate=True)
-            self.log.info("Read %d sources from %s for filter %s: %s" % (len(catalog), dataset, filterName, patchRef.dataId))
+            self.log.info("Read %d sources from %s for filter %s: %s" %
+                          (len(catalog), dataset, filterName, patchRef.dataId))
             catalogDict[dataset] = catalog
         return filterName, catalogDict
 
@@ -134,7 +149,7 @@ class WriteObjectTableTask(CmdLineTask):
                                                        names=('dataset', 'filter', 'column'))
                 dfs.append(df)
 
-        catalog = functools.reduce(lambda d1,d2 : d1.join(d2), dfs)
+        catalog = functools.reduce(lambda d1, d2: d1.join(d2), dfs)
         return ParquetTable(dataFrame=catalog)
 
     def write(self, patchRef, catalog):

@@ -86,6 +86,9 @@ class PostprocessAnalysis(object):
     """
     _defaultFlags = ('calib_psf_used', 'detect_isPrimary')
 
+    _defaultFuncs = (('ra', RAColumn()),
+                     ('dec', DecColumn()))
+
     def __init__(self, parq, functors, filt=None, flags=None):
         self.parq = parq
         self.functors = functors
@@ -98,9 +101,13 @@ class PostprocessAnalysis(object):
         self._df = None
 
     @property
+    def defaultFuncs(self):
+        funcs = dict(self._defaultFuncs)
+        return funcs
+
+    @property
     def func(self):
-        additionalFuncs = {'ra': RAColumn(),
-                           'dec': DecColumn()}
+        additionalFuncs = self.defaultFuncs
         additionalFuncs.update({flag: Column(flag) for flag in self.flags})
 
         if isinstance(self.functors, CompositeFunctor):
@@ -236,6 +243,7 @@ class PostprocessTask(CmdLineTask):
 
     def getFunctors(self):
         funcs = CompositeFunctor.from_file(self.config.functorFile)
+        funcs.update(dict(PostprocessAnalysis._defaultFuncs))
         return funcs
 
     def runDataRef(self, patchRef):

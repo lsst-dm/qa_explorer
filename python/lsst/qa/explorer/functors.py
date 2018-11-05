@@ -213,6 +213,18 @@ class CompositeFunctor(Functor):
                 f.filt = filt
         self._filt = filt
 
+    def update(self, new):
+        if isinstance(new, dict):
+            self.funcDict.update(new)
+        elif isinstance(new, CompositeFunctor):
+            self.funcDict.update(new.funcDict)
+        else:
+            raise TypeError('Can only update with dictionary or CompositeFunctor.')
+
+        # Make sure new functors have the same 'filt' set
+        if self.filt is not None:
+            self.filt = self.filt
+
     @property
     def columns(self):
         return list(set([x for y in [f.columns for f in self.funcDict.values()] for x in y]))

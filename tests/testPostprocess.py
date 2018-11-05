@@ -88,7 +88,6 @@ class PostprocessTestCase(unittest.TestCase):
 
         assert all([c in df.columns for c in self.noDupCols])
 
-        ok = True
         missing = []
         for filt, col in itertools.product(self.shortFilters, self.columnNames):
             if col not in self.noDupCols:
@@ -96,11 +95,7 @@ class PostprocessTestCase(unittest.TestCase):
                 if mungedCol not in df.columns:
                     missing.append(mungedCol)
 
-        try:
-            assert len(missing) == 0
-        except AssertionError:
-            print(missing)
-            raise
+        assert len(missing) == 0
 
     def testRun(self):
 

@@ -162,14 +162,14 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
         # Case D: Only one level (first level) is provided
         dataset_D = self.datasets[0]
         columnDict_D = {'dataset':dataset_D}
-        df_D = df[dataset_D]
+        df_D = df[dataset_D].sort_index(axis=1)
         assert_frame_equal(parq.toDataFrame(columns=columnDict_D), df_D)
 
         # Case E: Only one level (second level) is provided
         filters_E = self.filters[1]
         columnDict_E = {'filter':filters_E}
         # get second level of multi-index column using .xs()
-        df_E = df.xs(filters_E, level=1, axis=1)
+        df_E = df.xs(filters_E, level=1, axis=1).sort_index(axis=1)
         assert_frame_equal(parq.toDataFrame(columns=columnDict_E), df_E)
 
 if __name__ == "__main__":

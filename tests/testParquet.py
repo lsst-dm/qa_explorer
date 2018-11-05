@@ -151,6 +151,11 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
         assert_frame_equal(parq.toDataFrame(columns=columnDict_B), df_B)
         assert_frame_equal(df_B, parq.toDataFrame(columns=colTuples_B))
 
+        # When explicit columns are not provided, comparison requires
+        # first getting the column index in sorted order.  Apparently this 
+        # happens by default in parq.toDataFrame(); to be honest, I'm not
+        # exactly sure how/why.
+
         # Case C: Two levels have a single value; third is not provided
         datasets_C = self.datasets[0]
         filters_C = self.filters[0]

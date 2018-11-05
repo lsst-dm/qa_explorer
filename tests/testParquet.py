@@ -156,7 +156,7 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
         filters_C = self.filters[0]
         columnDict_C = {'dataset':datasets_C,
                        'filter':filters_C}
-        df_C = df[datasets_C][filters_C]
+        df_C = df[datasets_C][filters_C].sort_index(axis=1)
         assert_frame_equal(parq.toDataFrame(columns=columnDict_C), df_C)
 
         # Case D: Only one level (first level) is provided

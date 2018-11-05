@@ -1,0 +1,37 @@
+funcs:
+    psfMag:
+        functor: Mag
+        args:
+            - base_PsfFlux
+        filt: HSC-G
+        dataset: meas
+    label:
+        functor: StarGalaxyLabeller
+    cmodel_magDiff:
+        functor: MagDiff
+        args:
+            - modelfit_CModel
+            - base_PsfFlux
+    gauss_magDiff:
+        functor: MagDiff
+        args:
+            - base_GaussianFlux
+            - base_PsfFlux
+    count:
+        functor: Column
+        args:
+            - base_InputCount_value
+    seeing:
+        functor: Seeing
+
+    deconvolved_moments:
+        functor: DeconvolvedMoments
+flags:
+    - calib_psf_used
+    - merge_measurement_i
+    - merge_measurement_r
+    - merge_measurement_z
+    - merge_measurement_y
+    - merge_measurement_g
+    - base_PixelFlags_flag_inexact_psfCenter
+    - detect_isPrimary

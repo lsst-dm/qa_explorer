@@ -49,6 +49,7 @@ class ParquetTable(object):
         Path to Parquet file.
 
     """
+
     def __init__(self, filename=None, dataFrame=None):
         if filename is not None:
             self._pf = pq.ParquetFile(filename)
@@ -207,8 +208,8 @@ class MultilevelParquetTable(ParquetTable):
     @property
     def columnLevelNames(self):
         if self._columnLevelNames is None:
-            self._columnLevelNames = {level : list(np.unique(np.array(self.columns)[:,i]))
-                                      for i,level in enumerate(self.columnLevels)}
+            self._columnLevelNames = {level: list(np.unique(np.array(self.columns)[:, i]))
+                                      for i, level in enumerate(self.columnLevels)}
         return self._columnLevelNames
 
     @property
@@ -234,7 +235,7 @@ class MultilevelParquetTable(ParquetTable):
             matches = [re.search(pattern, c) for c in columns]
             return [m.groups() for m in matches if m is not None]
 
-    def toDataFrame(self, columns=None):
+    def toDataFrame(self, columns=None, droplevels=True):
         """Get table (or specified columns) as a pandas DataFrame
 
         To get specific columns in specified sub-levels:
@@ -284,23 +285,24 @@ class MultilevelParquetTable(ParquetTable):
             if not newColumns:
                 raise ValueError('None of the requested columns ({}) are available!'.format(columns))
             pfColumns = self._stringify(newColumns)
-            df = self.pf.read(columns=pfColumns, use_pandas_metadata=True).to_pandas()
+            df = self._pf.read(columns=pfColumns, use_pandas_metadata=True).to_pandas()
 
-        # Drop levels of column index that have just one entry
-        levelsToDrop = [n for l,n in zip(df.columns.levels, df.columns.names)
-                        if len(l)==1]
+        if droplevels:
+            # Drop levels of column index that have just one entry
+            levelsToDrop = [n for l, n in zip(df.columns.levels, df.columns.names)
+                            if len(l) == 1]
 
-        # Prevent error when trying to drop *all* columns
-        if len(levelsToDrop) == len(df.columns.names):
-            levelsToDrop.remove(df.columns.names[-1])
+            # Prevent error when trying to drop *all* columns
+            if len(levelsToDrop) == len(df.columns.names):
+                levelsToDrop.remove(df.columns.names[-1])
 
-        df.columns = df.columns.droplevel(levelsToDrop)
+            df.columns = df.columns.droplevel(levelsToDrop)
 
         return df
 
     def _colsFromDict(self, colDict):
         new_colDict = {}
-        for i,l in enumerate(self.columnLevels):
+        for i, l in enumerate(self.columnLevels):
             if l in colDict:
                 if isinstance(colDict[l], str):
                     new_colDict[l] = [colDict[l]]

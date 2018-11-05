@@ -151,25 +151,30 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
         assert_frame_equal(parq.toDataFrame(columns=columnDict_B), df_B)
         assert_frame_equal(df_B, parq.toDataFrame(columns=colTuples_B))
 
+        # When explicit columns are not provided, comparison requires
+        # first getting the column index in sorted order.  Apparently this 
+        # happens by default in parq.toDataFrame(); to be honest, I'm not
+        # exactly sure how/why.
+
         # Case C: Two levels have a single value; third is not provided
         datasets_C = self.datasets[0]
         filters_C = self.filters[0]
         columnDict_C = {'dataset':datasets_C,
                        'filter':filters_C}
-        df_C = df[datasets_C][filters_C]
+        df_C = df[datasets_C][filters_C].sort_index(axis=1)
         assert_frame_equal(parq.toDataFrame(columns=columnDict_C), df_C)
 
         # Case D: Only one level (first level) is provided
         dataset_D = self.datasets[0]
         columnDict_D = {'dataset':dataset_D}
-        df_D = df[dataset_D]
+        df_D = df[dataset_D].sort_index(axis=1)
         assert_frame_equal(parq.toDataFrame(columns=columnDict_D), df_D)
 
         # Case E: Only one level (second level) is provided
         filters_E = self.filters[1]
         columnDict_E = {'filter':filters_E}
         # get second level of multi-index column using .xs()
-        df_E = df.xs(filters_E, level=1, axis=1)
+        df_E = df.xs(filters_E, level=1, axis=1).sort_index(axis=1)
         assert_frame_equal(parq.toDataFrame(columns=columnDict_E), df_E)
 
 if __name__ == "__main__":

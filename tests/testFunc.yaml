@@ -1,0 +1,23 @@
+
+funcs:
+    psfMag:
+        functor: Mag
+        args: base_PsfFlux
+        filt: HSC-R
+    cModelMag: 
+        functor: Mag
+        args: modelfit_CModel
+        filt: HSC-G
+    cModelMagDiff:
+        functor: MagDiff
+        args:
+            - base_PsfFlux
+            - modelfit_CModel
+        filt: HSC-R
+    cModel_GR:
+        functor: Color
+        args:
+            - modelfit_CModel
+            - HSC-G
+            - HSC-R
+        dataset: meas

@@ -87,9 +87,20 @@ class PostprocessTestCase(unittest.TestCase):
             noDupCols += list(dataId.keys())
 
         assert all([c in df.columns for c in self.noDupCols])
-        assert all(['{0}_{1}'.format(filt, col) in df.columns
-                    for filt, col in itertools.product(self.shortFilters, self.columnNames)
-                    if col not in self.noDupCols])
+
+        ok = True
+        missing = []
+        for filt, col in itertools.product(self.shortFilters, self.columnNames):
+            if col not in self.noDupCols:
+                mungedCol = '{0}_{1}'.format(filt, col)
+                if mungedCol not in df.columns:
+                    missing.append(mungedCol)
+
+        try:
+            assert len(missing) == 0
+        except AssertionError:
+            print(missing)
+            raise
 
     def testRun(self):
 

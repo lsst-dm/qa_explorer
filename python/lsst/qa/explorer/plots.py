@@ -4,7 +4,6 @@ import param
 import holoviews as hv
 import datashader as ds
 import colorcet as cc
-import parambokeh
 
 from param import ParameterizedFunction, ParamOverrides
 from bokeh.palettes import Greys9

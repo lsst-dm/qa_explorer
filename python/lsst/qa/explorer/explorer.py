@@ -5,32 +5,20 @@ import pandas as pd
 
 import logging
 
-from bokeh.application.handlers import FunctionHandler
-from bokeh.application import Application
-from bokeh.io import show
-from bokeh.layouts import layout
-from bokeh.plotting import curdoc
-from bokeh.models.widgets import Panel, Tabs, Select, RadioButtonGroup, TextInput, PreText
-from bokeh.palettes import Spectral4, Category10, Dark2
 from bokeh.models import HoverTool
 
 import holoviews as hv
 
 import datashader as ds
-from holoviews.operation.datashader import aggregate, shade, datashade, dynspread
-from holoviews.operation import decimate, histogram
+from holoviews.operation.datashader import aggregate, datashade, dynspread
 import colorcet as cc
-
-from holoviews.plotting.bokeh.callbacks import callbacks, Callback
-
-# hv.extension('bokeh')
 
 import param
 import parambokeh
 
 from .functors import Mag, CustomFunctor, DeconvolvedMoments
 from .functors import StarGalaxyLabeller
-from .functors import RAColumn, DecColumn, Column, IDColumn
+from .functors import RAColumn, DecColumn, Column
 from .functors import SdssTraceSize, PsfSdssTraceSizeDiff, HsmTraceSize, PsfHsmTraceSizeDiff
 from .functors import CompositeFunctor
 

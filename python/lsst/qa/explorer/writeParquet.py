@@ -3,18 +3,13 @@
 The deepCoadd_obj table is a merged catalog of deepCoadd_meas, deepCoadd_forced_src and deepCoadd_ref
 catalogs for multiple bands.
 """
-from lsst.daf.persistence.butler import Butler
-from lsst.pex.config import (Config, Field, ConfigField, ListField, DictField, ConfigDictField,
-                             ConfigurableField)
-from lsst.pipe.base import Task, CmdLineTask, ArgumentParser, TaskRunner, TaskError
-from lsst.coadd.utils import TractDataIdContainer
+from lsst.pex.config import Field, ListField
+from lsst.pipe.base import ArgumentParser
 from lsst.pipe.tasks.multiBand import MergeSourcesTask, MergeSourcesConfig
-from lsst.pipe.tasks.multiBand import _makeGetSchemaCatalogs
 from lsst.coadd.utils.coaddDataIdContainer import ExistingCoaddDataIdContainer
 
 
 import functools
-import re
 import pandas as pd
 
 from .table import ParquetTable

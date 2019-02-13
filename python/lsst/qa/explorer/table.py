@@ -7,7 +7,6 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 import fastparquet
-from astropy.table import Table
 
 class ParquetTable(object):
     """Shim to use butler to write pandas dataframe to parquet file

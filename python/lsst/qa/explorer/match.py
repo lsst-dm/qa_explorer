@@ -2,7 +2,7 @@
 import scipy.spatial.kdtree
 import numpy
 from scipy import version
-from numpy import sin, cos, deg2rad, rad2deg, arcsin
+from numpy import arcsin
 import numpy as np
 import dask.array as da
 

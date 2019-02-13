@@ -1,6 +1,5 @@
 import os
 import unittest
-import tempfile
 
 import pandas as pd
 import numpy as np
@@ -9,7 +8,7 @@ from pandas.util.testing import assert_frame_equal, assert_series_equal
 
 from lsst.utils import getPackageDir
 import lsst.utils.tests
-from lsst.qa.explorer.parquetTable import ParquetTable, MultilevelParquetTable
+from lsst.qa.explorer.parquetTable import MultilevelParquetTable
 from lsst.qa.explorer.functors import (CompositeFunctor, CustomFunctor, Column, RAColumn,
                      DecColumn, Mag, MagDiff, Color, StarGalaxyLabeller,
                      DeconvolvedMoments, SdssTraceSize, PsfSdssTraceSizeDiff,

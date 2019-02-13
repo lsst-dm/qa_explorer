@@ -1,5 +1,4 @@
 from bokeh.io import curdoc
-import distributed
 
 def modify_doc(doc):
     raise ValueError

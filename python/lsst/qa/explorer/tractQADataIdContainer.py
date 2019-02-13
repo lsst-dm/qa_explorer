@@ -19,11 +19,9 @@
 # the GNU General Public License along with this program.  If not,
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
-import argparse
 from collections import defaultdict
 
 from lsst.coadd.utils import CoaddDataIdContainer
-import lsst.pipe.base as pipeBase
 
 class TractQADataIdContainer(CoaddDataIdContainer):
 

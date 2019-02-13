@@ -1,6 +1,5 @@
-import os, glob
+import os
 import holoviews as hv
-import pandas as pd
 import parambokeh
 from bokeh.io import curdoc
 from explorer.explorer import QAExplorer

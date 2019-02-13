@@ -5,13 +5,10 @@ Utilties for loading static pipe_analysis PNGs into holoviews DynamicMaps
 See 'qa-image-browser.ipynb' demo notebook for examples of usage.  
 """
 from __future__ import print_function, division
-import re, os, glob
-from itertools import product
 from functools import partial
 import numpy as np
 import holoviews as hv
 import logging
-from matplotlib import pyplot as plt
 
 try:
     from lsst.pipe.analysis.utils import Filenamer

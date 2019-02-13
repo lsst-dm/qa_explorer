@@ -24,19 +24,14 @@ from __future__ import print_function
 
 import os
 import unittest
-import tempfile
 import itertools
 
 import pandas as pd
-import pyarrow as pa
-import pyarrow.parquet as pq
-
-from pandas.util.testing import assert_frame_equal
 
 import lsst.utils.tests
 
 from lsst.qa.explorer.parquetTable import MultilevelParquetTable
-from lsst.qa.explorer.postprocess import PostprocessAnalysis, PostprocessTask, MultibandPostprocessTask
+from lsst.qa.explorer.postprocess import PostprocessAnalysis, MultibandPostprocessTask
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
 

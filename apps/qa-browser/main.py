@@ -1,23 +1,18 @@
 import os
 from pkg_resources import resource_filename
 import yaml
-import numpy as np
 import holoviews as hv
 
 import logging
 
-from bokeh.application.handlers import FunctionHandler
-from bokeh.application import Application
-from bokeh.io import show, curdoc
-from bokeh.layouts import layout, gridplot
-from bokeh.models import Slider, Button, TextInput
-from bokeh.models.widgets import Panel, Tabs, RadioButtonGroup
+from bokeh.io import curdoc
+from bokeh.layouts import layout
+from bokeh.models import TextInput
+from bokeh.models.widgets import Panel, Tabs
 
-from explorer.static import get_plot, get_tracts
 from explorer.static import filter_layout_dmap_coadd
 from explorer.static import description_layout_dmap_visit
 from explorer.static import color_dmap
-from explorer.rc import wide_filters
 
 from lsst.daf.persistence import Butler
 

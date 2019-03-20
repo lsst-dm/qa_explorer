@@ -170,7 +170,7 @@ class ParquetTable(object):
             kwargs['use_pandas_metadata'] = True
         try:
             df = self._read(**kwargs)
-        except AttributeError:
+        except (AttributeError, ValueError):
             kwargs['columns'] = self._sanitizeColumns(columns)
             df = self._read(**kwargs)
 

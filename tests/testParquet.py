@@ -25,6 +25,7 @@ from __future__ import print_function
 import os
 import unittest
 import logging
+import tempfile
 
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -49,17 +50,14 @@ class ParquetTableTestCase(unittest.TestCase):
 
     def setUp(self):
         self.df = pq.read_table(os.path.join(ROOT, self.testFilename)).to_pandas()
-        with lsst.utils.tests.getTempFilePath('.parq') as filename:
-            table = pa.Table.from_pandas(self.df)
-            pq.write_table(table, filename, compression='none')
-            self.parq, self.dfParq = self.getParq(filename, self.df)
-            import pdb
-            pdb.set_trace()
-
-        logging.debug(self.parq.filename)
+        filename = tempfile.mktemp(dir='.', suffix='.parq', prefix='{}'.format(self.type))
+        table = pa.Table.from_pandas(self.df)
+        pq.write_table(table, filename, compression='none')
+        self.parq, self.dfParq = self.getParq(filename, self.df)
 
     def tearDown(self):
         del self.df
+        os.remove(self.parq.filename)
         del self.parq
 
     def getParq(self, filename, df):

@@ -55,6 +55,7 @@ class ParquetTableTestCase(unittest.TestCase):
             self.parq, self.dfParq = self.getParq(filename, self.df)
             import pdb
             pdb.set_trace()
+            logging.debug(self.parq.filename)
 
     def tearDown(self):
         del self.df

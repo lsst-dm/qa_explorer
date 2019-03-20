@@ -48,7 +48,7 @@ class ParquetTableTestCase(unittest.TestCase):
 
     def setUp(self):
         self.df = pq.read_table(os.path.join(ROOT, self.testFilename)).to_pandas()
-        with lsst.utils.tests.getTempFilePath('*.parq') as filename:
+        with lsst.utils.tests.getTempFilePath('.parq') as filename:
             table = pa.Table.from_pandas(self.df)
             pq.write_table(table, filename, compression='none')
             self.parq, self.dfParq = self.getParq(filename, self.df)

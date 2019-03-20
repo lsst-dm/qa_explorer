@@ -54,8 +54,6 @@ class ParquetTableTestCase(unittest.TestCase):
         table = pa.Table.from_pandas(self.df)
         pq.write_table(table, filename, compression='none')
         self.parq, self.dfParq = self.getParq(filename, self.df)
-        import pdb
-        pdb.set_trace()
 
     def tearDown(self):
         del self.df
@@ -69,8 +67,6 @@ class ParquetTableTestCase(unittest.TestCase):
         assert_frame_equal(self.parq.toDataFrame(), self.df)
 
     def testColumns(self):
-        import pdb
-        pdb.set_trace()
         columns = ['coord_ra', 'coord_dec']
         assert_frame_equal(self.parq.toDataFrame(columns=columns),
                            self.df[columns])
@@ -81,6 +77,13 @@ class ParquetTableTestCase(unittest.TestCase):
 
 
 class FastparquetTestCase(ParquetTableTestCase):
+
+    def setUp(self):
+        self.df = pq.read_table(os.path.join(ROOT, self.testFilename)).to_pandas()
+        filename = tempfile.mktemp(dir='.', suffix='.parq', prefix='{}'.format(type(self)))
+        from fastparquet import write
+        write(filename, self.df)
+        self.parq, self.dfParq = self.getParq(filename, self.df)
 
     def getParq(self, filename, df):
         return ParquetTable(filename, engine='fastparquet'), ParquetTable(dataFrame=df)

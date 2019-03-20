@@ -25,6 +25,7 @@ Implementation of thin wrappers to pyarrow.ParquetFile.
 import re
 import json
 from itertools import product
+import logging
 
 import numpy as np
 import pandas as pd
@@ -50,9 +51,22 @@ class ParquetTable(object):
 
     """
 
-    def __init__(self, filename=None, dataFrame=None):
+    def __init__(self, filename=None, dataFrame=None, engine='pyarrow'):
+        if engine == 'fastparquet':
+            try:
+                from fastparquet import ParquetFile
+            except ImportError:
+                logging.warning('fastparquet not available.  Falling back on pyarrow.')
+                engine = 'pyarrow'
+
+        self.engine = engine
+
+
         if filename is not None:
-            self._pf = pq.ParquetFile(filename)
+            if self.engine == 'fastparquet':
+                self._pf = ParquetFile(filename)
+            elif self.engine == 'pyarrow':
+                self._pf = pq.ParquetFile(filename)
             self._df = None
             self._pandasMd = None
         elif dataFrame is not None:
@@ -119,10 +133,19 @@ class ParquetTable(object):
         if self._df is not None:
             return self._df.columns
         else:
-            return self._pf.metadata.schema.names
+            if self.engine == 'fastparquet':
+                return self._pf.columns
+            else:
+                return self._pf.metadata.schema.names
 
     def _sanitizeColumns(self, columns):
         return [c for c in columns if c in self.columnIndex]
+
+    def _read(self, **kwargs):
+        if self.engine == 'fastparquet':
+            return self._pf.to_pandas(**kwargs)
+        elif self.engine == 'pyarrow':
+            return self._pf.read(**kwargs).to_pandas()
 
     def toDataFrame(self, columns=None):
         """Get table (or specified columns) as a pandas DataFrame
@@ -140,13 +163,16 @@ class ParquetTable(object):
                 return self._df[columns]
 
         if columns is None:
-            return self._pf.read().to_pandas()
+            return self._read()
 
+        kwargs = dict(columns=columns)
+        if self.engine == 'pyarrow':
+            kwargs['use_pandas_metadata'] = True
         try:
-            df = self._pf.read(columns=columns, use_pandas_metadata=True).to_pandas()
+            df = self._read(**kwargs)
         except AttributeError:
-            columns = self._sanitizeColumns(columns)
-            df = self._pf.read(columns=columns, use_pandas_metadata=True).to_pandas()
+            kwargs['columns'] = self._sanitizeColumns(columns)
+            df = self._read(**kwargs)
 
         return df
 

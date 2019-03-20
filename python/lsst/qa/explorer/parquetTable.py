@@ -99,7 +99,10 @@ class ParquetTable(object):
         if self._pf is None:
             raise AttributeError("This property is only accessible if ._pf is set.")
         if self._pandasMd is None:
-            self._pandasMd = json.loads(self._pf.metadata.metadata[b'pandas'])
+            if self.engine == 'fastparquet':
+                self._pandasMd = self._pf.key_value_metadata['pandas']
+            elif self.engine == 'pyarrow':
+                self._pandasMd = json.loads(self._pf.metadata.metadata[b'pandas'])
         return self._pandasMd
 
     @property

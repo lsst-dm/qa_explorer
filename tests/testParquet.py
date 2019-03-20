@@ -68,6 +68,9 @@ class ParquetTableTestCase(unittest.TestCase):
 
     def testColumns(self):
         columns = ['coord_ra', 'coord_dec']
+        import pdb
+        pdb.set_trace()
+        
         assert_frame_equal(self.parq.toDataFrame(columns=columns),
                            self.df[columns])
 

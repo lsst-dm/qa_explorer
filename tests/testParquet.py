@@ -36,8 +36,10 @@ from lsst.qa.explorer.parquetTable import ParquetTable, MultilevelParquetTable
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
+
 def setup_module(module):
     lsst.utils.tests.init()
+
 
 class ParquetTableTestCase(unittest.TestCase):
     """Test case for ParquetTable
@@ -70,9 +72,11 @@ class ParquetTableTestCase(unittest.TestCase):
         assert_frame_equal(self.parq.toDataFrame(columns=columns+['hello']),
                            self.df[columns])
 
+
 class FastparquetTestCase(ParquetTableTestCase):
     def getParq(self, filename, df):
-        return ParquetTable(filename, engine='fastparquet')
+        return ParquetTable(filename, engine='fastparquet'), ParquetTable(dataFrame=df)
+
 
 class MultilevelParquetTableTestCase(ParquetTableTestCase):
     """Test case for MultilevelParquetTable
@@ -90,12 +94,11 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
         return MultilevelParquetTable(filename), MultilevelParquetTable(dataFrame=df)
 
     def testProperties(self):
-        assert(all([x==y for x,y in zip(self.parq.columnLevels, self.df.columns.names)]))
-        assert(len(self.parq.columns)==len(self.df.columns))
+        assert(all([x == y for x, y in zip(self.parq.columnLevels, self.df.columns.names)]))
+        assert(len(self.parq.columns) == len(self.df.columns))
 
-        assert(all([x==y for x,y in zip(self.dfParq.columnLevels, self.df.columns.names)]))
-        assert(len(self.dfParq.columns)==len(self.df.columns))
-
+        assert(all([x == y for x, y in zip(self.dfParq.columnLevels, self.df.columns.names)]))
+        assert(len(self.dfParq.columns) == len(self.df.columns))
 
     def testColumns(self):
         df = self.df
@@ -105,9 +108,9 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
         datasets_A = self.datasets
         filters_A = self.filters
         columns_A = self.columns
-        columnDict_A = {'dataset':datasets_A,
-                       'filter':filters_A,
-                       'column':columns_A}
+        columnDict_A = {'dataset': datasets_A,
+                        'filter': filters_A,
+                        'column': columns_A}
         colTuples_A = [(self.datasets[0], self.filters[0], self.columns[0]),
                        (self.datasets[0], self.filters[0], self.columns[1]),
                        (self.datasets[0], self.filters[1], self.columns[0]),
@@ -123,17 +126,17 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
         datasets_A1 = self.datasets
         filters_A1 = self.filters
         columns_A1 = self.columns + ['garbage']
-        columnDict_A1 = {'dataset':datasets_A1,
-                       'filter':filters_A1,
-                       'column':columns_A1}
+        columnDict_A1 = {'dataset': datasets_A1,
+                         'filter': filters_A1,
+                         'column': columns_A1}
         colTuples_A1 = [(self.datasets[0], self.filters[0], self.columns[0]),
-                       (self.datasets[0], self.filters[0], self.columns[1]),
-                       (self.datasets[0], self.filters[1], self.columns[0]),
-                       (self.datasets[0], self.filters[1], self.columns[1]),
-                       (self.datasets[1], self.filters[0], self.columns[0]),
-                       (self.datasets[1], self.filters[0], self.columns[1]),
-                       (self.datasets[1], self.filters[1], self.columns[0]),
-                       (self.datasets[1], self.filters[1], self.columns[1])]
+                        (self.datasets[0], self.filters[0], self.columns[1]),
+                        (self.datasets[0], self.filters[1], self.columns[0]),
+                        (self.datasets[0], self.filters[1], self.columns[1]),
+                        (self.datasets[1], self.filters[0], self.columns[0]),
+                        (self.datasets[1], self.filters[0], self.columns[1]),
+                        (self.datasets[1], self.filters[1], self.columns[0]),
+                        (self.datasets[1], self.filters[1], self.columns[1])]
         df_A1 = df[colTuples_A1]
         assert_frame_equal(parq.toDataFrame(columns=columnDict_A1), df_A1)
 
@@ -141,9 +144,9 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
         datasets_B = self.datasets[0]
         filters_B = self.filters
         columns_B = self.columns
-        columnDict_B = {'dataset':datasets_B,
-                       'filter':filters_B,
-                       'column':columns_B}
+        columnDict_B = {'dataset': datasets_B,
+                        'filter': filters_B,
+                        'column': columns_B}
         colTuples_B = [(self.datasets[0], self.filters[0], self.columns[0]),
                        (self.datasets[0], self.filters[0], self.columns[1]),
                        (self.datasets[0], self.filters[1], self.columns[0]),
@@ -154,30 +157,31 @@ class MultilevelParquetTableTestCase(ParquetTableTestCase):
         assert_frame_equal(df_B, parq.toDataFrame(columns=colTuples_B))
 
         # When explicit columns are not provided, comparison requires
-        # first getting the column index in sorted order.  Apparently this 
+        # first getting the column index in sorted order.  Apparently this
         # happens by default in parq.toDataFrame(); to be honest, I'm not
         # exactly sure how/why.
 
         # Case C: Two levels have a single value; third is not provided
         datasets_C = self.datasets[0]
         filters_C = self.filters[0]
-        columnDict_C = {'dataset':datasets_C,
-                       'filter':filters_C}
+        columnDict_C = {'dataset': datasets_C,
+                        'filter': filters_C}
         df_C = df[datasets_C][filters_C].sort_index(axis=1)
         assert_frame_equal(parq.toDataFrame(columns=columnDict_C), df_C)
 
         # Case D: Only one level (first level) is provided
         dataset_D = self.datasets[0]
-        columnDict_D = {'dataset':dataset_D}
+        columnDict_D = {'dataset': dataset_D}
         df_D = df[dataset_D].sort_index(axis=1)
         assert_frame_equal(parq.toDataFrame(columns=columnDict_D), df_D)
 
         # Case E: Only one level (second level) is provided
         filters_E = self.filters[1]
-        columnDict_E = {'filter':filters_E}
+        columnDict_E = {'filter': filters_E}
         # get second level of multi-index column using .xs()
         df_E = df.xs(filters_E, level=1, axis=1).sort_index(axis=1)
         assert_frame_equal(parq.toDataFrame(columns=columnDict_E), df_E)
+
 
 if __name__ == "__main__":
     lsst.utils.tests.init()

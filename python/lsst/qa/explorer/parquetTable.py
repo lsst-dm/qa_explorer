@@ -61,7 +61,7 @@ class ParquetTable(object):
 
         self.engine = engine
 
-
+        self.filename = filename
         if filename is not None:
             if self.engine == 'fastparquet':
                 self._pf = ParquetFile(filename)

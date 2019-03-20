@@ -74,16 +74,6 @@ class ParquetTableTestCase(unittest.TestCase):
 
 
 class FastparquetTestCase(ParquetTableTestCase):
-    def setUp(self):
-        self.df = pq.read_table(os.path.join(ROOT, self.testFilename)).to_pandas()
-        with lsst.utils.tests.getTempFilePath('.parq') as filename:
-            table = pa.Table.from_pandas(self.df)
-            pq.write_table(table, filename, compression='none')
-            self.parq, self.dfParq = self.getParq(filename, self.df)
-
-    def tearDown(self):
-        del self.df
-        del self.parq
 
     def getParq(self, filename, df):
         return ParquetTable(filename, engine='fastparquet'), ParquetTable(dataFrame=df)

@@ -70,6 +70,10 @@ class ParquetTableTestCase(unittest.TestCase):
         assert_frame_equal(self.parq.toDataFrame(columns=columns+['hello']),
                            self.df[columns])
 
+class FastparquetTestCase(ParquetTableTestCase):
+    def getParq(self, filename, df):
+        return ParquetTable(filename, engine='fastparquet')
+
 class MultilevelParquetTableTestCase(ParquetTableTestCase):
     """Test case for MultilevelParquetTable
     """

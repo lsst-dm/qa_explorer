@@ -123,11 +123,12 @@ class Functor(object):
         """
         if isinstance(parq, MultilevelParquetTable):
             columns = self.multilevelColumns(parq)
+            df = parq.toDataFrame(columns=columns, droplevels=False)
+            df = self._setLevels(df)
         else:
             columns = self.columns
+            df = parq.toDataFrame(columns=columns)
 
-        df = parq.toDataFrame(columns=columns, droplevels=False)
-        df = self._setLevels(df)
         return df
 
     def _setLevels(self, df):

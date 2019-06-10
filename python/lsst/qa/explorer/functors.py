@@ -1,9 +1,9 @@
 import yaml
+import re
 
 import pandas as pd
 import numpy as np
-import re
-
+import astropy.units as u
 
 from lsst.qa.explorer.parquetTable import MultilevelParquetTable
 from lsst.qa.explorer.utils import init_fromDict
@@ -881,7 +881,7 @@ class ReferenceBand(Functor):
 
 
 class Photometry(Functor):
-    AB_FLUX_SCALE = 3.630780547701013425e12  # AB to NanoJansky (3631 Jansky)
+    AB_FLUX_SCALE = (0 * u.ABmag).to_value(u.nJy)  # AB to NanoJansky (3631 Jansky)
     LOG_AB_FLUX_SCALE = 12.56
     FIVE_OVER_2LOG10 = 1.085736204758129569
     # TO DO: DM-15751 will likely change this, and it should read from config/data in DM-16234
@@ -925,6 +925,7 @@ class Photometry(Functor):
         with np.warnings.catch_warnings():
             np.warnings.filterwarnings('ignore', r'invalid value encountered')
             np.warnings.filterwarnings('ignore', r'divide by zero')
+
             return -2.5 * np.log10(dn/fluxMag0)
 
     def dn2fluxErr(self, dn, dnErr, fluxMag0, fluxMag0Err):

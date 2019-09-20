@@ -201,6 +201,10 @@ class PrepareQADashboardTask(WriteObjectTableTask):
                 df = table.toDataFrame(columns=columns)
                 newCols = self.getComputedColumns(table)
                 df = pd.concat([df, newCols], axis=1)
+
+                df['filter'] = filt
+                df['dataset'] = dataset
+
                 dfs.append(df)
 
         catalog = pd.concat(dfs)

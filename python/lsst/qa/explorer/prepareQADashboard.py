@@ -60,6 +60,25 @@ class TractMergeSourcesRunner(MergeSourcesRunner):
             refDict[tract][patch][filter] = ref
         return refDict
 
+    @staticmethod
+    def getTargetList(parsedCmd, **kwargs):
+        """Provide a list of patch references for each patch, tract, filter combo.
+
+        Parameters
+        ----------
+        parsedCmd:
+            The parsed command
+        kwargs:
+            Keyword arguments passed to the task
+        Returns
+        -------
+        targetList: list
+            List of tuples, where each tuple is a (dataRef, kwargs) pair.
+        """
+        refDict = TractMergeSourcesRunner.buildRefDict(parsedCmd)
+        return [(list(p.values()), kwargs) for t in refDict.values() for p in t.values()]
+
+
 
 class PrepareQADashboardConfig(Config):
     coaddName = Field(dtype=str, default="deep", doc="Name of coadd")

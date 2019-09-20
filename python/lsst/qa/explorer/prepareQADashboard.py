@@ -203,7 +203,7 @@ class PrepareQADashboardTask(WriteObjectTableTask):
                 df = pd.concat([df, newCols], axis=1)
                 dfs.append(df)
 
-        catalog = functools.reduce(lambda d1, d2: d1.join(d2), dfs)
+        catalog = pd.concat(dfs)
         return ParquetTable(dataFrame=catalog)
 
     def write(self, patchRef, catalog):

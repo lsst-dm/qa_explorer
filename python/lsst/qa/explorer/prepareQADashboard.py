@@ -90,7 +90,8 @@ class PrepareQADashboardTask(WriteObjectTableTask):
 
         e.g., "label", "psfMag", "ra"/"dec" (in degrees)
 
-        Should also be specified in same .yaml file.
+        These functors should eventually be specified in same .yaml file
+        that the rest of the columns are specified in.
         """
         funcs = CompositeFunctor({'label': StarGalaxyLabeller(),
                                   'psfMag': Magnitude('base_PsfFlux_instFlux'),
@@ -108,6 +109,29 @@ class PrepareQADashboardTask(WriteObjectTableTask):
                                help="data ID, e.g. --id tract=12345",
                                ContainerClass=TractQADataIdContainer)
         return parser
+
+    def readCatalog(self, patchRef):
+        """Read input catalogs
+
+        Read all the input datasets given by the 'inputDatasets'
+        attribute.
+
+        Parameters
+        ----------
+        patchRef :
+            Data reference for patch
+
+        Returns
+        -------
+        Tuple consisting of filter name and a dict of catalogs, keyed by dataset
+        name
+        """
+        filterName = patchRef.dataId["filter"]
+        catalogDict = {}
+        for dataset in self.inputDatasets:
+            catalog = patchRef.get(dataset, immediate=True)
+            catalogDict[dataset] = catalog
+        return filterName, catalogDict
 
     def run(self, catalogs, patchRef):
         columns = self.getColumnNames()

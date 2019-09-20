@@ -23,7 +23,7 @@ ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 class PrepareQADashboardConfig(Config):
-    pass
+    coaddName = Field(dtype=str, default="deep", doc="Name of coadd")
 
 
 class PrepareQADashboardTask(WriteObjectTableTask):

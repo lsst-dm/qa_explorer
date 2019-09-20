@@ -13,12 +13,52 @@ from lsst.pex.config import Config, Field
 from lsst.pipe.base import CmdLineTask, ArgumentParser
 from lsst.qa.explorer.functors import StarGalaxyLabeller, Magnitude, RAColumn, DecColumn, CompositeFunctor
 from lsst.pipe.drivers.utils import TractDataIdContainer
+from lsst.pipe.tasks.multiBandUtils import MergeSourcesRunner
 
 from .parquetTable import ParquetTable
 from .writeObjectTable import WriteObjectTableTask
 
 # Question: is there a way that LSST packages store data files?
 ROOT = os.path.abspath(os.path.dirname(__file__))
+
+
+class TractMergeSourcesRunner(MergeSourcesRunner):
+    """Runner to use for a merging task when using TractDataIdContainer
+    """
+
+    @staticmethod
+    def buildRefDict(parsedCmd):
+        """Build a hierarchical dictionary of patch references
+        Parameters
+        ----------
+        parsedCmd:
+            The parsed command
+        Returns
+        -------
+        refDict: dict
+            A reference dictionary of the form {patch: {tract: {filter: dataRef}}}
+        Raises
+        ------
+        RuntimeError
+            Thrown when multiple references are provided for the same
+            combination of tract, patch and filter
+        """
+        refDict = {}  # Will index this as refDict[tract][patch][filter] = ref
+
+        # Handle the fact that parsedCmd.id.refList is a one-element list
+        # (where the first element is the real list) when using TractDataIdContainer
+        for ref in parsedCmd.id.refList[0]:
+            tract = ref.dataId["tract"]
+            patch = ref.dataId["patch"]
+            filter = ref.dataId["filter"]
+            if tract not in refDict:
+                refDict[tract] = {}
+            if patch not in refDict[tract]:
+                refDict[tract][patch] = {}
+            if filter in refDict[tract][patch]:
+                raise RuntimeError("Multiple versions of %s" % (ref.dataId,))
+            refDict[tract][patch][filter] = ref
+        return refDict
 
 
 class PrepareQADashboardConfig(Config):
@@ -30,6 +70,7 @@ class PrepareQADashboardTask(WriteObjectTableTask):
     """
     _DefaultName = "prepareQADashboard"
     ConfigClass = PrepareQADashboardConfig
+    RunnerClass = TractMergeSourcesRunner
 
     inputDatasets = ('analysisCoaddTable_forced', 'analysisCoaddTable_unforced')
     outputDataset = 'qaDashboardTable'

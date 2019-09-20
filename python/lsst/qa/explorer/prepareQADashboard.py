@@ -12,11 +12,10 @@ import functools
 from lsst.pex.config import Config, Field
 from lsst.pipe.base import CmdLineTask, ArgumentParser
 from lsst.qa.explorer.functors import StarGalaxyLabeller, Magnitude, RAColumn, DecColumn, CompositeFunctor
-
+from lsst.pipe.drivers.utils import TractDataIdContainer
 
 from .parquetTable import ParquetTable
 from .writeObjectTable import WriteObjectTableTask
-from .tractQADataIdContainer import TractQADataIdContainer
 
 # Question: is there a way that LSST packages store data files?
 ROOT = os.path.abspath(os.path.dirname(__file__))
@@ -107,7 +106,7 @@ class PrepareQADashboardTask(WriteObjectTableTask):
 
         parser.add_id_argument("--id", cls.inputDatasets[0],
                                help="data ID, e.g. --id tract=12345",
-                               ContainerClass=TractQADataIdContainer)
+                               ContainerClass=TractDataIdContainer)
         return parser
 
     def readCatalog(self, patchRef):

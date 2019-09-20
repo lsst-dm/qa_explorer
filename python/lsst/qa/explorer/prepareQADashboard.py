@@ -201,6 +201,7 @@ class PrepareQADashboardTask(WriteObjectTableTask):
                 df = table.toDataFrame(columns=columns)
                 newCols = self.getComputedColumns(table)
                 df = pd.concat([df, newCols], axis=1)
+                dfs.append(df)
 
         catalog = functools.reduce(lambda d1, d2: d1.join(d2), dfs)
         return ParquetTable(dataFrame=catalog)

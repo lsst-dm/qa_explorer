@@ -101,14 +101,14 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         newCols = funcs(parq)
         return newCols
 
-    @classmethod
-    def _makeArgumentParser(cls):
-        parser = ArgumentParser(name=cls._DefaultName)
+    # @classmethod
+    # def _makeArgumentParser(cls):
+    #     parser = ArgumentParser(name=cls._DefaultName)
 
-        parser.add_id_argument("--id", cls.inputDataset,
-                               help="data ID, e.g. --id tract=12345",
-                               ContainerClass=TractQADataIdContainer)
-        return parser
+    #     parser.add_id_argument("--id", cls.inputDataset,
+    #                            help="data ID, e.g. --id tract=12345",
+    #                            ContainerClass=TractQADataIdContainer)
+    #     return parser
 
     def readCatalog(self, patchRef):
         """Read input catalogs

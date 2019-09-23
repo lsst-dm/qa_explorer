@@ -36,28 +36,24 @@ class TractMergeSourcesRunner(MergeSourcesRunner):
         Returns
         -------
         refDict: dict
-            A reference dictionary of the form {patch: {tract: {filter: dataRef}}}
-        Raises
-        ------
-        RuntimeError
-            Thrown when multiple references are provided for the same
-            combination of tract, patch and filter
+            A reference dictionary of the form {tract: {filter: dataRef}}
+            Only one reference per tract will be saved.
+            )
         """
-        refDict = {}  # Will index this as refDict[tract][patch][filter] = ref
+
+        refDict = {}  # Will index this as refDict[tract][filter] = ref
 
         # Handle the fact that parsedCmd.id.refList is a one-element list
         # (where the first element is the real list) when using TractDataIdContainer
         for ref in parsedCmd.id.refList[0]:
             tract = ref.dataId["tract"]
-            patch = ref.dataId["patch"]
+            # patch = ref.dataId["patch"]
             filter = ref.dataId["filter"]
             if tract not in refDict:
                 refDict[tract] = {}
-            if patch not in refDict[tract]:
-                refDict[tract][patch] = {}
-            if filter in refDict[tract][patch]:
-                raise RuntimeError("Multiple versions of %s" % (ref.dataId,))
-            refDict[tract][patch][filter] = ref
+            if filter not in refDict[tract]:
+                refDict[tract][filter] = ref  # only first patch (patch not used)
+
         return refDict
 
     @staticmethod

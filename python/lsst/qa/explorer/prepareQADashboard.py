@@ -91,7 +91,7 @@ class PrepareQADashboardTask(WriteObjectTableTask):
     ConfigClass = PrepareQADashboardConfig
     RunnerClass = TractMergeSourcesRunner
 
-    inputDatasets = ('analysisCoaddTable_forced', 'analysisCoaddTable_unforced')
+    inputDatasets = ('analysisCoaddTable_forced',) # 'analysisCoaddTable_unforced')
     outputDataset = 'qaDashboardTable'
 
     def getColumnNames(self):

@@ -192,6 +192,18 @@ class PrepareQADashboardTask(WriteObjectTableTask):
             catalogDict[dataset] = catalog
         return filterName, catalogDict
 
+    def runDataRef(self, patchRefList):
+        """!
+        @brief Merge coadd sources from multiple bands. Calls @ref `run` which must be defined in
+        subclasses that inherit from MergeSourcesTask.
+        @param[in] patchRefList list of data references for each filter
+        """
+        catalogs = dict(self.readCatalog(patchRef) for patchRef in patchRefList)
+        import pdb
+        pdb.set_trace()
+        mergedCatalog = self.run(catalogs, patchRefList[0])
+        self.write(patchRefList[0], mergedCatalog)
+
     def run(self, catalogs, patchRef):
         columns = self.getColumnNames()
 

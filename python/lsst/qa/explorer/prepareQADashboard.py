@@ -196,8 +196,6 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         @param[in] patchRefList list of data references for each filter
         """
         catalogs = dict(self.readCatalog(patchRef) for patchRef in patchRefList)
-        import pdb
-        pdb.set_trace()
         mergedCatalog = self.run(catalogs, patchRefList[0])
         self.write(patchRefList[0], mergedCatalog)
 

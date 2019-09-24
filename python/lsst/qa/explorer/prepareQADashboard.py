@@ -205,9 +205,6 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         dfs = []
         for filt, tableDict in catalogs.items():
             for dataset, table in tableDict.items():
-                import pdb
-                pdb.set_trace()
-                
                 df = table.toDataFrame(columns=columns)
                 newCols = self.getComputedColumns(table)
                 df = pd.concat([df, newCols], axis=1)

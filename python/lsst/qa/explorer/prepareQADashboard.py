@@ -43,18 +43,19 @@ class TractMergeSourcesRunner(MergeSourcesRunner):
 
         refDict = {}  # Will index this as refDict[tract][filter] = ref
 
-        # Handle the fact that parsedCmd.id.refList is a one-element list
-        # (where the first element is the real list) when using TractDataIdContainer
+        # Loop over tract refLists
+        for refList in parsedCmd.id.refList:
+            for ref in refList:
+                tract = ref.dataId["tract"]
+                # patch = ref.dataId["patch"]
+                filter = ref.dataId["filter"]
+                if tract not in refDict:
+                    refDict[tract] = {}
+                if filter not in refDict[tract]:
+                    refDict[tract][filter] = ref  # only first patch (patch not used)
+
         import pdb
         pdb.set_trace()
-        for ref in parsedCmd.id.refList[0]:
-            tract = ref.dataId["tract"]
-            # patch = ref.dataId["patch"]
-            filter = ref.dataId["filter"]
-            if tract not in refDict:
-                refDict[tract] = {}
-            if filter not in refDict[tract]:
-                refDict[tract][filter] = ref  # only first patch (patch not used)
 
         return refDict
 

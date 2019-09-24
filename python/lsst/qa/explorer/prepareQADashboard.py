@@ -72,10 +72,8 @@ class TractMergeSourcesRunner(MergeSourcesRunner):
             List of tuples, where each tuple is a (dataRef, kwargs) pair.
         """
         refDict = TractMergeSourcesRunner.buildRefDict(parsedCmd)
-        # return [(list(ref.values()), kwargs) for ref in refDict.values()]
-        import pdb
-        pdb.set_trace()
-        return [(ref, kwargs) for t in refDict.values() for ref in t.values()]
+        return [(list(t.values()), kwargs) for t in refDict.values()]
+        # return [(list(ref.values()), kwargs) for t in refDict.values() for ref in t.values()]
 
 
 

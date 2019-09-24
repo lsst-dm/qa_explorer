@@ -45,6 +45,8 @@ class TractMergeSourcesRunner(MergeSourcesRunner):
 
         # Handle the fact that parsedCmd.id.refList is a one-element list
         # (where the first element is the real list) when using TractDataIdContainer
+        import pdb
+        pdb.set_trace()
         for ref in parsedCmd.id.refList[0]:
             tract = ref.dataId["tract"]
             # patch = ref.dataId["patch"]
@@ -197,8 +199,6 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         """
         catalogs = dict(self.readCatalog(patchRef) for patchRef in patchRefList)
         mergedCatalog = self.run(catalogs, patchRefList[0])
-        import pdb
-        pdb.set_trace()
         self.write(patchRefList[0], mergedCatalog)
 
     def run(self, catalogs, patchRef):

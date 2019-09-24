@@ -197,6 +197,8 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         """
         catalogs = dict(self.readCatalog(patchRef) for patchRef in patchRefList)
         mergedCatalog = self.run(catalogs, patchRefList[0])
+        import pdb
+        pdb.set_trace()
         self.write(patchRefList[0], mergedCatalog)
 
     def run(self, catalogs, patchRef):

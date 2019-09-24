@@ -195,8 +195,6 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         subclasses that inherit from MergeSourcesTask.
         @param[in] patchRefList list of data references for each filter
         """
-        import pdb
-        pdb.set_trace()
         catalogs = dict(self.readCatalog(patchRef) for patchRef in patchRefList)
         mergedCatalog = self.run(catalogs, patchRefList[0])
         self.write(patchRefList[0], mergedCatalog)
@@ -207,6 +205,9 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         dfs = []
         for filt, tableDict in catalogs.items():
             for dataset, table in tableDict.items():
+                import pdb
+                pdb.set_trace()
+                
                 df = table.toDataFrame(columns=columns)
                 newCols = self.getComputedColumns(table)
                 df = pd.concat([df, newCols], axis=1)

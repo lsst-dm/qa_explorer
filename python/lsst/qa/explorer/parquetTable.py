@@ -30,6 +30,7 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+import dask.dataframe as dd
 
 
 class ParquetTable(object):
@@ -50,8 +51,9 @@ class ParquetTable(object):
 
     """
 
-    def __init__(self, filename=None, dataFrame=None):
+    def __init__(self, filename=None, dataFrame=None, engine='pyarrow'):
         self.filename = filename
+        self.engine = engine
         if filename is not None:
             self._pf = pq.ParquetFile(filename)
             self._df = None
@@ -141,13 +143,23 @@ class ParquetTable(object):
                 return self._df[columns]
 
         if columns is None:
-            return self._pf.read().to_pandas()
+            if dask:
+                return dd.read_parquet(self.filename, engine=self.engine)
+            else:
+                return self._pf.read().to_pandas()
 
-        try:
-            df = self._pf.read(columns=columns, use_pandas_metadata=True).to_pandas()
-        except AttributeError:
-            columns = self._sanitizeColumns(columns)
-            df = self._pf.read(columns=columns, use_pandas_metadata=True).to_pandas()
+        if dask:
+            try:
+                df = dd.read_parquet(self.filename, columns=columns)
+            except AttributeError:
+                columns = self._sanitizeColumns(columns)
+                df = dd.read_parquet(self.filename, columns=columns)
+        else:
+            try:
+                df = self._pf.read(columns=columns, use_pandas_metadata=True).to_pandas()
+            except AttributeError:
+                columns = self._sanitizeColumns(columns)
+                df = self._pf.read(columns=columns, use_pandas_metadata=True).to_pandas()
 
         return df
 

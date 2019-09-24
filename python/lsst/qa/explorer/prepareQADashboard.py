@@ -54,9 +54,6 @@ class TractMergeSourcesRunner(MergeSourcesRunner):
                 if filter not in refDict[tract]:
                     refDict[tract][filter] = ref  # only first patch (patch not used)
 
-        import pdb
-        pdb.set_trace()
-
         return refDict
 
     @staticmethod
@@ -75,8 +72,8 @@ class TractMergeSourcesRunner(MergeSourcesRunner):
             List of tuples, where each tuple is a (dataRef, kwargs) pair.
         """
         refDict = TractMergeSourcesRunner.buildRefDict(parsedCmd)
-        return [(list(ref.values()), kwargs) for ref in refDict.values()]
-        # return [(list(p.values()), kwargs) for t in refDict.values() for p in t.values()]
+        # return [(list(ref.values()), kwargs) for ref in refDict.values()]
+        return [(list(p.values()), kwargs) for t in refDict.values() for p in t.values()]
 
 
 
@@ -198,6 +195,8 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         subclasses that inherit from MergeSourcesTask.
         @param[in] patchRefList list of data references for each filter
         """
+        import pdb
+        pdb.set_trace()
         catalogs = dict(self.readCatalog(patchRef) for patchRef in patchRefList)
         mergedCatalog = self.run(catalogs, patchRefList[0])
         self.write(patchRefList[0], mergedCatalog)

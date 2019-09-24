@@ -51,6 +51,7 @@ class ParquetTable(object):
     """
 
     def __init__(self, filename=None, dataFrame=None):
+        self.filename = filename
         if filename is not None:
             self._pf = pq.ParquetFile(filename)
             self._df = None
@@ -124,7 +125,7 @@ class ParquetTable(object):
     def _sanitizeColumns(self, columns):
         return [c for c in columns if c in self.columnIndex]
 
-    def toDataFrame(self, columns=None):
+    def toDataFrame(self, columns=None, dask=False):
         """Get table (or specified columns) as a pandas DataFrame
 
         Parameters

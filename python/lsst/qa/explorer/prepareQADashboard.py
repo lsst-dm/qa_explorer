@@ -73,9 +73,7 @@ class TractMergeSourcesRunner(MergeSourcesRunner):
         """
         refDict = TractMergeSourcesRunner.buildRefDict(parsedCmd)
         # return [(list(ref.values()), kwargs) for ref in refDict.values()]
-        import pdb
-        pdb.set_trace()
-        return [(list(p.values()), kwargs) for t in refDict.values() for p in t.values()]
+        return [(ref, kwargs) for t in refDict.values() for ref in t.values()]
 
 
 

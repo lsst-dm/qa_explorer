@@ -150,10 +150,10 @@ class ParquetTable(object):
 
         if dask:
             try:
-                df = dd.read_parquet(self.filename, columns=columns)
+                df = dd.read_parquet(self.filename, columns=columns, engine=self.engine)
             except AttributeError:
                 columns = self._sanitizeColumns(columns)
-                df = dd.read_parquet(self.filename, columns=columns)
+                df = dd.read_parquet(self.filename, columns=columns, engine=self.engine)
         else:
             try:
                 df = self._pf.read(columns=columns, use_pandas_metadata=True).to_pandas()

@@ -27,7 +27,7 @@ import numpy as np
 
 import lsst.pex.config as pexConfig
 from lsst.pipe.base import Task
-from .parquetTable import ParquetTable
+from lsst.pipe.tasks.parquetTable import ParquetTable
 
 __all__ = ["StarGalaxyClassifierTask", "StarGalaxyClassifierConfig"]
 

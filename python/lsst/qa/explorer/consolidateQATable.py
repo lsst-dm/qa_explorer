@@ -10,18 +10,19 @@ import pandas as pd
 from lsst.pex.config import Config, Field
 from lsst.pipe.base import CmdLineTask, ArgumentParser
 
-from .parquetTable import ParquetTable
-from .tractQADataIdContainer import TractQADataIdContainer
+from lsst.pipe.tasks.parquetTable import ParquetTable
+from lsst.pipe.tasks.postprocess import (ConsolidateObjectTableConfig, ConsolidateObjectTableTask,
+                                         TractObjectDataIdContainer)
 
 # Question: is there a way that LSST packages store data files?
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
-class ConsolidateQATableConfig(Config):
+class ConsolidateQATableConfig(ConsolidateObjectTableConfig):
     coaddName = Field(dtype=str, default="deep", doc="Name of coadd")
 
 
-class ConsolidateQATableTask(CmdLineTask):
+class ConsolidateQATableTask(ConsolidateObjectTableTask):
     """Write patch-merged source tables to a tract-level parquet file
     """
     _DefaultName = "consolidateQATable"
@@ -36,7 +37,7 @@ class ConsolidateQATableTask(CmdLineTask):
 
         parser.add_id_argument("--id", cls.inputDataset,
                                help="data ID, e.g. --id tract=12345",
-                               ContainerClass=TractQADataIdContainer)
+                               ContainerClass=TractObjectDataIdContainer)
         return parser
 
     def runDataRef(self, patchRefList):
@@ -47,15 +48,3 @@ class ConsolidateQATableTask(CmdLineTask):
         """No metadata to write.
         """
         pass
-
-
-class ConsolidateObjectTableConfig(ConsolidateQATableConfig):
-    pass
-
-
-class ConsolidateObjectTableTask(ConsolidateQATableTask):
-    _DefaultName = "consolidateObjectTable"
-    ConfigClass = ConsolidateObjectTableConfig
-
-    inputDataset = 'objectTable'
-    outputDataset = 'objectTable_tract'

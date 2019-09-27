@@ -34,7 +34,7 @@ from lsst.daf.persistence import NoResults
 from lsst.qa.explorer.match import match_lists
 from lsst.pipe.drivers.utils import TractDataIdContainer
 
-from .parquetTable import ParquetTable
+from lsst.pipe.tasks.parquetTable import ParquetTable
 
 
 __all__ = ['MatchVisitsConfig', 'MatchVisitsTask']

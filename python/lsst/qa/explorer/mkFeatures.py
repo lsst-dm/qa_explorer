@@ -30,7 +30,7 @@ from lsst.meas.algorithms.loadIndexedReferenceObjects import LoadIndexedReferenc
 import lsst.afw.geom as afwGeom
 import lsst.pex.config as pexConfig
 from lsst.pipe.base import Task
-from .parquetTable import ParquetTable
+from lsst.pipe.tasks.parquetTable import ParquetTable
 from .classifyObjects import StarGalaxyClassifierTask
 from .match import match_lists
 

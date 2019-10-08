@@ -76,7 +76,6 @@ class TractMergeSourcesRunner(MergeSourcesRunner):
         # return [(list(ref.values()), kwargs) for t in refDict.values() for ref in t.values()]
 
 
-
 class PrepareQADashboardConfig(Config):
     coaddName = Field(dtype=str, default="deep", doc="Name of coadd")
 
@@ -88,8 +87,8 @@ class PrepareQADashboardTask(WriteObjectTableTask):
     ConfigClass = PrepareQADashboardConfig
     RunnerClass = TractMergeSourcesRunner
 
-    inputDatasets = ('analysisCoaddTable_forced',) # 'analysisCoaddTable_unforced')
-    outputDataset = 'qaDashboardTable'
+    inputDatasets = ('analysisCoaddTable_forced',)  # 'analysisCoaddTable_unforced')
+    outputDatasets = ('qaDashboardCoaddTable', 'qaDashboardVisitTable')
 
     def getColumnNames(self):
         """Returns names of columns to persist in consolidated table.
@@ -194,17 +193,24 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         @brief Merge coadd sources from multiple bands. Calls @ref `run` which must be defined in
         subclasses that inherit from MergeSourcesTask.
         @param[in] patchRefList list of data references for each filter
+
+        Returns
+        -------
+
         """
         catalogs = dict(self.readCatalog(patchRef) for patchRef in patchRefList)
-        mergedCatalog = self.run(catalogs, patchRefList[0])
-        self.write(patchRefList[0], mergedCatalog)
+        mergedCoadd, mergedVisits = self.run(catalogs, patchRefList[0])
+        self.write(patchRefList[0], mergedCoadd, self.outputDatasets[0])
+        self.write(patchRefList[0], mergedVisits, self.outputDatasets[1])
 
     def run(self, catalogs, patchRef):
         columns = self.getColumnNames()
 
         dfs = []
+        visit_dfs = []
         for filt, tableDict in catalogs.items():
             for dataset, table in tableDict.items():
+                # Assemble coadd table
                 df = table.toDataFrame(columns=columns)
                 newCols = self.getComputedColumns(table)
                 df = pd.concat([df, newCols], axis=1)
@@ -214,10 +220,27 @@ class PrepareQADashboardTask(WriteObjectTableTask):
 
                 dfs.append(df)
 
-        catalog = pd.concat(dfs)
-        return ParquetTable(dataFrame=catalog)
+            # Assemble visit table
+            tract = patchRef.dataId['tract']
+            butler = patchRef.getButler()
+            visitMatchDf = butler.get('visitMatchTable', tract=tract, filter=filt).toDataFrame()
+            visits = visitMatchDf['matchId'].columns
+            for visit in visits:
+                visitParq = butler.get('analysisVisitTable', tract=tract, filter=filt, visit=visit)
+                visit_df = parq.toDataFrame(columns=columns)
+                newCols = self.getComputedColumns(visitParq)
+                visit_df = pd.concat([visit_df, newCols], axis=1)
+                visit_df['filter'] = filt
+                visit_df['tractId'] = tract
+                visit_df['visitId'] = visit
+                # TODO: add matched coaddId column
+                visit_dfs.append(visit_df)
 
-    def write(self, patchRef, catalog):
+        all_visits = pd.concat(visit_dfs)
+        catalog = pd.concat(dfs)
+        return ParquetTable(dataFrame=catalog), ParquetTable(dataFrame=all_visits)
+
+    def write(self, patchRef, catalog, dataset):
         """!
         @brief Write the output.
         @param[in]  patchRef   data reference for patch
@@ -225,12 +248,12 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         We write as the dataset provided by the 'outputDataset'
         class variable.
         """
-        patchRef.put(catalog, self.outputDataset)
+        patchRef.put(catalog, dataset)
         # since the filter isn't actually part of the data ID for the dataset we're saving,
         # it's confusing to see it in the log message, even if the butler simply ignores it.
         mergeDataId = patchRef.dataId.copy()
         del mergeDataId["filter"]
-        self.log.info("Wrote merged catalog: %s" % (mergeDataId,))
+        self.log.info("Wrote {}: {}" % (dataset, mergeDataId))
 
     def writeMetadata(self, dataRef):
         """No metadata to write.

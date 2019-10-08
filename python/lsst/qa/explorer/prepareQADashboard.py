@@ -210,7 +210,6 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         dfs = []
         visit_dfs = []
         for filt, tableDict in catalogs.items():
-            self.log.info('Computing coadd table for tract {}, {}...'.format(tract, filt))
             for dataset, table in tableDict.items():
                 # Assemble coadd table
                 df = table.toDataFrame(columns=columns)
@@ -221,10 +220,13 @@ class PrepareQADashboardTask(WriteObjectTableTask):
                 df['dataset'] = dataset
 
                 dfs.append(df)
+                self.log.info('Computed coadd table for tract {}, {}.'.format(tract, filt))
 
             # Assemble visit table
             butler = patchRef.getButler()
-            visitMatchDf = butler.get('visitMatchTable', tract=tract, filter=filt).toDataFrame()
+            visitMatchParq = butler.get('visitMatchTable', tract=tract, filter=filt)
+            self.log.info('Retrieved visit table for tract {}, {}.'.format(tract, filt))
+            visitMatchDf = visitMatchParq.toDataFrame()
             visits = visitMatchDf['matchId'].columns
             self.log.info('Building visit table for tract {}, {}...'.format(tract, filt))
             n_visits = len(visits)

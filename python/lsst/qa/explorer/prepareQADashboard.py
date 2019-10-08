@@ -225,9 +225,7 @@ class PrepareQADashboardTask(WriteObjectTableTask):
             # Assemble visit table
             butler = patchRef.getButler()
             visitMatchParq = butler.get('visitMatchTable', tract=tract, filter=filt)
-            self.log.info('Retrieved visit table for tract {}, {}.'.format(tract, filt))
-            visitMatchDf = visitMatchParq.toDataFrame()
-            visits = visitMatchDf['matchId'].columns
+            visits = {int(eval(c)[1]) for c in visitMatchParq.columns if c != 'id'}
             self.log.info('Building visit table for tract {}, {}...'.format(tract, filt))
             n_visits = len(visits)
             for i, visit in enumerate(visits):

@@ -225,7 +225,9 @@ class PrepareQADashboardTask(WriteObjectTableTask):
             butler = patchRef.getButler()
             visitMatchDf = butler.get('visitMatchTable', tract=tract, filter=filt).toDataFrame()
             visits = visitMatchDf['matchId'].columns
-            for visit in visits:
+            self.log.info('Building visit table for {}...'.format(filt))
+            n_visits = len(visits)
+            for i, visit in enumerate(visits):
                 visitParq = butler.get('analysisVisitTable', tract=tract, filter=filt, visit=visit)
                 visit_df = parq.toDataFrame(columns=columns)
                 newCols = self.getComputedColumns(visitParq)
@@ -235,6 +237,7 @@ class PrepareQADashboardTask(WriteObjectTableTask):
                 visit_df['visitId'] = visit
                 # TODO: add matched coaddId column
                 visit_dfs.append(visit_df)
+                self.log.info('{} of {}: {} ({} sources)'.format(i+1, n_visits, visit, len(visit_df)))
 
         all_visits = pd.concat(visit_dfs)
         catalog = pd.concat(dfs)

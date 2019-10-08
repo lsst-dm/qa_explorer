@@ -209,6 +209,7 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         dfs = []
         visit_dfs = []
         for filt, tableDict in catalogs.items():
+            self.log.info('Computing coadd table for {}...'.format(filt))
             for dataset, table in tableDict.items():
                 # Assemble coadd table
                 df = table.toDataFrame(columns=columns)

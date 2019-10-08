@@ -240,8 +240,8 @@ class PrepareQADashboardTask(WriteObjectTableTask):
                 visit_dfs.append(visit_df)
                 self.log.info('{} of {}: {} ({} sources)'.format(i+1, n_visits, visit, len(visit_df)))
 
-        all_visits = pd.concat(visit_dfs)
         catalog = pd.concat(dfs)
+        all_visits = pd.concat(visit_dfs)
         return ParquetTable(dataFrame=catalog), ParquetTable(dataFrame=all_visits)
 
     def write(self, patchRef, catalog, dataset):
@@ -257,7 +257,7 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         # it's confusing to see it in the log message, even if the butler simply ignores it.
         mergeDataId = patchRef.dataId.copy()
         del mergeDataId["filter"]
-        self.log.info("Wrote {}: {}" % (dataset, mergeDataId))
+        self.log.info("Wrote {}: {}".format(dataset, mergeDataId))
 
     def writeMetadata(self, dataRef):
         """No metadata to write.

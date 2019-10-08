@@ -206,10 +206,11 @@ class PrepareQADashboardTask(WriteObjectTableTask):
     def run(self, catalogs, patchRef):
         columns = self.getColumnNames()
 
+        tract = patchRef.dataId['tract']
         dfs = []
         visit_dfs = []
         for filt, tableDict in catalogs.items():
-            self.log.info('Computing coadd table for {}...'.format(filt))
+            self.log.info('Computing coadd table for tract {}, {}...'.format(tract, filt))
             for dataset, table in tableDict.items():
                 # Assemble coadd table
                 df = table.toDataFrame(columns=columns)
@@ -222,15 +223,14 @@ class PrepareQADashboardTask(WriteObjectTableTask):
                 dfs.append(df)
 
             # Assemble visit table
-            tract = patchRef.dataId['tract']
             butler = patchRef.getButler()
             visitMatchDf = butler.get('visitMatchTable', tract=tract, filter=filt).toDataFrame()
             visits = visitMatchDf['matchId'].columns
-            self.log.info('Building visit table for {}...'.format(filt))
+            self.log.info('Building visit table for tract {}, {}...'.format(tract, filt))
             n_visits = len(visits)
             for i, visit in enumerate(visits):
                 visitParq = butler.get('analysisVisitTable', tract=tract, filter=filt, visit=visit)
-                visit_df = parq.toDataFrame(columns=columns)
+                visit_df = visitParq.toDataFrame(columns=columns)
                 newCols = self.getComputedColumns(visitParq)
                 visit_df = pd.concat([visit_df, newCols], axis=1)
                 visit_df['filter'] = filt

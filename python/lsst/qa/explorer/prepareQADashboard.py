@@ -88,7 +88,7 @@ class PrepareQADashboardTask(WriteObjectTableTask):
     RunnerClass = TractMergeSourcesRunner
 
     inputDatasets = ('analysisCoaddTable_forced',)  # 'analysisCoaddTable_unforced')
-    outputDatasets = ('qaDashboardCoaddTable', 'qaDashboardVisitTable')
+    # outputDatasets = ('qaDashboardCoaddTable', 'qaDashboardVisitTable')
 
     def getColumnNames(self):
         """Returns names of columns to persist in consolidated table.
@@ -200,8 +200,8 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         """
         catalogs = dict(self.readCatalog(patchRef) for patchRef in patchRefList)
         mergedCoadd, mergedVisits = self.run(catalogs, patchRefList[0])
-        self.write(patchRefList[0], mergedCoadd, self.outputDatasets[0])
-        self.write(patchRefList[0], mergedVisits, self.outputDatasets[1])
+        self.write(patchRefList[0], mergedCoadd, 'qaDashboardCoaddTable')
+        self.write(patchRefList[0], mergedVisits, 'qaDashboardVisitTable')
 
     def run(self, catalogs, patchRef):
         columns = self.getColumnNames()

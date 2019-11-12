@@ -204,19 +204,8 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         catalogs = dict(self.readCatalog(patchRef) for patchRef in patchRefList)
         mergedCoadd, visitDfs = self.run(catalogs, patchRefList[0])
         self.write(patchRefList[0], mergedCoadd, 'qaDashboardCoaddTable')
-
-        butler = patchRefList[0].getButler()
-
-        for metric, df in zip(self.getMetrics(), visitDfs):
-            filters = df['filter'].unique()
-            for filt in filters:
-                subdf = df.query(f'filter=={filt}')
-                dataId = dict(patchRefList[0].dataId)
-                dataId['column'] = metric
-                dataId['filter'] = filt
-                table = ParquetTable(subdf)
-                butler.write(table, 'qaDashboardVisitTable', dataId=dataId)
-            # self.write(patchRefList[0], mergedVisits, 'qaDashboardVisitTable')
+        self.writeVisitTables(patchRefList[0], visitDfs)
+        # self.write(patchRefList[0], mergedVisits, 'qaDashboardVisitTable')
 
     def run(self, catalogs, patchRef):
         columns = self.getColumnNames()
@@ -282,6 +271,21 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         mergeDataId = patchRef.dataId.copy()
         del mergeDataId["filter"]
         self.log.info("Wrote {}: {}".format(dataset, mergeDataId))
+
+    def writeVisitTables(self, patchRef, dfs):
+        butler = patchRef.getButler()
+
+        for metric, df in zip(self.getMetrics(), visitDfs):
+            filters = df['filter'].unique()
+            for filt in filters:
+                subdf = df.query(f'filter=={filt}')
+                dataId = dict(patchRefList[0].dataId)
+                dataId['column'] = metric
+                dataId['filter'] = filt
+                table = ParquetTable(subdf)
+                self.log.info(f'writing {dataId} visit table')
+                self.log.info{f'{subdf.head}'}
+                butler.write(table, 'qaDashboardVisitTable', dataId=dataId)
 
     def writeMetadata(self, dataRef):
         """No metadata to write.

@@ -278,7 +278,7 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         for metric, df in zip(self.getMetrics(), visitDfs):
             filters = df['filter'].unique()
             for filt in filters:
-                subdf = df.query(f'filter=={filt}')
+                subdf = df.query(f'filter=="{filt}"')
                 dataId = dict(patchRefList[0].dataId)
                 dataId['column'] = metric
                 dataId['filter'] = filt

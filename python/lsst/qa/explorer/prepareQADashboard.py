@@ -278,13 +278,13 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         for metric, df in zip(self.getMetrics(), visitDfs):
             filters = df['filter'].unique()
             for filt in filters:
-                subdf = df.query(f'filter=="{filt}"')
+                subdf = df.query('filter=="{}"'.format(filt))
                 dataId = dict(patchRefList[0].dataId)
                 dataId['column'] = metric
                 dataId['filter'] = filt
                 table = ParquetTable(subdf)
-                self.log.info(f'writing {dataId} visit table')
-                self.log.info{f'{subdf.head}'}
+                self.log.info('writing {} visit table'.format(dataId))
+                self.log.info{'{}'.format(subdf.head)}
                 butler.write(table, 'qaDashboardVisitTable', dataId=dataId)
 
     def writeMetadata(self, dataRef):

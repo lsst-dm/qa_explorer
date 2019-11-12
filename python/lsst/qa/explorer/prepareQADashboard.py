@@ -90,13 +90,8 @@ class PrepareQADashboardTask(WriteObjectTableTask):
     inputDatasets = ('analysisCoaddTable_forced',)  # 'analysisCoaddTable_unforced')
     # outputDatasets = ('qaDashboardCoaddTable', 'qaDashboardVisitTable')
 
-    def getColumnNames(self):
-        """Returns names of columns to persist in consolidated table.
-
-        This is a placeholder for a better config-based solution; ideally
-        specificied in some .yaml file.
-        """
-        metrics = ['base_Footprint_nPix',
+    def getMetrics(self):
+        return ['base_Footprint_nPix',
                    'Gaussian-PSF_magDiff_mmag',
                    'CircAper12pix-PSF_magDiff_mmag',
                    'Kron-PSF_magDiff_mmag',
@@ -119,7 +114,8 @@ class PrepareQADashboardTask(WriteObjectTableTask):
                    'base_PsfFlux_instFlux',
                    'base_PsfFlux_instFluxErr']
 
-        flags = ['calib_psf_used',
+    def getFlags(self):
+        return ['calib_psf_used',
                  'calib_psf_candidate',
                  'calib_photometry_reserved',
                  'merge_measurement_i2',
@@ -136,9 +132,16 @@ class PrepareQADashboardTask(WriteObjectTableTask):
                  'merge_measurement_N515',
                  'qaBad_flag']
 
-        id_cols = ['patchId', 'id']
+    def getIdCols(self):
+        return ['patchId', 'id']
 
-        return metrics + flags + id_cols
+    def getColumnNames(self):
+        """Returns names of columns to persist in consolidated table.
+
+        This is a placeholder for a better config-based solution; ideally
+        specificied in some .yaml file.
+        """
+        return self.getMetrics() + self.getFlags() + self.getIdCols()
 
     def getComputedColumns(self, parq):
         """Returns dataframe with additional computed columns
@@ -199,9 +202,21 @@ class PrepareQADashboardTask(WriteObjectTableTask):
 
         """
         catalogs = dict(self.readCatalog(patchRef) for patchRef in patchRefList)
-        mergedCoadd, mergedVisits = self.run(catalogs, patchRefList[0])
+        mergedCoadd, visitDfs = self.run(catalogs, patchRefList[0])
         self.write(patchRefList[0], mergedCoadd, 'qaDashboardCoaddTable')
-        self.write(patchRefList[0], mergedVisits, 'qaDashboardVisitTable')
+
+        butler = patchRefList[0].getButler()
+
+        for metric, df in zip(self.getMetrics(), visitDfs):
+            filters = df['filter'].unique()
+            for filt in filters:
+                subdf = df.query(f'filter=={filt}')
+                dataId = dict(patchRefList[0].dataId)
+                dataId['column'] = metric
+                dataId['filter'] = filt
+                table = ParquetTable(subdf)
+                butler.write(table, 'qaDashboardVisitTable', dataId=dataId)
+            # self.write(patchRefList[0], mergedVisits, 'qaDashboardVisitTable')
 
     def run(self, catalogs, patchRef):
         columns = self.getColumnNames()
@@ -218,6 +233,7 @@ class PrepareQADashboardTask(WriteObjectTableTask):
 
                 df['filter'] = filt
                 df['dataset'] = dataset
+                df['tractId'] = tract
 
                 dfs.append(df)
                 self.log.info('Computed coadd table for tract {}, {}.'.format(tract, filt))
@@ -242,7 +258,15 @@ class PrepareQADashboardTask(WriteObjectTableTask):
 
         catalog = pd.concat(dfs)
         all_visits = pd.concat(visit_dfs)
-        return ParquetTable(dataFrame=catalog), ParquetTable(dataFrame=all_visits)
+
+        # Reshape visit tables into single table per tract and metric column
+        visit_dfs = []
+        for metric in self.getMetrics():
+            cols = [metric] + ['filter', 'tractId', 'visitId'] + self.getFlags()
+            cols = [c for c in cols if c in all_visits.columns]
+            visit_dfs.append(all_visits[cols])
+
+        return ParquetTable(dataFrame=catalog), visit_dfs  # ParquetTable(dataFrame=all_visits)
 
     def write(self, patchRef, catalog, dataset):
         """!

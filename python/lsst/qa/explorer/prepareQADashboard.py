@@ -275,11 +275,11 @@ class PrepareQADashboardTask(WriteObjectTableTask):
     def writeVisitTables(self, patchRef, dfs):
         butler = patchRef.getButler()
 
-        for metric, df in zip(self.getMetrics(), visitDfs):
+        for metric, df in zip(self.getMetrics(), dfs):
             filters = df['filter'].unique()
             for filt in filters:
                 subdf = df.query('filter=="{}"'.format(filt))
-                dataId = dict(patchRefList[0].dataId)
+                dataId = dict(patchRef.dataId)
                 dataId['column'] = metric
                 dataId['filter'] = filt
                 table = ParquetTable(subdf)

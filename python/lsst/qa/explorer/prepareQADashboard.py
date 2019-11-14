@@ -284,7 +284,6 @@ class PrepareQADashboardTask(WriteObjectTableTask):
                 dataId['filter'] = filt
                 table = ParquetTable(dataFrame=subdf)
                 self.log.info('writing {} visit table'.format(dataId))
-                self.log.info('{}'.format(subdf.head))
                 butler.put(table, 'qaDashboardVisitTable', dataId=dataId)
 
     def writeMetadata(self, dataRef):

@@ -285,7 +285,7 @@ class PrepareQADashboardTask(WriteObjectTableTask):
                 table = ParquetTable(dataFrame=subdf)
                 self.log.info('writing {} visit table'.format(dataId))
                 self.log.info('{}'.format(subdf.head))
-                butler.write(table, 'qaDashboardVisitTable', dataId=dataId)
+                butler.put(table, 'qaDashboardVisitTable', dataId=dataId)
 
     def writeMetadata(self, dataRef):
         """No metadata to write.

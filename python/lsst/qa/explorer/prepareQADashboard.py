@@ -205,7 +205,16 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         mergedCoadd, visitDfs = self.run(catalogs, patchRefList[0])
         self.write(patchRefList[0], mergedCoadd, 'qaDashboardCoaddTable')
         self.writeVisitTables(patchRefList[0], visitDfs)
+        self.writeMetadata(patchRefList[0])
         # self.write(patchRefList[0], mergedVisits, 'qaDashboardVisitTable')
+
+    def getVisits(self, patchRef, filt):
+
+        tract = patchRef.dataId['tract']
+        butler = patchRef.getButler()
+        visitMatchParq = butler.get('visitMatchTable', tract=tract, filter=filt)
+        visits = {int(eval(c)[1]) for c in visitMatchParq.columns if c != 'id'}
+        return visits
 
     def run(self, catalogs, patchRef):
         columns = self.getColumnNames()
@@ -228,9 +237,7 @@ class PrepareQADashboardTask(WriteObjectTableTask):
                 self.log.info('Computed coadd table for tract {}, {}.'.format(tract, filt))
 
             # Assemble visit table
-            butler = patchRef.getButler()
-            visitMatchParq = butler.get('visitMatchTable', tract=tract, filter=filt)
-            visits = {int(eval(c)[1]) for c in visitMatchParq.columns if c != 'id'}
+            visits = self.getVisits(patchRef, filt)
             self.log.info('Building visit table for tract {}, {}...'.format(tract, filt))
             n_visits = len(visits)
             for i, visit in enumerate(visits):
@@ -289,4 +296,30 @@ class PrepareQADashboardTask(WriteObjectTableTask):
     def writeMetadata(self, dataRef):
         """No metadata to write.
         """
-        pass
+        tract = dataRef.dataId['tract']
+        filt = dataRef.dataId['filter']
+        metrics = self.getMetrics()
+        visits = self.getVisits(dataRef, filt)
+
+        butler = dataRef.getButler()
+        meta = butler.get('QADashboard_metadata')
+
+        if 'tracts' not in meta:
+            meta['tracts'] = dict(tract=visits)
+        else:
+            meta['tracts'][tract] = visits
+
+        if 'filters' not in meta:
+            meta['filters'] = [filt]
+        elif filt not in meta['filters']:
+            meta['filters'] += [filt]
+
+        if 'metrics' not in meta:
+            meta['metrics'] = metrics
+        else:
+            if set(meta['metrics']) != set(metrics):
+                raise RuntimeError('Metrics list different than stored!')
+
+        butler.put(meta, 'QADashboard_metadata')
+
+

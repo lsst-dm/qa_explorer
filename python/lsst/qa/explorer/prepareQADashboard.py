@@ -305,7 +305,7 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         visits = self.getVisits(dataRef, filt)
 
         butler = dataRef.getButler()
-        meta = butler.get('QADashboard_metadata')
+        meta = butler.get('qaDashboard_metadata')
 
         if 'tracts' not in meta:
             meta['tracts'] = dict(tract=visits)
@@ -323,6 +323,6 @@ class PrepareQADashboardTask(WriteObjectTableTask):
             if set(meta['metrics']) != set(metrics):
                 raise RuntimeError('Metrics list different than stored!')
 
-        butler.put(meta, 'QADashboard_metadata')
+        butler.put(meta, 'qaDashboard_metadata')
 
 

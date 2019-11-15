@@ -14,6 +14,7 @@ from lsst.pipe.base import CmdLineTask, ArgumentParser
 from lsst.qa.explorer.functors import StarGalaxyLabeller, Magnitude, RAColumn, DecColumn, CompositeFunctor
 from lsst.pipe.drivers.utils import TractDataIdContainer
 from lsst.pipe.tasks.multiBandUtils import MergeSourcesRunner
+from lsst.daf.persistence.butlerExceptions import NoResults
 
 from .parquetTable import ParquetTable
 from .writeObjectTable import WriteObjectTableTask
@@ -305,7 +306,11 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         visits = self.getVisits(dataRef, filt)
 
         butler = dataRef.getButler()
-        meta = butler.get('qaDashboard_metadata')
+
+        try:
+            meta = butler.get('qaDashboard_metadata')
+        except NoResults:
+            meta = {}
 
         if 'tracts' not in meta:
             meta['tracts'] = dict(tract=visits)

@@ -214,6 +214,8 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         butler = patchRef.getButler()
         visitMatchParq = butler.get('visitMatchTable', tract=tract, filter=filt)
         visits = {int(eval(c)[1]) for c in visitMatchParq.columns if c != 'id'}
+        visits = list(visits)
+        visits.sort()
         return visits
 
     def run(self, catalogs, patchRef):

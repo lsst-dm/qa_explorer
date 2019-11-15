@@ -205,7 +205,7 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         mergedCoadd, visitDfs = self.run(catalogs, patchRefList[0])
         self.write(patchRefList[0], mergedCoadd, 'qaDashboardCoaddTable')
         self.writeVisitTables(patchRefList[0], visitDfs)
-        self.writeMetadata(patchRefList[0])
+        self.writeMeta(patchRefList[0])
         # self.write(patchRefList[0], mergedVisits, 'qaDashboardVisitTable')
 
     def getVisits(self, patchRef, filt):
@@ -219,6 +219,7 @@ class PrepareQADashboardTask(WriteObjectTableTask):
     def run(self, catalogs, patchRef):
         columns = self.getColumnNames()
 
+        butler = patchRef.getButler()
         tract = patchRef.dataId['tract']
         dfs = []
         visit_dfs = []
@@ -293,7 +294,7 @@ class PrepareQADashboardTask(WriteObjectTableTask):
                 self.log.info('writing {} visit table'.format(dataId))
                 butler.put(table, 'qaDashboardVisitTable', dataId=dataId)
 
-    def writeMetadata(self, dataRef):
+    def writeMeta(self, dataRef):
         """No metadata to write.
         """
         tract = dataRef.dataId['tract']

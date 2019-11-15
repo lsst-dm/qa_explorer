@@ -313,7 +313,7 @@ class PrepareQADashboardTask(WriteObjectTableTask):
             meta = {}
 
         if 'tracts' not in meta:
-            meta['tracts'] = dict(tract=visits)
+            meta['tracts'] = {tract: visits}
         else:
             meta['tracts'][tract] = visits
 

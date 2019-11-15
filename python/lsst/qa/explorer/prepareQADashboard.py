@@ -312,15 +312,12 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         except NoResults:
             meta = {}
 
-        if 'tracts' not in meta:
-            meta['tracts'] = {tract: visits}
-        else:
-            meta['tracts'][tract] = visits
-
-        if 'filters' not in meta:
-            meta['filters'] = [filt]
-        elif filt not in meta['filters']:
-            meta['filters'] += [filt]
+        if 'visits' not in meta:
+            meta['visits'] = {}
+        if filt not in meta['visits']:
+            meta['visits'][filt] = {}
+        if tract not in meta['visits'][filt]:
+            meta['visits'][filt][tract] = visits
 
         if 'metrics' not in meta:
             meta['metrics'] = metrics

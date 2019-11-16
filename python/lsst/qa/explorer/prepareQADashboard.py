@@ -206,7 +206,7 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         mergedCoadd, visitDfs = self.run(catalogs, patchRefList[0])
         self.write(patchRefList[0], mergedCoadd, 'qaDashboardCoaddTable')
         self.writeVisitTables(patchRefList[0], visitDfs)
-        self.writeMeta(patchRefList[0])
+        self.writeMeta(patchRefList)
         # self.write(patchRefList[0], mergedVisits, 'qaDashboardVisitTable')
 
     def getVisits(self, patchRef, filt):
@@ -297,11 +297,11 @@ class PrepareQADashboardTask(WriteObjectTableTask):
                 self.log.info('writing {} visit table'.format(dataId))
                 butler.put(table, 'qaDashboardVisitTable', dataId=dataId)
 
-    def writeMeta(self, dataRef):
+    def writeMeta(self, patchRefList):
         """No metadata to write.
         """
-        tract = dataRef.dataId['tract']
-        filt = dataRef.dataId['filter']
+        filters = {p.dataId['filter'] for p in patchRefList}
+        tracts = {p.dataId['tract'] for p in patchRefList}
         metrics = self.getMetrics()
         visits = self.getVisits(dataRef, filt)
 
@@ -312,12 +312,14 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         except NoResults:
             meta = {}
 
-        if 'visits' not in meta:
-            meta['visits'] = {}
-        if filt not in meta['visits']:
-            meta['visits'][filt] = {}
-        if tract not in meta['visits'][filt]:
-            meta['visits'][filt][tract] = visits
+        for filt in filters:
+            for tract in tracts:
+                if 'visits' not in meta:
+                    meta['visits'] = {}
+                if filt not in meta['visits']:
+                    meta['visits'][filt] = {}
+                if tract not in meta['visits'][filt]:
+                    meta['visits'][filt][tract] = visits
 
         if 'metrics' not in meta:
             meta['metrics'] = metrics

@@ -209,9 +209,10 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         self.writeMeta(patchRefList)
         # self.write(patchRefList[0], mergedVisits, 'qaDashboardVisitTable')
 
-    def getVisits(self, patchRef, filt):
+    def getVisits(self, patchRef, filt, tract=None):
 
-        tract = patchRef.dataId['tract']
+        if tract is None:
+            tract = patchRef.dataId['tract']
         butler = patchRef.getButler()
         visitMatchParq = butler.get('visitMatchTable', tract=tract, filter=filt)
         visits = {int(eval(c)[1]) for c in visitMatchParq.columns if c != 'id'}
@@ -303,9 +304,8 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         filters = {p.dataId['filter'] for p in patchRefList}
         tracts = {p.dataId['tract'] for p in patchRefList}
         metrics = self.getMetrics()
-        visits = self.getVisits(dataRef, filt)
 
-        butler = dataRef.getButler()
+        butler = patchRefList[0].getButler()
 
         try:
             meta = butler.get('qaDashboard_metadata')
@@ -314,6 +314,7 @@ class PrepareQADashboardTask(WriteObjectTableTask):
 
         for filt in filters:
             for tract in tracts:
+                visits = self.getVisits(patchRefList[0], filt, tract=tract)
                 if 'visits' not in meta:
                     meta['visits'] = {}
                 if filt not in meta['visits']:

@@ -264,6 +264,7 @@ class PrepareQADashboardTask(WriteObjectTableTask):
         visit_dfs = []
         for metric in self.getMetrics():
             cols = [metric] + ['filter', 'tractId', 'visitId'] + self.getFlags()
+            cols += ['ra', 'dec', 'label', 'psfMag']
             cols = [c for c in cols if c in all_visits.columns]
             visit_dfs.append(all_visits[cols])
 

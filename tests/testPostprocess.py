@@ -30,8 +30,8 @@ import pandas as pd
 
 import lsst.utils.tests
 
-from lsst.qa.explorer.parquetTable import MultilevelParquetTable
-from lsst.qa.explorer.postprocess import PostprocessAnalysis, MultibandPostprocessTask
+from lsst.pipe.tasks.parquetTable import MultilevelParquetTable
+from lsst.pipe.tasks.postprocess import PostprocessAnalysis, TransformObjectCatalogTask
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
@@ -48,13 +48,13 @@ class PostprocessTestCase(unittest.TestCase):
     def setUp(self):
         self.parq = MultilevelParquetTable(os.path.join(ROOT, self.catFilename))
         self.filters = self.parq.columnLevelNames['filter']
-        self.task = MultibandPostprocessTask()
+        self.task = TransformObjectCatalogTask()
         self.shortFilters = [f for k, f in self.task.config.filterMap.items()
                              if k in self.filters]
         self.task.config.functorFile = self.yamlFile
         self.funcs = self.task.getFunctors()
         self.columnNames = list(self.funcs.funcDict.keys())
-        self.columnNames += ['ra', 'dec'] + list(PostprocessAnalysis._defaultFlags)
+        self.columnNames += list(PostprocessAnalysis._defaultFlags)
         self.noDupCols = [k for k, f in self.funcs.funcDict.items() if f.noDup]
 
     def tearDown(self):

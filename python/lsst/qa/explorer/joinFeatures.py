@@ -28,7 +28,7 @@ import pandas as pd
 import lsst.pex.config as pexConfig
 import lsst.daf.persistence.butlerExceptions
 from lsst.pipe.base import Task
-from .parquetTable import ParquetTable
+from lsst.pipe.tasks.parquetTable import ParquetTable
 
 __all__ = ["JoinFeaturesTask", "JoinFeaturesConfig"]
 

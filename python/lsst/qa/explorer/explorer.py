@@ -16,11 +16,10 @@ import colorcet as cc
 import param
 import parambokeh
 
-from .functors import Mag, CustomFunctor, DeconvolvedMoments
-from .functors import StarGalaxyLabeller
-from .functors import RAColumn, DecColumn, Column
-from .functors import SdssTraceSize, PsfSdssTraceSizeDiff, HsmTraceSize, PsfHsmTraceSizeDiff
-from .functors import CompositeFunctor
+from lsst.pipe.tasks.functors import (Mag, CustomFunctor, DeconvolvedMoments,
+                                      StarGalaxyLabeller, RAColumn, DecColumn,
+                                      Column, SdssTraceSize, PsfSdssTraceSizeDiff,
+                                      HsmTraceSize, PsfHsmTraceSizeDiff, CompositeFunctor)
 
 default_xFuncs = {'base_PsfFlux' : Mag('base_PsfFlux'),
                   'modelfit_CModel' : Mag('modelfit_CModel')}

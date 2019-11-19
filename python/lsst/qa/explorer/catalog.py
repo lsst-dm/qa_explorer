@@ -10,7 +10,7 @@ from operator import add
 import string
 
 from .match import match_lists
-from .functors import Labeller, CompositeFunctor, RAColumn, DecColumn
+from lsst.pipe.tasks.functors import Labeller, CompositeFunctor, RAColumn, DecColumn
 from .utils import result
 
 # This is for temporary backwards compatibility

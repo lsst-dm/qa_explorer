@@ -37,7 +37,7 @@ from lsst.pipe.drivers.utils import TractDataIdContainer
 from lsst.pipe.tasks.parquetTable import ParquetTable
 
 
-__all__ = ['MatchVisitsConfig', 'MatchVisitsTask']
+__all__ = ["MatchVisitsConfig", "MatchVisitsTask"]
 
 
 class MatchVisitsConfig(Config):
@@ -56,22 +56,26 @@ class MatchVisitsTask(CmdLineTask):
         matchVisits.py <repo> --output <output_repo> --id tract=9615 filter=HSC-I
 
     """
+
     _DefaultName = "matchVisits"
     ConfigClass = MatchVisitsConfig
 
-    inputDataset = 'analysisCoaddTable_forced'
-    outputDataset = 'visitMatchTable'
+    inputDataset = "analysisCoaddTable_forced"
+    outputDataset = "visitMatchTable"
 
     @classmethod
     def _makeArgumentParser(cls):
         parser = ArgumentParser(name=cls._DefaultName)
 
-        parser.add_id_argument("--id", cls.inputDataset,
-                               help="data ID, e.g. --id tract=12345",
-                               ContainerClass=TractDataIdContainer)
+        parser.add_id_argument(
+            "--id",
+            cls.inputDataset,
+            help="data ID, e.g. --id tract=12345",
+            ContainerClass=TractDataIdContainer,
+        )
         return parser
 
-    def matchCats(self, df1, df2, raColumn='coord_ra', decColumn='coord_dec'):
+    def matchCats(self, df1, df2, raColumn="coord_ra", decColumn="coord_dec"):
         """Match two catalogs, represented as dataframes
 
         This uses the `match_lists` function, that uses a KDTree for matching.
@@ -98,12 +102,12 @@ class MatchVisitsTask(CmdLineTask):
         ra1, dec1 = df1[raColumn].values, df1[decColumn].values
         ra2, dec2 = df2[raColumn].values, df2[decColumn].values
 
-        dist, inds = match_lists(ra1, dec1, ra2, dec2, self.config.matchRadius/3600)
+        dist, inds = match_lists(ra1, dec1, ra2, dec2, self.config.matchRadius / 3600)
 
         good = np.isfinite(dist)  # sometimes dist is inf, sometimes nan.
         id2 = df2.index
 
-        return good, id2[inds[good]], dist[good]*3600.
+        return good, id2[inds[good]], dist[good] * 3600.0
 
     def runDataRef(self, patchRefList):
         """Matches visits to coadd and writes output
@@ -125,39 +129,44 @@ class MatchVisitsTask(CmdLineTask):
 
         """
         butler = patchRefList[0].getButler()
-        tract = patchRefList[0].dataId['tract']
-        filt = patchRefList[0].dataId['filter']
+        tract = patchRefList[0].dataId["tract"]
+        filt = patchRefList[0].dataId["filter"]
 
         # Collect all visits that overlap any part of the requested tract
         allVisits = set()
         for patchRef in patchRefList:
             try:
-                exp = butler.get('deepCoadd_calexp', dataId=patchRef.dataId)
-                allVisits = allVisits.union(set(exp.getInfo().getCoaddInputs().visits['id']))
+                exp = butler.get("deepCoadd_calexp", dataId=patchRef.dataId)
+                allVisits = allVisits.union(set(exp.getInfo().getCoaddInputs().visits["id"]))
             except NoResults:
                 pass
-        self.log.info('matching {} visits to tract {}: {}'.format(len(allVisits), tract, allVisits))
+        self.log.info("matching {} visits to tract {}: {}".format(len(allVisits), tract, allVisits))
 
         # Match
-        columns = ['coord_ra', 'coord_dec']
-        coaddDf = butler.get(self.inputDataset,
-                             tract=tract, filter=filt).toDataFrame(columns=columns)
+        columns = ["coord_ra", "coord_dec"]
+        coaddDf = butler.get(self.inputDataset, tract=tract, filter=filt).toDataFrame(columns=columns)
 
-        column_index = pd.MultiIndex.from_product([['matchId', 'distance'], allVisits])
+        column_index = pd.MultiIndex.from_product([["matchId", "distance"], allVisits])
         matchDf = pd.DataFrame(columns=column_index, index=coaddDf.index)
         for i, visit in enumerate(allVisits):
-            visitDf = butler.get('analysisVisitTable',
-                                 tract=tract, filter=filt, visit=visit).toDataFrame(columns=columns)
+            try:
+                visitDf = butler.get(
+                    "analysisVisitTable", tract=tract, filter=filt, visit=visit
+                ).toDataFrame(columns=columns)
+            except NoResults:
+                self.log.info(f"({i+1} of {len(allVisits)}) visit {visit}: analysisVisitTable not available")
+                continue
+
             good, ids, distance = self.matchCats(coaddDf, visitDf)
 
-            matchDf.loc[good, ('matchId', visit)] = ids
-            matchDf.loc[good, ('distance', visit)] = distance
-            self.log.info('({} of {}) visit {}: {} sources matched.'.format(i + 1, len(allVisits),
-                                                                      visit, good.sum()))
+            matchDf.loc[good, ("matchId", visit)] = ids
+            matchDf.loc[good, ("distance", visit)] = distance
+            self.log.info(
+                "({} of {}) visit {}: {} sources matched.".format(i + 1, len(allVisits), visit, good.sum())
+            )
 
         butler.put(ParquetTable(dataFrame=matchDf), self.outputDataset, tract=tract, filter=filt)
         return matchDf
-
 
     def writeMetadata(self, dataRef):
         """No metadata to write.

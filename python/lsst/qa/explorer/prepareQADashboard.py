@@ -82,7 +82,9 @@ from lsst.pipe.base import DataIdContainer
 
 class MultiTractDataIdContainer(DataIdContainer):
     def makeDataRefList(self, namespace):
-        self.refList = [namespace.butler.dataRef(self.datasetType, dataId=dataId) for dataId in self.idList]
+        self.refList = [
+            [namespace.butler.dataRef(self.datasetType, dataId=dataId) for dataId in self.idList]
+        ]
 
 
 class PrepareQADashboardConfig(Config):

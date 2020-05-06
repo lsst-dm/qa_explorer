@@ -77,6 +77,16 @@ class TractMergeSourcesRunner(MergeSourcesRunner):
         # return [(list(ref.values()), kwargs) for t in refDict.values() for ref in t.values()]
 
 
+from lsst.pipe.base import DataIdContainer
+
+
+class MultiTractDataIdContainer(DataIdContainer):
+    def makeDataRefList(self, namespace):
+        import pdb
+
+        pdb.set_trace()
+
+
 class PrepareQADashboardConfig(Config):
     coaddName = Field(dtype=str, default="deep", doc="Name of coadd")
 
@@ -87,90 +97,16 @@ class PrepareQADashboardTask(CmdLineTask):
 
     _DefaultName = "prepareQADashboard"
     ConfigClass = PrepareQADashboardConfig
-    RunnerClass = TractMergeSourcesRunner
 
-    inputDatasets = ("analysisCoaddTable_forced",)  # 'analysisCoaddTable_unforced')
-    # outputDatasets = ('qaDashboardCoaddTable', 'qaDashboardVisitTable')
+    inputDataset = "visitMatchTable"
 
-    def __init__(self, *args, **kwargs):
-        self.__dict__.update(kwargs)
-
-    def getMetrics(self):
-        return [
-            "base_Footprint_nPix",
-            "Gaussian-PSF_magDiff_mmag",
-            "CircAper12pix-PSF_magDiff_mmag",
-            "Kron-PSF_magDiff_mmag",
-            "CModel-PSF_magDiff_mmag",
-            "traceSdss_pixel",
-            "traceSdss_fwhm_pixel",
-            "psfTraceSdssDiff_percent",
-            "e1ResidsSdss_milli",
-            "e2ResidsSdss_milli",
-            "deconvMoments",
-            "compareUnforced_Gaussian_magDiff_mmag",
-            "compareUnforced_CircAper12pix_magDiff_mmag",
-            "compareUnforced_Kron_magDiff_mmag",
-            "compareUnforced_CModel_magDiff_mmag",
-            "traceSdss_pixel",
-            "traceSdss_fwhm_pixel",
-            "psfTraceSdssDiff_percent",
-            "e1ResidsSdss_milli",
-            "e2ResidsSdss_milli",
-            "base_PsfFlux_instFlux",
-            "base_PsfFlux_instFluxErr",
-        ]
-
-    def getFlags(self):
-        return [
-            "calib_psf_used",
-            "calib_psf_candidate",
-            "calib_photometry_reserved",
-            "merge_measurement_i2",
-            "merge_measurement_i",
-            "merge_measurement_r2",
-            "merge_measurement_r",
-            "merge_measurement_z",
-            "merge_measurement_y",
-            "merge_measurement_g",
-            "merge_measurement_N921",
-            "merge_measurement_N816",
-            "merge_measurement_N1010",
-            "merge_measurement_N387",
-            "merge_measurement_N515",
-            "qaBad_flag",
-        ]
-
-    def getIdCols(self):
-        return ["patchId", "id"]
-
-    def getColumnNames(self):
-        """Returns names of columns to persist in consolidated table.
-
-        This is a placeholder for a better config-based solution; ideally
-        specificied in some .yaml file.
+    def runDataRef(self, dataRef):
         """
-        return self.getMetrics() + self.getFlags() + self.getIdCols()
 
-    def getComputedColumns(self, parq):
-        """Returns dataframe with additional computed columns
-
-        e.g., "label", "psfMag", "ra"/"dec" (in degrees)
-
-        These functors should eventually be specified in same .yaml file
-        that the rest of the columns are specified in.
+        dataRef: want to point to one tract/filter combination
         """
-        funcs = CompositeFunctor(
-            {
-                "label": StarGalaxyLabeller(),
-                "psfMag": Magnitude("base_PsfFlux_instFlux"),
-                "ra": RAColumn(),
-                "dec": DecColumn(),
-            }
-        )
-
-        newCols = funcs(parq)
-        return newCols
+        visitMatchTable = dataRef.get()
+        print(visitMatchTable)
 
     @classmethod
     def _makeArgumentParser(cls):
@@ -178,51 +114,11 @@ class PrepareQADashboardTask(CmdLineTask):
 
         parser.add_id_argument(
             "--id",
-            cls.inputDatasets[0],
+            cls.inputDataset,
             help="data ID, e.g. --id tract=12345",
-            ContainerClass=TractDataIdContainer,
+            ContainerClass=MultiTractDataIdContainer,
         )
         return parser
-
-    def readCatalog(self, patchRef):
-        """Read input catalogs
-
-        Read all the input datasets given by the 'inputDatasets'
-        attribute.
-
-        Parameters
-        ----------
-        patchRef :
-            Data reference for patch
-
-        Returns
-        -------
-        Tuple consisting of filter name and a dict of catalogs, keyed by dataset
-        name
-        """
-        filterName = patchRef.dataId["filter"]
-        catalogDict = {}
-        for dataset in self.inputDatasets:
-            catalog = patchRef.get(dataset, immediate=True)
-            catalogDict[dataset] = catalog
-        return filterName, catalogDict
-
-    def runDataRef(self, patchRefList):
-        """!
-        @brief Merge coadd sources from multiple bands. Calls @ref `run` which must be defined in
-        subclasses that inherit from MergeSourcesTask.
-        @param[in] patchRefList list of data references for each filter
-
-        Returns
-        -------
-
-        """
-        # catalogs = dict(self.readCatalog(patchRef) for patchRef in patchRefList)
-        # mergedCoadd, visitDfs = self.run(catalogs, patchRefList[0])
-        # self.write(patchRefList[0], mergedCoadd, 'qaDashboardCoaddTable')
-        # self.writeVisitTables(patchRefList[0], visitDfs)
-        self.writeMeta(patchRefList)
-        # self.write(patchRefList[0], mergedVisits, 'qaDashboardVisitTable')
 
     def getVisits(self, patchRef, filt, tract=None):
 
@@ -234,85 +130,6 @@ class PrepareQADashboardTask(CmdLineTask):
         visits = list(visits)
         visits.sort()
         return visits
-
-    def run(self, catalogs, patchRef):
-        columns = self.getColumnNames()
-
-        butler = patchRef.getButler()
-        tract = patchRef.dataId["tract"]
-        dfs = []
-        visit_dfs = []
-        for filt, tableDict in catalogs.items():
-            for dataset, table in tableDict.items():
-                # Assemble coadd table
-                df = table.toDataFrame(columns=columns)
-                newCols = self.getComputedColumns(table)
-                df = pd.concat([df, newCols], axis=1)
-
-                df["filter"] = filt
-                df["dataset"] = dataset
-                df["tractId"] = tract
-
-                dfs.append(df)
-                self.log.info("Computed coadd table for tract {}, {}.".format(tract, filt))
-
-            # Assemble visit table
-            visits = self.getVisits(patchRef, filt)
-            self.log.info("Building visit table for tract {}, {}...".format(tract, filt))
-            n_visits = len(visits)
-            for i, visit in enumerate(visits):
-                visitParq = butler.get("analysisVisitTable", tract=tract, filter=filt, visit=visit)
-                visit_df = visitParq.toDataFrame(columns=columns)
-                newCols = self.getComputedColumns(visitParq)
-                visit_df = pd.concat([visit_df, newCols], axis=1)
-                visit_df["filter"] = filt
-                visit_df["tractId"] = tract
-                visit_df["visitId"] = visit
-                # TODO: add matched coaddId column
-                visit_dfs.append(visit_df)
-                self.log.info("{} of {}: {} ({} sources)".format(i + 1, n_visits, visit, len(visit_df)))
-
-        catalog = pd.concat(dfs)
-        all_visits = pd.concat(visit_dfs)
-
-        # Reshape visit tables into single table per tract and metric column
-        visit_dfs = []
-        for metric in self.getMetrics():
-            cols = [metric] + ["filter", "tractId", "visitId"] + self.getFlags()
-            cols += ["ra", "dec", "label", "psfMag"]
-            cols = [c for c in cols if c in all_visits.columns]
-            visit_dfs.append(all_visits[cols])
-
-        return ParquetTable(dataFrame=catalog), visit_dfs  # ParquetTable(dataFrame=all_visits)
-
-    def write(self, patchRef, catalog, dataset):
-        """!
-        @brief Write the output.
-        @param[in]  patchRef   data reference for patch
-        @param[in]  catalog    catalog
-        We write as the dataset provided by the 'outputDataset'
-        class variable.
-        """
-        patchRef.put(catalog, dataset)
-        # since the filter isn't actually part of the data ID for the dataset we're saving,
-        # it's confusing to see it in the log message, even if the butler simply ignores it.
-        mergeDataId = patchRef.dataId.copy()
-        del mergeDataId["filter"]
-        self.log.info("Wrote {}: {}".format(dataset, mergeDataId))
-
-    def writeVisitTables(self, patchRef, dfs):
-        butler = patchRef.getButler()
-
-        for metric, df in zip(self.getMetrics(), dfs):
-            filters = df["filter"].unique()
-            for filt in filters:
-                subdf = df.query('filter=="{}"'.format(filt))
-                dataId = dict(patchRef.dataId)
-                dataId["column"] = metric
-                dataId["filter"] = filt
-                table = ParquetTable(dataFrame=subdf)
-                self.log.info("writing {} visit table".format(dataId))
-                butler.put(table, "qaDashboardVisitTable", dataId=dataId)
 
     def writeMeta(self, patchRefList):
         """No metadata to write.

@@ -118,7 +118,9 @@ class PrepareQADashboardTask(CmdLineTask):
             filter2:
                 ...
         """
+        import pdb
 
+        pdb.set_trace()
         meta = {}
 
         for dataRef in dataRefList:
@@ -163,7 +165,7 @@ class PrepareQADashboardTask(CmdLineTask):
         visits.sort()
         return visits
 
-    def writeMeta(self, patchRefList):
+    def writeMetadata(self, dataRefList):
         """No metadata to write.
         """
         pass

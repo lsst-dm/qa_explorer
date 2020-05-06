@@ -82,9 +82,7 @@ from lsst.pipe.base import DataIdContainer
 
 class MultiTractDataIdContainer(DataIdContainer):
     def makeDataRefList(self, namespace):
-        import pdb
-
-        pdb.set_trace()
+        self.refList = [namespace.butler.dataRef(self.datasetType, dataId=dataId) for dataId in self.idList]
 
 
 class PrepareQADashboardConfig(Config):
@@ -100,13 +98,47 @@ class PrepareQADashboardTask(CmdLineTask):
 
     inputDataset = "visitMatchTable"
 
-    def runDataRef(self, dataRef):
+    def runDataRef(self, dataRefList):
         """
 
         dataRef: want to point to one tract/filter combination
+
+        qaDashboard_metadata.yaml looks like this:
+
+
+        visits:
+            filter1:
+                tract1:
+                    -1234
+                    -1235
+                    -1236
+                tract2:
+                    -2345
+                    -2366
+            filter2:
+                ...
         """
-        visitMatchTable = dataRef.get()
-        print(visitMatchTable)
+
+        meta = {}
+
+        for dataRef in dataRefList:
+
+            visitMatchParq = dataRef.get()
+            visits = {int(eval(c)[1]) for c in visitMatchParq.columns if c != "id"}
+            visits = list(visits)
+            visits.sort()
+
+            filt = dataRef.dataId["filter"]
+            tract = dataRef.dataId["tract"]
+            if "visits" not in meta:
+                meta["visits"] = {}
+            if filt not in meta["visits"]:
+                meta["visits"][filt] = {}
+            if tract not in meta["visits"][filt]:
+                meta["visits"][filt][tract] = visits
+
+        butler = dataRef.getButler()
+        butler.put(meta, "qaDashboard_metadata")
 
     @classmethod
     def _makeArgumentParser(cls):
@@ -130,35 +162,3 @@ class PrepareQADashboardTask(CmdLineTask):
         visits = list(visits)
         visits.sort()
         return visits
-
-    def writeMeta(self, patchRefList):
-        """No metadata to write.
-        """
-        filters = {p.dataId["filter"] for p in patchRefList}
-        tracts = {p.dataId["tract"] for p in patchRefList}
-        metrics = self.getMetrics()
-
-        butler = patchRefList[0].getButler()
-
-        try:
-            meta = butler.get("qaDashboard_metadata")
-        except NoResults:
-            meta = {}
-
-        for filt in filters:
-            for tract in tracts:
-                visits = self.getVisits(patchRefList[0], filt, tract=tract)
-                if "visits" not in meta:
-                    meta["visits"] = {}
-                if filt not in meta["visits"]:
-                    meta["visits"][filt] = {}
-                if tract not in meta["visits"][filt]:
-                    meta["visits"][filt][tract] = visits
-
-        if "metrics" not in meta:
-            meta["metrics"] = metrics
-        else:
-            if set(meta["metrics"]) != set(metrics):
-                raise RuntimeError("Metrics list different than stored!")
-
-        butler.put(meta, "qaDashboard_metadata")

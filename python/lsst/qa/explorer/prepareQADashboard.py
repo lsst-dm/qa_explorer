@@ -146,7 +146,7 @@ class PrepareQADashboardTask(CmdLineTask):
                 meta["visits"][filt][tract] = visits
 
         butler = dataRef.getButler()
-        butler.put(meta, "qaDashboard_metadata")
+        butler.put(meta, "qaDashboard_info")
 
     @classmethod
     def _makeArgumentParser(cls):

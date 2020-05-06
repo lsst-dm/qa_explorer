@@ -87,7 +87,7 @@ class PrepareQADashboardTask(WriteObjectTableTask):
 
     _DefaultName = "prepareQADashboard"
     ConfigClass = PrepareQADashboardConfig
-    RunnerClass = TractMergeSourcesRunner
+    # RunnerClass = TractMergeSourcesRunner
 
     inputDatasets = ("analysisCoaddTable_forced",)  # 'analysisCoaddTable_unforced')
     # outputDatasets = ('qaDashboardCoaddTable', 'qaDashboardVisitTable')

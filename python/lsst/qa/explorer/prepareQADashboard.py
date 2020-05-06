@@ -81,7 +81,7 @@ class PrepareQADashboardConfig(Config):
     coaddName = Field(dtype=str, default="deep", doc="Name of coadd")
 
 
-class PrepareQADashboardTask(WriteObjectTableTask):
+class PrepareQADashboardTask(CmdLineTask):
     """Write patch-merged source tables to a tract-level parquet file
     """
 

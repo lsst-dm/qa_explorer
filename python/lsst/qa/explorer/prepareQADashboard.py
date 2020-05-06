@@ -87,10 +87,13 @@ class PrepareQADashboardTask(CmdLineTask):
 
     _DefaultName = "prepareQADashboard"
     ConfigClass = PrepareQADashboardConfig
-    # RunnerClass = TractMergeSourcesRunner
+    RunnerClass = TractMergeSourcesRunner
 
     inputDatasets = ("analysisCoaddTable_forced",)  # 'analysisCoaddTable_unforced')
     # outputDatasets = ('qaDashboardCoaddTable', 'qaDashboardVisitTable')
+
+    def __init__(self, *args, **kwargs):
+        pass
 
     def getMetrics(self):
         return [

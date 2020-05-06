@@ -10,6 +10,7 @@ from lsst.pipe.base import CmdLineTask, ArgumentParser
 from lsst.pipe.drivers.utils import TractDataIdContainer
 from lsst.pipe.tasks.multiBandUtils import MergeSourcesRunner
 from lsst.daf.persistence.butlerExceptions import NoResults
+from lsst.pipe.tasks.postprocess import TransformObjectCatalogTask
 
 
 class TractMergeSourcesRunner(MergeSourcesRunner):
@@ -69,7 +70,7 @@ class PrepareQADashboardConfig(Config):
     coaddName = Field(dtype=str, default="deep", doc="Name of coadd")
 
 
-class PrepareQADashboardTask(CmdLineTask):
+class PrepareQADashboardTask(TransformObjectCatalogTask):
     """Write qaDashboardMetadata YAML dataset
 
     This is the metadata file that gets read in order to write the

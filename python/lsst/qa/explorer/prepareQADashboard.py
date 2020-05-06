@@ -5,7 +5,7 @@ Writes the following single parquet tables (potentially multi-part):
 
 
 """
-from lsst.pex.config import Config
+from lsst.pex.config import Config, Field
 from lsst.pipe.base import CmdLineTask, ArgumentParser
 from lsst.pipe.drivers.utils import TractDataIdContainer
 from lsst.pipe.tasks.multiBandUtils import MergeSourcesRunner
@@ -66,7 +66,7 @@ class TractMergeSourcesRunner(MergeSourcesRunner):
 
 
 class PrepareQADashboardConfig(Config):
-    pass
+    coaddName = Field(dtype=str, default="deep", doc="Name of coadd")
 
 
 class PrepareQADashboardTask(CmdLineTask):

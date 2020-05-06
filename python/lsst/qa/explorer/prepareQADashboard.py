@@ -93,7 +93,7 @@ class PrepareQADashboardTask(CmdLineTask):
     # outputDatasets = ('qaDashboardCoaddTable', 'qaDashboardVisitTable')
 
     def __init__(self, *args, **kwargs):
-        pass
+        self.__dict__.update(kwargs)
 
     def getMetrics(self):
         return [

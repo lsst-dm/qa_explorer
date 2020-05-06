@@ -83,7 +83,11 @@ from lsst.pipe.base import DataIdContainer
 class MultiTractDataIdContainer(DataIdContainer):
     def makeDataRefList(self, namespace):
         self.refList = [
-            [namespace.butler.dataRef(self.datasetType, dataId=dataId) for dataId in self.idList]
+            [
+                namespace.butler.dataRef(self.datasetType, dataId=dataId)
+                for dataId in self.idList
+                if namespace.butler.datasetExists(self.datasetType, dataId=dataId)
+            ]
         ]
 
 
@@ -120,9 +124,9 @@ class PrepareQADashboardTask(CmdLineTask):
             filter2:
                 ...
         """
-        import pdb
+        # import pdb
 
-        pdb.set_trace()
+        # pdb.set_trace()
         meta = {}
 
         for dataRef in dataRefList:

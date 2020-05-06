@@ -162,3 +162,8 @@ class PrepareQADashboardTask(CmdLineTask):
         visits = list(visits)
         visits.sort()
         return visits
+
+    def writeMeta(self, patchRefList):
+        """No metadata to write.
+        """
+        pass

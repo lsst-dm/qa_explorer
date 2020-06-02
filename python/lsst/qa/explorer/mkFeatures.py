@@ -27,7 +27,7 @@ Makes the features needed to train the star galaxy classifier
 import numpy as np
 
 from lsst.meas.algorithms.loadIndexedReferenceObjects import LoadIndexedReferenceObjectsTask
-import lsst.afw.geom as afwGeom
+import lsst.geom as geom
 import lsst.pex.config as pexConfig
 from lsst.pipe.base import Task
 from lsst.pipe.tasks.parquetTable import ParquetTable
@@ -56,13 +56,13 @@ class StarGalaxyFeaturesConfig(pexConfig.Config):
     psfColName = pexConfig.Field(
         doc="Column name for PSF flux columns used in addMagnitudes",
         dtype=str,
-        default="base_PsfFlux_flux"
+        default="base_PsfFlux_instFlux"
     )
 
     modelColName = pexConfig.Field(
         doc="Column name for model flux columns used in addSNFlux and addMagnitudes",
         dtype=str,
-        default="modelfit_CModel_flux"
+        default="modelfit_CModel_instFlux"
     )
 
     truthRaColName = pexConfig.Field(
@@ -268,15 +268,15 @@ class StarGalaxyFeaturesTask(StarGalaxyClassifierTask):
 
         for flag in ["base_PixelFlags_flag_saturated", "base_SdssShape_flag_psf"]:
             cat = self.cleanOnFlag(cat, flag, filters)
-        for fluxCol in ["base_PsfFlux_flux", "modelfit_CModel_flux"]:
+        for fluxCol in [self.config.psfColName, self.config.modelColName]:
             cat = self.goodFlux(cat, fluxCol, filters)
         cat = self.removeBlended(cat, filters)
         cleanCat = self.cleanUpCat(cat)
 
         medRa = np.median(cleanCat["ra"].values)
         medDec = np.median(cleanCat["dec"].values)
-        center = afwGeom.SpherePoint(medRa, medDec, afwGeom.radians)
-        radius = (1/np.sqrt(2))*(np.max(cleanCat["ra"].values)-np.min(cleanCat["ra"].values))*afwGeom.radians
+        center = geom.SpherePoint(medRa, medDec, geom.radians)
+        radius = (1/np.sqrt(2))*(np.max(cleanCat["ra"].values)-np.min(cleanCat["ra"].values))*geom.radians
         refs = truthRefObj.loadSkyCircle(center, radius, "MAG_BEST").refCat
         truthCat = refs.asAstropy()
         if len(truthCat) == 0:
@@ -388,18 +388,18 @@ class StarGalaxyFeaturesTask(StarGalaxyClassifierTask):
         cleanCat : `pandas.core.frame.DataFrame`
             A single index pandas data frame containing only objects selected to be useful for training.
         """
-        clean = ((cat["featuresSGSep"]["magPsfHSC-G"] > 0.0) &
-                 (cat["featuresSGSep"]["magPsfHSC-R"] > 0.0) &
-                 (cat["featuresSGSep"]["magPsfHSC-I"] > 0.0) &
-                 (cat["featuresSGSep"]["magPsfHSC-Z"] > 0.0) &
-                 (cat["featuresSGSep"]["magPsfHSC-Y"] > 0.0) &
-                 (cat["featuresSGSep"]["magModelHSC-G"] > 0.0) &
-                 (cat["featuresSGSep"]["magModelHSC-R"] > 0.0) &
-                 (cat["featuresSGSep"]["magModelHSC-I"] > 0.0) &
-                 (cat["featuresSGSep"]["magModelHSC-Z"] > 0.0) &
-                 (cat["featuresSGSep"]["magModelHSC-Y"] > 0.0) &
-                 (np.isfinite(np.sum(cat["featuresSGSep"].values, axis=1))) &
-                 (cat["featuresSGSep"]["magModelHSC-I"] < self.config.magLim))
+        clean = ((cat["featuresSGSep"]["magPsfHSC-G"] > 0.0)
+                 & (cat["featuresSGSep"]["magPsfHSC-R"] > 0.0)
+                 & (cat["featuresSGSep"]["magPsfHSC-I"] > 0.0)
+                 & (cat["featuresSGSep"]["magPsfHSC-Z"] > 0.0)
+                 & (cat["featuresSGSep"]["magPsfHSC-Y"] > 0.0)
+                 & (cat["featuresSGSep"]["magModelHSC-G"] > 0.0)
+                 & (cat["featuresSGSep"]["magModelHSC-R"] > 0.0)
+                 & (cat["featuresSGSep"]["magModelHSC-I"] > 0.0)
+                 & (cat["featuresSGSep"]["magModelHSC-Z"] > 0.0)
+                 & (cat["featuresSGSep"]["magModelHSC-Y"] > 0.0)
+                 & (np.isfinite(np.sum(cat["featuresSGSep"].values, axis=1)))
+                 & (cat["featuresSGSep"]["magModelHSC-I"] < self.config.magLim))
 
         cleanCat = cat["featuresSGSep"][clean]
 

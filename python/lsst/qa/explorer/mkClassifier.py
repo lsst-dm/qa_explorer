@@ -46,13 +46,13 @@ class MakeStarGalaxyClassifierConfig(pexConfig.Config):
         doc="Label provides version information",
         dtype=str,
         default="HSC-COSMOS-20180538",
-        )
+    )
 
     classifierType = pexConfig.Field(
         doc="Morphology only (morph), morphology and color only (color) or both (both)",
         dtype=str,
         default="both"
-        )
+    )
 
     columnsMorph = pexConfig.ListField(
         doc="Columns for the morphology only classifier",
@@ -61,7 +61,7 @@ class MakeStarGalaxyClassifierConfig(pexConfig.Config):
                  "seeingHSC-G", "seeingHSC-R", "seeingHSC-I", "seeingHSC-Z", "seeingHSC-Y",
                  "fluxSNHSC-G", "fluxSNHSC-R", "fluxSNHSC-I", "fluxSNHSC-Z", "fluxSNHSC-Y",
                  "magPsf-magModelErrHSC-R", "magPsf-magModelErrHSC-I", "magPsf-magModelErrHSC-Z"]
-        )
+    )
 
     columnsColor = pexConfig.ListField(
         doc="Columns for the morphology and color based classifier",
@@ -72,13 +72,13 @@ class MakeStarGalaxyClassifierConfig(pexConfig.Config):
                  "fluxSNHSC-Z", "fluxSNHSC-Y", "seeingHSC-G", "seeingHSC-R", "seeingHSC-I", "seeingHSC-Z",
                  "seeingHSC-Y", "magPsf-magModelErrHSC-G", "magPsf-magModelErrHSC-R",
                  "magPsf-magModelErrHSC-I", "magPsf-magModelErrHSC-Z", "magPsf-magModelErrHSC-Y"]
-        )
+    )
 
     filters = pexConfig.ListField(
         doc="Filters used in the classifier should be given in wavelength order",
         dtype=str,
         default=["HSC-G", "HSC-R", "HSC-I", "HSC-Z", "HSC-Y"]
-        )
+    )
 
 
 class MakeStarGalaxyClassifierTask(Task):

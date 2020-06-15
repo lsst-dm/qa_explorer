@@ -55,13 +55,13 @@ class StarGalaxyClassifierConfig(pexConfig.Config):
     psfColName = pexConfig.Field(
         doc="Column name for PSF flux columns used in addMagnitudes",
         dtype=str,
-        default="base_PsfFlux_flux"
+        default="base_PsfFlux_instFlux"
     )
 
     modelColName = pexConfig.Field(
         doc="Column name for model flux columns used in addSNFlux and addMagnitudes",
         dtype=str,
-        default="modelfit_CModel_flux"
+        default="modelfit_CModel_instFlux"
     )
 
 
@@ -293,22 +293,20 @@ class StarGalaxyClassifierTask(Task):
 
         for band in filters:
 
-            calib = dataRef.get("deepCoadd_calexp_calib", filter=band)
+            calib = dataRef.get("deepCoadd_calexp_photoCalib", filter=band)
 
             for (i, col) in enumerate(colsIn):
-
-                goodFlux = ((np.isfinite(cat[band][col])) & (cat[band][col] > 0.0))
 
                 magCol = np.array([np.nan]*len(cat))
                 magErrCol = np.array([np.nan]*len(cat))
 
-                flux = cat[band][col][goodFlux]
-                fluxErr = cat[band][col + "Err"][goodFlux]
+                flux = cat[band][col]
+                fluxErr = cat[band][col + "Err"]
 
-                mags, magErrs = calib.getMagnitude(flux.values, fluxErr.values)
-
-                magCol[goodFlux] = mags
-                magErrCol[goodFlux] = magErrs
+                for (j, (fluxVal, fluxErrVal)) in enumerate(zip(flux.values, fluxErr.values)):
+                    magAndError = calib.instFluxToMagnitude(fluxVal, fluxErrVal)
+                    magCol[j] = magAndError.value
+                    magErrCol[j] = magAndError.error
 
                 cat["featuresSGSep", colsOut[i] + band] = magCol
                 cat["featuresSGSep", colsOut[i] + "Err" + band] = magErrCol
@@ -399,10 +397,10 @@ class StarGalaxyClassifierTask(Task):
         """
 
         for band in filters:
-            cat["featuresSGSep", "magPsf-magModel" + band] = cat["featuresSGSep"]["magPsf" + band] - \
-                                                             cat["featuresSGSep"]["magModel" + band]
-            errs = np.sqrt(cat["featuresSGSep"]["magPsfErr" + band]**2 +
-                           cat["featuresSGSep"]["magModelErr" + band]**2)
+            cat["featuresSGSep", "magPsf-magModel" + band] = (cat["featuresSGSep"]["magPsf" + band]
+                                                              - cat["featuresSGSep"]["magModel" + band])
+            errs = np.sqrt(cat["featuresSGSep"]["magPsfErr" + band]**2
+                           + cat["featuresSGSep"]["magModelErr" + band]**2)
             cat["featuresSGSep", "magPsf-magModelErr" + band] = errs
 
         # The fastest way to iterate through a pandas dataframe is by using iter tuples but it gets rid of the
@@ -457,8 +455,8 @@ class StarGalaxyClassifierTask(Task):
         """
 
         for band in filters:
-            cat["featuresSGSep", "fluxSN" + band] = cat[band][self.config.modelColName] / \
-                                                    cat[band][self.config.modelColName + "Err"]
+            cat["featuresSGSep", "fluxSN" + band] = (cat[band][self.config.modelColName]
+                                                     / cat[band][self.config.modelColName + "Err"])
 
         return cat
 
@@ -485,7 +483,7 @@ class StarGalaxyClassifierTask(Task):
         features = np.zeros((len(colsToUse), len(cat)))
 
         for (i, col) in enumerate(colsToUse):
-            features[i] = cat["featuresSGSep"][col].data
+            features[i] = cat["featuresSGSep"][col].values
 
         # Need to take out the nans but remember which rows they are and assign nans to the probability and
         # add a flag

@@ -51,8 +51,8 @@ class JoinFeaturesConfig(pexConfig.Config):
     )
 
     outputRerunName = pexConfig.Field(
-        doc="Name of the rerun that the output should be written to. Should be one of the names from the" \
-             "input dict of dataRefs",
+        doc="Name of the rerun that the output should be written to. Should be one of the names from the"
+            "input dict of dataRefs",
         dtype=str,
         default="weekly28_stars"
     )

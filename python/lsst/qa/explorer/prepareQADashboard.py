@@ -159,7 +159,4 @@ class PrepareQADashboardTask(CmdLineTask):
     def writeMetadata(self, dataRefList):
         """No metadata to write.
         """
-        import pdb
-
-        pdb.set_trace()
         pass

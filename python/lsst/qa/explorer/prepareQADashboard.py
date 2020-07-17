@@ -90,7 +90,6 @@ class MultiTractDataIdContainer(DataIdContainer):
             ]
         ]
 
-
 class PrepareQADashboardConfig(Config):
     coaddName = Field(dtype=str, default="deep", doc="Name of coadd")
 
@@ -124,9 +123,6 @@ class PrepareQADashboardTask(CmdLineTask):
             filter2:
                 ...
         """
-        # import pdb
-
-        # pdb.set_trace()
         meta = {}
 
         for dataRef in dataRefList:

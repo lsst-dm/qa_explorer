@@ -102,8 +102,8 @@ class PrepareQADashboardTask(CmdLineTask):
     _DefaultName = "prepareQADashboard"
     ConfigClass = PrepareQADashboardConfig
 
-    # inputDataset = "visitMatchTable"
-    inputDataset = "sourceTable_visit"
+    inputDataset = "visitMatchTable"
+    # inputDataset = "sourceTable_visit"
 
     def runDataRef(self, dataRefList):
         """
@@ -125,13 +125,29 @@ class PrepareQADashboardTask(CmdLineTask):
             filter2:
                 ...
         """
-        butler = dataRefList[0].getButler()
+        meta = {}
 
-        d = butler.get("qaDashboard_info") if butler.datasetExists("qaDashboard_info") else {}
+        for dataRef in dataRefList:
 
-        d[self.inputDataset] = [dict(dataRef.dataId) for dataRef in dataRefList]
+            visitMatchParq = dataRef.get()
+            visits = {int(eval(c)[1]) for c in visitMatchParq.columns if c != "id"}
+            visits = list(visits)
+            visits.sort()
 
-        butler.put(d, "qaDashboard_info")
+            filt = dataRef.dataId["filter"]
+            tract = dataRef.dataId["tract"]
+            if "visits" not in meta:
+                meta["visits"] = {}
+            if filt not in meta["visits"]:
+                meta["visits"][filt] = {}
+            if tract not in meta["visits"][filt]:
+                meta["visits"][filt][tract] = visits
+
+        butler = dataRef.getButler()
+
+        meta[self.inputDataset] = [dict(dataRef.dataId) for dataRef in dataRefList]
+
+        butler.put(meta, "qaDashboard_info")
 
     @classmethod
     def _makeArgumentParser(cls):

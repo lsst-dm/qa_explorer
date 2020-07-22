@@ -104,8 +104,15 @@ class PrepareQADashboardTask(CmdLineTask):
 
     inputDataset = "visitMatchTable"
     # inputDataset = "sourceTable_visit"
-    otherDatasets = ("sourceTable_visit", "objectTable_tract")
-    hasVisits = (True, False)
+    otherDatasets = (
+        ("sourceTable_visit", ("visit",)),
+        ("objectTable_tract", ("tract",)),
+        ("analysisVisitTable", ("filter", "tract", "visit")),
+        ("analysisVisitTable_commonZp", ("filter", "tract", "visit")),
+        ("analysisCoaddTable_forced", ("filter", "tract")),
+        ("analysisCoaddTable_unforced", ("filter", "tract")),
+        ("analysisColorTable", ("tract",)),
+    )
 
     def runDataRef(self, dataRefList):
         """
@@ -150,24 +157,27 @@ class PrepareQADashboardTask(CmdLineTask):
         meta[self.inputDataset] = [dict(dataRef.dataId) for dataRef in dataRefList]
 
         # Write other dataIds that will be of interest
-        for dataset, hasVisits in zip(self.otherDatasets, self.hasVisits):
+        for dataset, keys in self.otherDatasets:
             meta[dataset] = [
-                dataId
-                for dataId in self.iter_dataId(meta, visits=hasVisits)
-                if butler.datasetExists(dataset, **dataId)
+                dataId for dataId in self.iter_dataId(meta, keys) if butler.datasetExists(dataset, **dataId)
             ]
 
         butler.put(meta, "qaDashboard_info")
 
-    def iter_dataId(self, metadata, visits=False):
+    def iter_dataId(self, metadata, keys):
         d = metadata
+        seen_already = set()
         for filt in d["visits"].keys():
             for tract in d["visits"][filt]:
-                if visits:
-                    for visit in d["visits"][filt][tract]:
-                        yield {"filter": filt, "tract": tract, "visit": visit}
-                else:
-                    yield {"filter": filt, "tract": tract}
+                for visit in d["visits"][filt][tract]:
+                    dataId = {
+                        k: v
+                        for k, v in {"filter": filt, "tract": tract, "visit": visit}.items()
+                        if k in keys
+                    }
+                    if dataId not in seen_already:
+                        yield dataId
+                        seen_already.add(dataId)
 
     @classmethod
     def _makeArgumentParser(cls):

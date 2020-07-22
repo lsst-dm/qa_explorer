@@ -104,6 +104,8 @@ class PrepareQADashboardTask(CmdLineTask):
 
     inputDataset = "visitMatchTable"
     # inputDataset = "sourceTable_visit"
+    otherDatasets = ("sourceTable_visit", "objectTable_tract")
+    hasVisits = (True, False)
 
     def runDataRef(self, dataRefList):
         """
@@ -125,7 +127,9 @@ class PrepareQADashboardTask(CmdLineTask):
             filter2:
                 ...
         """
-        meta = {}
+        butler = dataRefList[0].getButler()
+
+        meta = {} if not butler.datasetExists("qaDashboard_info") else butler.get("qaDashboard_info")
 
         for dataRef in dataRefList:
 
@@ -143,11 +147,27 @@ class PrepareQADashboardTask(CmdLineTask):
             if tract not in meta["visits"][filt]:
                 meta["visits"][filt][tract] = visits
 
-        butler = dataRef.getButler()
-
         meta[self.inputDataset] = [dict(dataRef.dataId) for dataRef in dataRefList]
 
+        # Write other dataIds that will be of interest
+        for dataset, hasVisits in zip(self.otherDatasets, self.hasVisits):
+            meta[dataset] = [
+                dataId
+                for dataId in self.iter_dataId(meta, visits=hasVisits)
+                if butler.datasetExists(dataset, **dataId)
+            ]
+
         butler.put(meta, "qaDashboard_info")
+
+    def iter_dataId(self, metadata, visits=False):
+        d = metadata
+        for filt in d["visits"].keys():
+            for tract in d["visits"][filt]:
+                if visits:
+                    for visit in d["visits"][filt][tract]:
+                        yield {"filter": filt, "tract": tract, "visit": visit}
+                else:
+                    yield {"filter": filt, "tract": tract}
 
     @classmethod
     def _makeArgumentParser(cls):

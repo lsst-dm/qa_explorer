@@ -175,9 +175,9 @@ class PrepareQADashboardTask(CmdLineTask):
                         for k, v in {"filter": filt, "tract": tract, "visit": visit}.items()
                         if k in keys
                     }
-                    if dataId not in seen_already:
+                    if tuple(dataId.items()) not in seen_already:
                         yield dataId
-                        seen_already.add(dataId)
+                        seen_already.add(tuple(dataId.items()))
 
     @classmethod
     def _makeArgumentParser(cls):

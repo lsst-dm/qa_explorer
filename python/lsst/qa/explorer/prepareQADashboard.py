@@ -89,9 +89,6 @@ class MultiTractDataIdContainer(DataIdContainer):
                 if namespace.butler.datasetExists(self.datasetType, dataId=dataId)
             ]
         ]
-        import pdb
-
-        pdb.set_trace()
 
 
 class PrepareQADashboardConfig(Config):
@@ -106,7 +103,7 @@ class PrepareQADashboardTask(CmdLineTask):
     ConfigClass = PrepareQADashboardConfig
 
     inputDataset = "visitMatchTable"
-    inputDataset = "objectTable"
+    # inputDataset = "objectTable"
     # inputDataset = "sourceTable_visit"
     otherDatasets = (
         ("sourceTable_visit", ("filter", "visit",)),
@@ -162,6 +159,11 @@ class PrepareQADashboardTask(CmdLineTask):
         meta[self.inputDataset] = [dict(dataRef.dataId) for dataRef in dataRefList]
 
         # Write other dataIds that will be of interest
+        skymap = butler.get("deepCoadd_skyMap")
+        import pdb
+
+        pdb.set_trace()
+
         for dataset, keys in self.otherDatasets:
             meta[dataset] = [
                 dataId for dataId in self.iter_dataId(meta, keys) if butler.datasetExists(dataset, **dataId)
@@ -169,7 +171,7 @@ class PrepareQADashboardTask(CmdLineTask):
 
         butler.put(meta, "qaDashboard_info")
 
-    def iter_dataId(self, metadata, keys):
+    def iter_dataId(self, metadata, keys, patches=None):
         d = metadata
         seen_already = set()
         for filt in d["visits"].keys():
@@ -180,6 +182,14 @@ class PrepareQADashboardTask(CmdLineTask):
                         for k, v in {"filter": filt, "tract": tract, "visit": visit}.items()
                         if k in keys
                     }
+
+                    if "patch" in keys:
+                        for patch in patches:
+                            dataId["patch"] = patch
+                            if tuple(dataId.items()) not in seen_already:
+                                yield dataId
+                                seen_already.add(tuple(dataId.items()))
+
                     if tuple(dataId.items()) not in seen_already:
                         yield dataId
                         seen_already.add(tuple(dataId.items()))

@@ -162,7 +162,7 @@ class PrepareQADashboardTask(CmdLineTask):
         # Write other dataIds that will be of interest
         skymap = butler.get("deepCoadd_skyMap")
         nx, ny = skymap[0].getNumPatches()
-        patches = [(x, y) for x, y in product(range(nx), range(ny))]
+        patches = [f"{x},{y}" for x, y in product(range(nx), range(ny))]
 
         for dataset, keys in self.otherDatasets:
             meta[dataset] = [
@@ -191,10 +191,10 @@ class PrepareQADashboardTask(CmdLineTask):
                             if tuple(dataId.items()) not in seen_already:
                                 yield dataId
                                 seen_already.add(tuple(dataId.items()))
-
-                    if tuple(dataId.items()) not in seen_already:
-                        yield dataId
-                        seen_already.add(tuple(dataId.items()))
+                    else:
+                        if tuple(dataId.items()) not in seen_already:
+                            yield dataId
+                            seen_already.add(tuple(dataId.items()))
 
     @classmethod
     def _makeArgumentParser(cls):

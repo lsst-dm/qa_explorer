@@ -106,6 +106,7 @@ class PrepareQADashboardTask(CmdLineTask):
     ConfigClass = PrepareQADashboardConfig
 
     inputDataset = "visitMatchTable"
+    inputDataset = "objectTable"
     # inputDataset = "sourceTable_visit"
     otherDatasets = (
         ("sourceTable_visit", ("filter", "visit",)),

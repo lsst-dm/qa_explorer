@@ -105,8 +105,9 @@ class PrepareQADashboardTask(CmdLineTask):
     inputDataset = "visitMatchTable"
     # inputDataset = "sourceTable_visit"
     otherDatasets = (
-        ("sourceTable_visit", ("visit",)),
-        ("objectTable_tract", ("tract",)),
+        ("sourceTable_visit", ("filter", "visit",)),
+        ("objectTable", ("tract", "patch")),
+        # ("objectTable_tract", ("tract",)),
         ("analysisVisitTable", ("filter", "tract", "visit")),
         ("analysisVisitTable_commonZp", ("filter", "tract", "visit")),
         ("analysisCoaddTable_forced", ("filter", "tract")),
@@ -172,7 +173,7 @@ class PrepareQADashboardTask(CmdLineTask):
                 for visit in d["visits"][filt][tract]:
                     dataId = {
                         k: v
-                        for k, v in {"filter": filt, "tract": tract, "visit": visit}.items()
+                        for k, v in {"filter": filt, "tract": tract, "visit": visit, "patch": patch}.items()
                         if k in keys
                     }
                     if tuple(dataId.items()) not in seen_already:

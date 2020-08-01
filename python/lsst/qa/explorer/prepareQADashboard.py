@@ -89,6 +89,9 @@ class MultiTractDataIdContainer(DataIdContainer):
                 if namespace.butler.datasetExists(self.datasetType, dataId=dataId)
             ]
         ]
+        import pdb
+
+        pdb.set_trace()
 
 
 class PrepareQADashboardConfig(Config):
@@ -173,7 +176,7 @@ class PrepareQADashboardTask(CmdLineTask):
                 for visit in d["visits"][filt][tract]:
                     dataId = {
                         k: v
-                        for k, v in {"filter": filt, "tract": tract, "visit": visit, "patch": patch}.items()
+                        for k, v in {"filter": filt, "tract": tract, "visit": visit}.items()
                         if k in keys
                     }
                     if tuple(dataId.items()) not in seen_already:

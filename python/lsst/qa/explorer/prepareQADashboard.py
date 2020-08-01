@@ -8,6 +8,7 @@ Writes the following single parquet tables (potentially multi-part):
 import os
 import pandas as pd
 import functools
+from itertools import product
 
 from lsst.pex.config import Config, Field
 from lsst.pipe.base import CmdLineTask, ArgumentParser
@@ -160,13 +161,14 @@ class PrepareQADashboardTask(CmdLineTask):
 
         # Write other dataIds that will be of interest
         skymap = butler.get("deepCoadd_skyMap")
-        import pdb
-
-        pdb.set_trace()
+        nx, ny = skymap[0].getNumPatches()
+        patches = [(x, y) for x, y in product(range(nx), range(ny))]
 
         for dataset, keys in self.otherDatasets:
             meta[dataset] = [
-                dataId for dataId in self.iter_dataId(meta, keys) if butler.datasetExists(dataset, **dataId)
+                dataId
+                for dataId in self.iter_dataId(meta, keys, patches=patches)
+                if butler.datasetExists(dataset, **dataId)
             ]
 
         butler.put(meta, "qaDashboard_info")

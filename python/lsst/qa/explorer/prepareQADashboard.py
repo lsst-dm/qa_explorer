@@ -174,11 +174,9 @@ class PrepareQADashboardTask(CmdLineTask):
         butler.put(meta, "qaDashboard_info")
 
     def iter_dataId(self, metadata, keys, patches=None):
-        import pdb
-
-        pdb.set_trace()
         d = metadata
         seen_already = set()
+        dataIds = []
         for filt in d["visits"].keys():
             for tract in d["visits"][filt]:
                 dataId = {k: v for k, v in {"filter": filt, "tract": tract}.items() if k in keys}
@@ -187,14 +185,17 @@ class PrepareQADashboardTask(CmdLineTask):
                     for patch in patches:
                         dataId["patch"] = patch
                         if tuple(dataId.items()) not in seen_already:
-                            yield dataId
+                            # yield dataId
+                            dataIds.append(dataId)
                             seen_already.add(tuple(dataId.items()))
                 elif "visit" in keys:
                     for visit in d["visits"][filt][tract]:
                         dataId["visit"] = visit
                         if tuple(dataId.items()) not in seen_already:
-                            yield dataId
+                            # yield dataId
+                            dataIds.append(dataId)
                             seen_already.add(tuple(dataId.items()))
+        return dataIds
 
     @classmethod
     def _makeArgumentParser(cls):

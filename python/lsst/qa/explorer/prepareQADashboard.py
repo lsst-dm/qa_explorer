@@ -178,20 +178,17 @@ class PrepareQADashboardTask(CmdLineTask):
         seen_already = set()
         for filt in d["visits"].keys():
             for tract in d["visits"][filt]:
-                for visit in d["visits"][filt][tract]:
-                    dataId = {
-                        k: v
-                        for k, v in {"filter": filt, "tract": tract, "visit": visit}.items()
-                        if k in keys
-                    }
+                dataId = {k: v for k, v in {"filter": filt, "tract": tract}.items() if k in keys}
 
-                    if "patch" in keys:
-                        for patch in patches:
-                            dataId["patch"] = patch
-                            if tuple(dataId.items()) not in seen_already:
-                                yield dataId
-                                seen_already.add(tuple(dataId.items()))
-                    else:
+                if "patch" in keys:
+                    for patch in patches:
+                        dataId["patch"] = patch
+                        if tuple(dataId.items()) not in seen_already:
+                            yield dataId
+                            seen_already.add(tuple(dataId.items()))
+                elif "visit" in keys:
+                    for visit in d["visits"][filt][tract]:
+                        data["visit"] = visit
                         if tuple(dataId.items()) not in seen_already:
                             yield dataId
                             seen_already.add(tuple(dataId.items()))

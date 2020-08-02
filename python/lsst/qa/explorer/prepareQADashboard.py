@@ -188,7 +188,7 @@ class PrepareQADashboardTask(CmdLineTask):
                             seen_already.add(tuple(dataId.items()))
                 elif "visit" in keys:
                     for visit in d["visits"][filt][tract]:
-                        data["visit"] = visit
+                        dataId["visit"] = visit
                         if tuple(dataId.items()) not in seen_already:
                             yield dataId
                             seen_already.add(tuple(dataId.items()))

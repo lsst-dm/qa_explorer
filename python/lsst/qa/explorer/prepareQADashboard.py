@@ -176,26 +176,31 @@ class PrepareQADashboardTask(CmdLineTask):
     def iter_dataId(self, metadata, keys, patches=None):
         d = metadata
         seen_already = set()
-        dataIds = []
         for filt in d["visits"].keys():
             for tract in d["visits"][filt]:
                 dataId = {k: v for k, v in {"filter": filt, "tract": tract}.items() if k in keys}
 
                 if "patch" in keys:
                     for patch in patches:
+                        dataId = dict(dataId)
                         dataId["patch"] = patch
                         if tuple(dataId.items()) not in seen_already:
-                            # yield dataId
-                            dataIds.append(dataId)
                             seen_already.add(tuple(dataId.items()))
+                            yield dataId
                 elif "visit" in keys:
                     for visit in d["visits"][filt][tract]:
+                        dataId = dict(dataId)
                         dataId["visit"] = visit
                         if tuple(dataId.items()) not in seen_already:
-                            # yield dataId
-                            dataIds.append(dataId)
+
                             seen_already.add(tuple(dataId.items()))
-        return dataIds
+                            yield dataId
+                        else:
+                            print(f"skipping {dataId}")
+                else:
+                    if tuple(dataId.items()) not in seen_already:
+                        seen_already.add(tuple(dataId.items()))
+                        yield dataId
 
     @classmethod
     def _makeArgumentParser(cls):

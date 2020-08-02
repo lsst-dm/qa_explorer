@@ -174,6 +174,9 @@ class PrepareQADashboardTask(CmdLineTask):
         butler.put(meta, "qaDashboard_info")
 
     def iter_dataId(self, metadata, keys, patches=None):
+        import pdb
+
+        pdb.set_trace()
         d = metadata
         seen_already = set()
         for filt in d["visits"].keys():

@@ -171,10 +171,10 @@ class PrepareQADashboardTask(CmdLineTask):
         patches = [f"{x},{y}" for x, y in product(range(nx), range(ny))]
 
         for dataset, keys in self.otherDatasets:
-            if self.skip_pipe_analysis:
+            if self.config.skip_pipe_analysis:
                 if "analysis" in dataset:
                     continue
-            if self.skip_object_tables:
+            if self.config.skip_object_tables:
                 if dataset in ("objectTable", "sourceTable_visit"):
                     continue
 

@@ -94,6 +94,12 @@ class MultiTractDataIdContainer(DataIdContainer):
 
 class PrepareQADashboardConfig(Config):
     coaddName = Field(dtype=str, default="deep", doc="Name of coadd")
+    skip_pipe_analysis = Field(
+        dtype=bool, default=False, doc="Whether to skip the pipe_analysis datasets or not."
+    )
+    skip_object_tables = Field(
+        dtype=bool, default=False, doc="Whether to skip the objectTable and sourceTable or not."
+    )
 
 
 class PrepareQADashboardTask(CmdLineTask):
@@ -165,6 +171,13 @@ class PrepareQADashboardTask(CmdLineTask):
         patches = [f"{x},{y}" for x, y in product(range(nx), range(ny))]
 
         for dataset, keys in self.otherDatasets:
+            if self.skip_pipe_analysis:
+                if "analysis" in dataset:
+                    continue
+            if self.skip_object_tables:
+                if dataset in ("objectTable", "sourceTable_visit"):
+                    continue
+
             meta[dataset] = [
                 dataId
                 for dataId in self.iter_dataId(meta, keys, patches=patches)

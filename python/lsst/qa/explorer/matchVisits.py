@@ -144,15 +144,15 @@ class MatchVisitsTask(CmdLineTask):
 
         # Match
         columns = ["coord_ra", "coord_dec"]
-        coaddDf = butler.get(self.inputDataset, tract=tract, filter=filt).toDataFrame(columns=columns)
+        coaddDf = (butler.get(self.inputDataset, tract=tract, filter=filt, subdir="").
+                   toDataFrame(columns=columns))
 
         column_index = pd.MultiIndex.from_product([["matchId", "distance"], allVisits])
         matchDf = pd.DataFrame(columns=column_index, index=coaddDf.index)
         for i, visit in enumerate(allVisits):
             try:
-                visitDf = butler.get(
-                    "analysisVisitTable", tract=tract, filter=filt, visit=visit
-                ).toDataFrame(columns=columns)
+                visitDf = (butler.get("analysisVisitTable", tract=tract, filter=filt, visit=visit, subdir="").
+                           toDataFrame(columns=columns))
             except NoResults:
                 self.log.info(f"({i+1} of {len(allVisits)}) visit {visit}: analysisVisitTable not available")
                 continue

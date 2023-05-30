@@ -1,5 +1,5 @@
 setupRequired(afw)
-setupRequired(daf_persistence)
+setupRequired(daf_butler)
 setupRequired(pex_config)
 setupRequired(pipe_base)
 setupRequired(pipe_tasks)

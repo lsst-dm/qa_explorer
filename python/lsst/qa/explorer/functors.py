@@ -44,10 +44,10 @@ class StarGalaxyLabeller(Labeller):
     def _func(self, df):
         x = df[self._columns][self._column]
         mask = x.isnull()
-        test = (x < 0.5).astype(int)
+        test = (x >= 0.5).astype(int)
         test = test.mask(mask, 2)
 
-        categories = ["galaxy", "star", self._null_label]
+        categories = ["star", "galaxy", self._null_label]
         label = pd.Series(
             pd.Categorical.from_codes(test, categories=categories),
             index=x.index,

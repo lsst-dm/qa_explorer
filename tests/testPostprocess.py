@@ -36,10 +36,6 @@ from lsst.pipe.tasks.postprocess import PostprocessAnalysis, TransformObjectCata
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
-def setup_module(module):
-    lsst.utils.tests.init()
-
-
 class PostprocessTestCase(unittest.TestCase):
 
     catFilename = 'multilevel_test.parq'
@@ -121,3 +117,14 @@ class PostprocessTestCase(unittest.TestCase):
         self.checkFlatResults(df)
 
 
+class MyMemoryTestCase(lsst.utils.tests.MemoryTestCase):
+    pass
+
+
+def setup_module(module):
+    lsst.utils.tests.init()
+
+
+if __name__ == "__main__":
+    lsst.utils.tests.init()
+    unittest.main()

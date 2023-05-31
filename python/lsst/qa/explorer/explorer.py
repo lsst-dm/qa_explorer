@@ -17,9 +17,10 @@ import param
 import parambokeh
 
 from lsst.pipe.tasks.functors import (Mag, CustomFunctor, DeconvolvedMoments,
-                                      StarGalaxyLabeller, RAColumn, DecColumn,
+                                      RAColumn, DecColumn,
                                       Column, SdssTraceSize, PsfSdssTraceSizeDiff,
                                       HsmTraceSize, PsfHsmTraceSizeDiff, CompositeFunctor)
+from .functors import StarGalaxyLabeller
 
 default_xFuncs = {'base_PsfFlux' : Mag('base_PsfFlux'),
                   'modelfit_CModel' : Mag('modelfit_CModel')}
